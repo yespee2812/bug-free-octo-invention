@@ -1,0 +1,30 @@
+# Copy to ground_truth/<same_name_as_script>.yaml
+# Scene numbers = order of INT./EXT. headings in file (1 = first scene).
+# These must match "scene N" in the customer report (not scene_00N ids in engine JSON).
+
+script_id: my_script_01
+filename: my_script_01.fountain
+
+# Contradictions you believe are real in the script (or already present).
+expected_contradictions:
+  - type: timeline_consistency
+    scene_number_a: 3
+    scene_number_b: 6
+    note: "Monday vs Wednesday with no flashback"
+
+# Contradictions you intentionally planted to test detection.
+planted_contradictions:
+  - type: character_alive_status
+    scene_number_a: 4
+    scene_number_b: 18
+    note: "Vance dead then alive"
+
+# Delete-impact checks (simulate cut).
+expected_simulate_delete:
+  - scene_id: scene_005
+    expect_impacted:
+      - scene_011
+      - scene_012
+
+notes: >
+  Optional free text — formatting issues, expected false positives, etc.

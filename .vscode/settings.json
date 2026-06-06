@@ -1,0 +1,8 @@
+{
+  "python.defaultInterpreterPath": "c:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\venv\\Scripts\\python.exe",
+  "python.terminal.activateEnvironment": true,
+  "terminal.integrated.env.windows": {
+    "VIRTUAL_ENV": "${workspaceFolder}/venv",
+    "PATH": "${workspaceFolder}\\venv\\Scripts;${env:PATH}"
+  }
+}

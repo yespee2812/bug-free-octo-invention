@@ -1,0 +1,969 @@
+"""Plot contradiction detection for screenplay scenes (Tier 1 deterministic rules)."""
+
+import re
+import uuid
+from dataclasses import dataclass
+from typing import Optional
+
+import spacy
+from spacy.language import Language
+
+from scene_dependency import SceneBlock, _is_character_cue, _normalize_token
+
+FACT_TYPES: tuple[str, ...] = (
+    "character_trait",
+    "location",
+    "timeline",
+    "object_ownership",
+    "character_status",
+    "relationship",
+)
+
+DAYS_OF_WEEK: dict[str, int] = {
+    "monday": 1,
+    "tuesday": 2,
+    "wednesday": 3,
+    "thursday": 4,
+    "friday": 5,
+    "saturday": 6,
+    "sunday": 7,
+}
+
+FLASHBACK_MARKERS: tuple[str, ...] = (
+    "earlier",
+    "flashback",
+    "previously",
+    "years ago",
+    "months ago",
+    "weeks ago",
+)
+
+CHARACTER_STATUS_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(
+        r"(?<![A-Za-z0-9])(?P<entity>[A-Z][A-Z0-9 .'\-]+?)\s+(?:is|was)\s+"
+        r"(?:dead|killed)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?<![A-Za-z0-9])(?P<entity>[A-Z][A-Z0-9 .'\-]+?)\s+(?:has\s+)?died",
+        re.IGNORECASE,
+    ),
+)
+
+TIMELINE_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(
+        r"(?:today\s+is|it\s+is|this\s+is)\s+(?P<day>Monday|Tuesday|Wednesday|"
+        r"Thursday|Friday|Saturday|Sunday)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"yesterday\s+was\s+(?P<day>Monday|Tuesday|Wednesday|Thursday|Friday|"
+        r"Saturday|Sunday)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?P<offset>(?:one|two|three|four|five|six|seven|eight|nine|ten|\d+)"
+        r"\s+days?\s+later)",
+        re.IGNORECASE,
+    ),
+)
+
+CHARACTER_TRAIT_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(
+        r"(?P<entity>[A-Z][A-Z0-9 .'\-]+?)\s+is\s+a\s+(?P<trait>[a-z][a-z\s\-]+)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?P<entity>[A-Z][A-Z0-9 .'\-]+?)\s+works\s+as\s+(?:a\s+)?"
+        r"(?P<trait>[a-z][a-z\s\-]+)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?P<entity>[A-Za-z]+),\s*the\s+city's best\s+"
+        r"(?P<trait>[a-z][a-z\s\-]+?),\s*entered",
+        re.IGNORECASE,
+    ),
+)
+
+OBJECT_OWNERSHIP_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (
+        re.compile(
+            r"(?P<owner>[A-Z][A-Z0-9 .'\-]+?)\s+picks\s+up\s+(?:the\s+)?"
+            r"(?P<object>[a-z][a-z0-9\s\-]+?)(?:\s+from|\s+on|\s+and|\.|$)",
+            re.IGNORECASE,
+        ),
+        "picks up",
+    ),
+    (
+        re.compile(
+            r"(?P<owner>[A-Z][A-Z0-9 .'\-]+?)\s+has\s+(?:the\s+)?"
+            r"(?P<object>[a-z][a-z0-9\s\-]+?)(?:\s+and|\s+on|\.|$)",
+            re.IGNORECASE,
+        ),
+        "has",
+    ),
+    (
+        re.compile(
+            r"(?P<owner>[A-Z][A-Z0-9 .'\-]+?)\s+gives\s+(?:the\s+)?"
+            r"(?P<object>[a-z][a-z0-9\s\-]+?)\s+to\s+"
+            r"(?P<recipient>[A-Z][A-Z0-9 .'\-]+)",
+            re.IGNORECASE,
+        ),
+        "gives to",
+    ),
+)
+
+LOCATION_DESCRIPTION_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(
+        r"the\s+(?P<location>[a-z][a-z0-9\s\-]+?)\s+was\s+(?P<state>.+?)(?:\.|$)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"the\s+(?P<location>[a-z][a-z0-9\s\-]+?)\s+had\s+been\s+(?P<state>.+?)(?:\.|$)",
+        re.IGNORECASE,
+    ),
+)
+
+TIER2_SIMILARITY_THRESHOLD = 0.35
+TIER2_MIN_CONFIDENCE = 0.55
+
+OPPOSING_STATE_TERMS: tuple[tuple[str, str], ...] = (
+    ("abandon", "active"),
+    ("silent", "busy"),
+    ("silent", "staff"),
+    ("dusty", "working"),
+    ("empty", "staffed"),
+    ("decay", "operational"),
+    ("derelict", "busy"),
+)
+
+
+@dataclass
+class Fact:
+    """A structured fact extracted from a screenplay scene."""
+
+    fact_id: str
+    scene_id: str
+    scene_number: int
+    fact_type: str
+    entity: str
+    value: str
+    raw_excerpt: str
+
+
+@dataclass
+class Contradiction:
+    """A detected contradiction between facts in two scenes."""
+
+    contradiction_id: str
+    scene_id_a: str
+    scene_id_b: str
+    scene_number_a: int
+    scene_number_b: int
+    fact_a: Fact
+    excerpt_b: str
+    contradiction_type: str
+    explanation: str
+    confidence: float
+    tier: int
+
+
+class FactStore:
+    """In-memory store for extracted screenplay facts."""
+
+    def __init__(self) -> None:
+        """Initialize an empty fact store."""
+        self._facts: list[Fact] = []
+
+    def add_fact(self, fact: Fact) -> None:
+        """Add a fact to the store."""
+        self._facts.append(fact)
+
+    def get_facts_about(self, entity: str) -> list[Fact]:
+        """Return all facts whose entity matches the given name (case-insensitive)."""
+        key = _normalize_token(entity)
+        return [fact for fact in self._facts if _normalize_token(fact.entity) == key]
+
+    def get_all_facts(self) -> list[Fact]:
+        """Return every stored fact."""
+        return list(self._facts)
+
+    def get_facts_by_type(self, fact_type: str) -> list[Fact]:
+        """Return all facts of a given fact type."""
+        return [fact for fact in self._facts if fact.fact_type == fact_type]
+
+
+def _new_contradiction_id() -> str:
+    """Generate a unique contradiction identifier."""
+    return f"contr_{uuid.uuid4().hex[:8]}"
+
+
+def _clean_entity(name: str) -> str:
+    """Normalize an entity name extracted from regex."""
+    return _normalize_token(name.strip(" ."))
+
+
+def _clean_value(value: str) -> str:
+    """Normalize a fact value string."""
+    return " ".join(value.strip().split())
+
+
+def _value_words(value: str) -> set[str]:
+    """Return lowercase word tokens from a fact value."""
+    return {word.lower() for word in re.findall(r"[a-zA-Z]+", value)}
+
+
+def _scene_body_lines(scene: SceneBlock) -> list[str]:
+    """Return non-heading lines from a scene's raw text."""
+    lines = scene.raw_text.splitlines()
+    if not lines:
+        return []
+    return [line.strip() for line in lines[1:] if line.strip()]
+
+
+def _character_appears_in_scene(scene: SceneBlock, entity: str) -> tuple[bool, str]:
+    """Check whether a character speaks or appears in a scene's action."""
+    entity_key = _normalize_token(entity)
+    for character in scene.characters:
+        if _normalize_token(character) == entity_key:
+            excerpt = _find_excerpt(scene.raw_text, character)
+            return True, excerpt
+
+    for line in _scene_body_lines(scene):
+        if _is_character_cue(line):
+            continue
+        if re.search(rf"\b{re.escape(entity)}\b", line, re.IGNORECASE):
+            return True, line
+
+    return False, ""
+
+
+def _find_excerpt(text: str, needle: str) -> str:
+    """Find the first line in text containing needle (case-insensitive)."""
+    for line in text.splitlines():
+        if needle.lower() in line.lower():
+            return line.strip()
+    return needle
+
+
+def _has_flashback_marker(text: str) -> bool:
+    """Return True when text contains a flashback or time-jump marker."""
+    lowered = text.lower()
+    return any(marker in lowered for marker in FLASHBACK_MARKERS)
+
+
+def _parse_day_number(value: str) -> Optional[int]:
+    """Parse a weekday number from a timeline fact value, if present."""
+    lowered = value.lower()
+    for day_name, day_number in DAYS_OF_WEEK.items():
+        if day_name in lowered:
+            return day_number
+    return None
+
+
+def _previous_weekday(day_number: int) -> int:
+    """Return the weekday number for the day before the given day (1-7)."""
+    return 7 if day_number == 1 else day_number - 1
+
+
+def _day_name(day_number: int) -> str:
+    """Return the weekday name for a day number."""
+    for name, number in DAYS_OF_WEEK.items():
+        if number == day_number:
+            return name.capitalize()
+    return str(day_number)
+
+
+class ContradictionEngine:
+    """Extract facts and run Tier 1 deterministic contradiction checks."""
+
+    def __init__(self) -> None:
+        """Initialize the engine and load the spaCy English model once."""
+        self.nlp: Language = spacy.load("en_core_web_sm")
+        self._fact_counter: int = 0
+
+    def _make_fact(
+        self,
+        scene: SceneBlock,
+        fact_type: str,
+        entity: str,
+        value: str,
+        raw_excerpt: str,
+    ) -> Fact:
+        """Create a Fact with a generated identifier."""
+        self._fact_counter += 1
+        return Fact(
+            fact_id=f"fact_{self._fact_counter:04d}",
+            scene_id=scene.scene_id,
+            scene_number=scene.scene_number,
+            fact_type=fact_type,
+            entity=_clean_entity(entity),
+            value=_clean_value(value),
+            raw_excerpt=raw_excerpt.strip(),
+        )
+
+    def extract_facts(self, scenes: list[SceneBlock]) -> FactStore:
+        """Extract structured facts from parsed scenes using spaCy and pattern rules.
+
+        Args:
+            scenes: Parsed scene blocks from the screenplay.
+
+        Returns:
+            A FactStore populated with extracted facts.
+        """
+        store = FactStore()
+        sorted_scenes = sorted(scenes, key=lambda scene: scene.scene_number)
+
+        for scene in sorted_scenes:
+            self._extract_character_status_facts(scene, store)
+            self._extract_timeline_facts(scene, store)
+            self._extract_character_trait_facts(scene, store)
+            self._extract_object_ownership_facts(scene, store)
+            self._extract_location_facts(scene, store)
+            self._extract_location_description_facts(scene, store)
+
+        return store
+
+    def _extract_character_status_facts(
+        self, scene: SceneBlock, store: FactStore
+    ) -> None:
+        """Extract character life/death status facts from scene text."""
+        for line in _scene_body_lines(scene):
+            for pattern in CHARACTER_STATUS_PATTERNS:
+                match = pattern.search(line)
+                if not match:
+                    continue
+                entity = _clean_entity(match.group("entity"))
+                store.add_fact(
+                    self._make_fact(
+                        scene,
+                        "character_status",
+                        entity,
+                        "is dead",
+                        line,
+                    )
+                )
+
+    def _extract_timeline_facts(self, scene: SceneBlock, store: FactStore) -> None:
+        """Extract explicit timeline references from scene text."""
+        for line in _scene_body_lines(scene):
+            for pattern in TIMELINE_PATTERNS:
+                match = pattern.search(line)
+                if not match:
+                    continue
+                groups = match.groupdict()
+                if groups.get("day"):
+                    day = match.group("day")
+                    if "yesterday" in line.lower():
+                        value = f"yesterday was {day}"
+                    else:
+                        value = f"day is {day}"
+                    entity = day
+                elif groups.get("offset"):
+                    offset = match.group("offset")
+                    value = offset.lower()
+                    entity = "timeline"
+                else:
+                    continue
+                store.add_fact(
+                    self._make_fact(
+                        scene,
+                        "timeline",
+                        entity,
+                        value,
+                        line,
+                    )
+                )
+
+    def _extract_character_trait_facts(
+        self, scene: SceneBlock, store: FactStore
+    ) -> None:
+        """Extract profession and role trait facts from scene text."""
+        for line in _scene_body_lines(scene):
+            for pattern in CHARACTER_TRAIT_PATTERNS:
+                match = pattern.search(line)
+                if not match:
+                    continue
+                entity = _clean_entity(match.group("entity"))
+                trait = _clean_value(match.group("trait"))
+                store.add_fact(
+                    self._make_fact(
+                        scene,
+                        "character_trait",
+                        entity,
+                        trait,
+                        line,
+                    )
+                )
+
+    def _extract_object_ownership_facts(
+        self, scene: SceneBlock, store: FactStore
+    ) -> None:
+        """Extract object possession and transfer facts from scene text."""
+        for line in _scene_body_lines(scene):
+            for pattern, verb in OBJECT_OWNERSHIP_PATTERNS:
+                match = pattern.search(line)
+                if not match:
+                    continue
+                owner = _clean_entity(match.group("owner"))
+                object_name = _clean_value(match.group("object"))
+                if verb == "gives to":
+                    recipient = _clean_entity(match.group("recipient"))
+                    value = f"{owner} gives {object_name} to {recipient}"
+                    entity = object_name.upper()
+                else:
+                    value = f"{owner} {verb} {object_name}"
+                    entity = object_name.upper()
+                store.add_fact(
+                    self._make_fact(
+                        scene,
+                        "object_ownership",
+                        entity,
+                        value,
+                        line,
+                    )
+                )
+
+    def _extract_location_facts(self, scene: SceneBlock, store: FactStore) -> None:
+        """Extract location facts from scene headings."""
+        if not scene.locations:
+            return
+        location = scene.locations[0]
+        store.add_fact(
+            self._make_fact(
+                scene,
+                "location",
+                location,
+                f"scene set in {location}",
+                scene.heading,
+            )
+        )
+
+    def _extract_location_description_facts(
+        self, scene: SceneBlock, store: FactStore
+    ) -> None:
+        """Extract descriptive location-state facts from action lines."""
+        for line in _scene_body_lines(scene):
+            for pattern in LOCATION_DESCRIPTION_PATTERNS:
+                match = pattern.search(line)
+                if not match:
+                    continue
+                location = _clean_entity(match.group("location"))
+                state = _clean_value(match.group("state"))
+                store.add_fact(
+                    self._make_fact(
+                        scene,
+                        "location",
+                        location,
+                        state,
+                        line,
+                    )
+                )
+
+    def run_tier1(
+        self, fact_store: FactStore, scenes: list[SceneBlock]
+    ) -> list[Contradiction]:
+        """Run all Tier 1 deterministic contradiction rules.
+
+        Args:
+            fact_store: Facts extracted from the screenplay.
+            scenes: Parsed scene blocks in screenplay order.
+
+        Returns:
+            Contradictions sorted by confidence descending.
+        """
+        scene_lookup = {scene.scene_id: scene for scene in scenes}
+        contradictions: list[Contradiction] = []
+        contradictions.extend(
+            self._check_character_alive_status(fact_store, scenes, scene_lookup)
+        )
+        contradictions.extend(
+            self._check_timeline_consistency(fact_store, scenes, scene_lookup)
+        )
+        contradictions.extend(
+            self._check_character_trait_conflict(fact_store, scene_lookup)
+        )
+        contradictions.extend(
+            self._check_object_ownership(fact_store, scenes, scene_lookup)
+        )
+        contradictions.sort(key=lambda item: item.confidence, reverse=True)
+        return contradictions
+
+    def run_tier2(
+        self,
+        fact_store: FactStore,
+        scenes: list[SceneBlock],
+        tier1_results: list[Contradiction],
+    ) -> list[Contradiction]:
+        """Detect semantic contradictions missed by Tier 1 pattern rules.
+
+        Compares fact values for the same entity using spaCy similarity.
+
+        Args:
+            fact_store: Facts extracted from the screenplay.
+            scenes: Parsed scene blocks in screenplay order.
+            tier1_results: Contradictions already found by Tier 1.
+
+        Returns:
+            Tier 2 contradictions sorted by confidence descending.
+        """
+        scene_lookup = {scene.scene_id: scene for scene in scenes}
+        tier1_coverage = self._tier1_scene_entity_coverage(tier1_results)
+        facts_by_entity: dict[str, list[Fact]] = {}
+
+        for fact in fact_store.get_all_facts():
+            scene = scene_lookup.get(fact.scene_id)
+            if (
+                scene is not None
+                and fact.fact_type == "location"
+                and fact.raw_excerpt == scene.heading
+            ):
+                continue
+            facts_by_entity.setdefault(fact.entity, []).append(fact)
+
+        results: list[Contradiction] = []
+
+        for entity, facts in facts_by_entity.items():
+            if len(facts) < 2:
+                continue
+
+            for left_index in range(len(facts)):
+                for right_index in range(left_index + 1, len(facts)):
+                    fact_a = facts[left_index]
+                    fact_b = facts[right_index]
+                    if fact_a.fact_type != fact_b.fact_type:
+                        continue
+                    if fact_a.scene_id == fact_b.scene_id:
+                        continue
+
+                    scene_ids = tuple(sorted([fact_a.scene_id, fact_b.scene_id]))
+                    coverage_key = (
+                        scene_ids[0],
+                        scene_ids[1],
+                        _normalize_token(entity),
+                        fact_a.fact_type,
+                    )
+                    if coverage_key in tier1_coverage:
+                        continue
+
+                    similarity = self._compute_value_similarity(
+                        fact_a.value, fact_b.value
+                    )
+                    if self._has_opposing_state_terms(fact_a.value, fact_b.value):
+                        similarity = min(similarity, 0.25)
+                    if similarity >= TIER2_SIMILARITY_THRESHOLD:
+                        continue
+
+                    confidence = round(0.75 - (similarity * 0.5), 2)
+                    if confidence < TIER2_MIN_CONFIDENCE:
+                        continue
+
+                    earlier, later = (
+                        (fact_a, fact_b)
+                        if fact_a.scene_number <= fact_b.scene_number
+                        else (fact_b, fact_a)
+                    )
+                    results.append(
+                        Contradiction(
+                            contradiction_id=_new_contradiction_id(),
+                            scene_id_a=earlier.scene_id,
+                            scene_id_b=later.scene_id,
+                            scene_number_a=earlier.scene_number,
+                            scene_number_b=later.scene_number,
+                            fact_a=earlier,
+                            excerpt_b=later.raw_excerpt,
+                            contradiction_type=f"semantic_{earlier.fact_type}",
+                            explanation=(
+                                f"{entity} facts are semantically inconsistent "
+                                f"(similarity {similarity:.2f}): "
+                                f"'{earlier.value}' in {earlier.scene_id} vs "
+                                f"'{later.value}' in {later.scene_id}."
+                            ),
+                            confidence=confidence,
+                            tier=2,
+                        )
+                    )
+
+        results.sort(key=lambda item: item.confidence, reverse=True)
+        return results
+
+    def run_analysis(self, scenes: list[SceneBlock]) -> list[Contradiction]:
+        """Extract facts and run Tier 1 and Tier 2 contradiction analysis.
+
+        Args:
+            scenes: Parsed scene blocks from the screenplay.
+
+        Returns:
+            Combined contradictions sorted by confidence descending.
+        """
+        fact_store = self.extract_facts(scenes)
+        tier1_results = self.run_tier1(fact_store, scenes)
+        tier2_results = self.run_tier2(fact_store, scenes, tier1_results)
+        return self._deduplicate_contradictions(tier1_results + tier2_results)
+
+    def _compute_value_similarity(self, value_a: str, value_b: str) -> float:
+        """Compute spaCy semantic similarity between two fact values."""
+        doc_a = self.nlp(value_a)
+        doc_b = self.nlp(value_b)
+        direct_similarity = float(doc_a.similarity(doc_b))
+        if direct_similarity < TIER2_SIMILARITY_THRESHOLD:
+            return direct_similarity
+
+        lemmas_a = {
+            token.lemma_.lower()
+            for token in doc_a
+            if not token.is_stop and not token.is_punct
+        }
+        lemmas_b = {
+            token.lemma_.lower()
+            for token in doc_b
+            if not token.is_stop and not token.is_punct
+        }
+        unique_a = lemmas_a - lemmas_b
+        unique_b = lemmas_b - lemmas_a
+        if not unique_a or not unique_b:
+            return direct_similarity
+
+        distinct_a = self.nlp(" ".join(sorted(unique_a)))
+        distinct_b = self.nlp(" ".join(sorted(unique_b)))
+        distinct_similarity = float(distinct_a.similarity(distinct_b))
+        return min(direct_similarity, distinct_similarity)
+
+    def _has_opposing_state_terms(self, value_a: str, value_b: str) -> bool:
+        """Return True when two values contain clearly opposing state terms."""
+        lowered_a = value_a.lower()
+        lowered_b = value_b.lower()
+        for term_a, term_b in OPPOSING_STATE_TERMS:
+            if (term_a in lowered_a and term_b in lowered_b) or (
+                term_b in lowered_a and term_a in lowered_b
+            ):
+                return True
+        return False
+
+    def _tier1_scene_entity_coverage(
+        self, tier1_results: list[Contradiction]
+    ) -> set[tuple[str, str, str, str]]:
+        """Return scene/entity/type keys already covered by Tier 1 results."""
+        covered: set[tuple[str, str, str, str]] = set()
+        for contradiction in tier1_results:
+            scene_ids = tuple(
+                sorted([contradiction.scene_id_a, contradiction.scene_id_b])
+            )
+            covered.add(
+                (
+                    scene_ids[0],
+                    scene_ids[1],
+                    _normalize_token(contradiction.fact_a.entity),
+                    contradiction.fact_a.fact_type,
+                )
+            )
+        return covered
+
+    def _deduplicate_contradictions(
+        self, contradictions: list[Contradiction]
+    ) -> list[Contradiction]:
+        """Remove duplicate contradictions while preserving highest confidence."""
+        unique: dict[tuple[str, str, str], Contradiction] = {}
+        for contradiction in contradictions:
+            scene_ids = tuple(
+                sorted([contradiction.scene_id_a, contradiction.scene_id_b])
+            )
+            key = (scene_ids[0], scene_ids[1], contradiction.contradiction_type)
+            existing = unique.get(key)
+            if existing is None or contradiction.confidence > existing.confidence:
+                unique[key] = contradiction
+        combined = list(unique.values())
+        combined.sort(key=lambda item: item.confidence, reverse=True)
+        return combined
+
+    def _check_character_alive_status(
+        self,
+        fact_store: FactStore,
+        scenes: list[SceneBlock],
+        scene_lookup: dict[str, SceneBlock],
+    ) -> list[Contradiction]:
+        """Flag characters who speak or act after being established as dead."""
+        results: list[Contradiction] = []
+        status_facts = fact_store.get_facts_by_type("character_status")
+
+        for fact in status_facts:
+            value_lower = fact.value.lower()
+            if "dead" not in value_lower and "killed" not in value_lower:
+                continue
+
+            for scene in scenes:
+                if scene.scene_number <= fact.scene_number:
+                    continue
+                appears, excerpt = _character_appears_in_scene(scene, fact.entity)
+                if not appears:
+                    continue
+                results.append(
+                    Contradiction(
+                        contradiction_id=_new_contradiction_id(),
+                        scene_id_a=fact.scene_id,
+                        scene_id_b=scene.scene_id,
+                        scene_number_a=fact.scene_number,
+                        scene_number_b=scene.scene_number,
+                        fact_a=fact,
+                        excerpt_b=excerpt,
+                        contradiction_type="character_alive_status",
+                        explanation=(
+                            f"{fact.entity} was established as dead in "
+                            f"{fact.scene_id} but appears active in {scene.scene_id}."
+                        ),
+                        confidence=0.95,
+                        tier=1,
+                    )
+                )
+
+        return results
+
+    def _check_timeline_consistency(
+        self,
+        fact_store: FactStore,
+        scenes: list[SceneBlock],
+        scene_lookup: dict[str, SceneBlock],
+    ) -> list[Contradiction]:
+        """Flag impossible backward day sequences without flashback markers."""
+        results: list[Contradiction] = []
+        timeline_facts = [
+            fact
+            for fact in fact_store.get_facts_by_type("timeline")
+            if _parse_day_number(fact.value) is not None
+        ]
+        timeline_facts.sort(key=lambda fact: fact.scene_number)
+
+        for index in range(len(timeline_facts) - 1):
+            earlier = timeline_facts[index]
+            later = timeline_facts[index + 1]
+            earlier_day = _parse_day_number(earlier.value)
+            later_day = _parse_day_number(later.value)
+            if earlier_day is None or later_day is None:
+                continue
+
+            later_scene = scene_lookup.get(later.scene_id)
+            later_text = later_scene.raw_text if later_scene else later.raw_excerpt
+            if _has_flashback_marker(later_text):
+                continue
+
+            if "yesterday was" in earlier.value.lower():
+                continue
+
+            if "yesterday was" in later.value.lower():
+                expected_yesterday = _previous_weekday(earlier_day)
+                stated_yesterday = later_day
+                if stated_yesterday != expected_yesterday:
+                    results.append(
+                        Contradiction(
+                            contradiction_id=_new_contradiction_id(),
+                            scene_id_a=earlier.scene_id,
+                            scene_id_b=later.scene_id,
+                            scene_number_a=earlier.scene_number,
+                            scene_number_b=later.scene_number,
+                            fact_a=earlier,
+                            excerpt_b=later.raw_excerpt,
+                            contradiction_type="timeline_consistency",
+                            explanation=(
+                                f"{earlier.value} in {earlier.scene_id} implies yesterday "
+                                f"was {_day_name(expected_yesterday)}, but {later.value} "
+                                f"in {later.scene_id} without a flashback marker."
+                            ),
+                            confidence=0.92,
+                            tier=1,
+                        )
+                    )
+                continue
+
+            if later_day >= earlier_day:
+                continue
+
+            results.append(
+                Contradiction(
+                    contradiction_id=_new_contradiction_id(),
+                    scene_id_a=earlier.scene_id,
+                    scene_id_b=later.scene_id,
+                    scene_number_a=earlier.scene_number,
+                    scene_number_b=later.scene_number,
+                    fact_a=earlier,
+                    excerpt_b=later.raw_excerpt,
+                    contradiction_type="timeline_consistency",
+                    explanation=(
+                        f"Timeline moves from {earlier.value} in {earlier.scene_id} "
+                        f"to {later.value} in {later.scene_id} without a flashback "
+                        f"or time-jump marker."
+                    ),
+                    confidence=0.92,
+                    tier=1,
+                )
+            )
+
+        return results
+
+    def _check_character_trait_conflict(
+        self,
+        fact_store: FactStore,
+        scene_lookup: dict[str, SceneBlock],
+    ) -> list[Contradiction]:
+        """Flag conflicting profession or role traits for the same character."""
+        results: list[Contradiction] = []
+        trait_facts = fact_store.get_facts_by_type("character_trait")
+        by_entity: dict[str, list[Fact]] = {}
+
+        for fact in trait_facts:
+            by_entity.setdefault(fact.entity, []).append(fact)
+
+        for entity, facts in by_entity.items():
+            for left_index in range(len(facts)):
+                for right_index in range(left_index + 1, len(facts)):
+                    left = facts[left_index]
+                    right = facts[right_index]
+                    if left.value.lower() == right.value.lower():
+                        continue
+                    shared = _value_words(left.value) & _value_words(right.value)
+                    if shared:
+                        continue
+
+                    earlier, later = (
+                        (left, right) if left.scene_number <= right.scene_number else (right, left)
+                    )
+                    results.append(
+                        Contradiction(
+                            contradiction_id=_new_contradiction_id(),
+                            scene_id_a=earlier.scene_id,
+                            scene_id_b=later.scene_id,
+                            scene_number_a=earlier.scene_number,
+                            scene_number_b=later.scene_number,
+                            fact_a=earlier,
+                            excerpt_b=later.raw_excerpt,
+                            contradiction_type="character_trait_conflict",
+                            explanation=(
+                                f"{entity} is described as '{earlier.value}' in "
+                                f"{earlier.scene_id} and '{later.value}' in "
+                                f"{later.scene_id} with no overlapping trait terms."
+                            ),
+                            confidence=0.85,
+                            tier=1,
+                        )
+                    )
+
+        return results
+
+    def _check_object_ownership(
+        self,
+        fact_store: FactStore,
+        scenes: list[SceneBlock],
+        scene_lookup: dict[str, SceneBlock],
+    ) -> list[Contradiction]:
+        """Flag object possession changes without an on-screen handoff."""
+        results: list[Contradiction] = []
+        ownership_facts = sorted(
+            fact_store.get_facts_by_type("object_ownership"),
+            key=lambda fact: (fact.scene_number, fact.fact_id),
+        )
+
+        last_owner: dict[str, tuple[str, int, str, Fact]] = {}
+
+        for fact in ownership_facts:
+            current_owner = self._ownership_holder(fact)
+            if not current_owner:
+                continue
+
+            object_key = _normalize_token(fact.entity)
+            if object_key in last_owner:
+                previous_owner, previous_scene_number, previous_scene_id, previous_fact = (
+                    last_owner[object_key]
+                )
+                if (
+                    _normalize_token(current_owner) != _normalize_token(previous_owner)
+                    and fact.scene_number > previous_scene_number
+                    and not self._has_handoff_between(
+                        fact_store,
+                        object_key,
+                        previous_scene_number,
+                        fact.scene_number,
+                        previous_owner,
+                        current_owner,
+                    )
+                ):
+                    results.append(
+                        Contradiction(
+                            contradiction_id=_new_contradiction_id(),
+                            scene_id_a=previous_scene_id,
+                            scene_id_b=fact.scene_id,
+                            scene_number_a=previous_scene_number,
+                            scene_number_b=fact.scene_number,
+                            fact_a=previous_fact,
+                            excerpt_b=fact.raw_excerpt,
+                            contradiction_type="object_ownership",
+                            explanation=(
+                                f"{object_key} was last held by {previous_owner} in "
+                                f"{previous_scene_id}, but {current_owner} has it in "
+                                f"{fact.scene_id} with no handoff between scenes."
+                            ),
+                            confidence=0.80,
+                            tier=1,
+                        )
+                    )
+
+            last_owner[object_key] = (
+                current_owner,
+                fact.scene_number,
+                fact.scene_id,
+                fact,
+            )
+
+        return results
+
+    def _ownership_holder(self, fact: Fact) -> Optional[str]:
+        """Parse the current holder from an object ownership fact value."""
+        value = fact.value
+        gives_match = re.match(
+            r"^(.+?)\s+gives\s+.+?\s+to\s+(.+)$",
+            value,
+            re.IGNORECASE,
+        )
+        if gives_match:
+            return _clean_entity(gives_match.group(1))
+
+        for prefix in ("picks up", "has"):
+            if prefix in value.lower():
+                owner = value.split(prefix, maxsplit=1)[0].strip()
+                return _clean_entity(owner)
+
+        return None
+
+    def _has_handoff_between(
+        self,
+        fact_store: FactStore,
+        object_key: str,
+        from_scene_number: int,
+        to_scene_number: int,
+        previous_owner: str,
+        current_owner: str,
+    ) -> bool:
+        """Return True when an ownership transfer is recorded between two scenes."""
+        if to_scene_number - from_scene_number <= 1:
+            return True
+
+        for fact in fact_store.get_facts_by_type("object_ownership"):
+            if _normalize_token(fact.entity) != object_key:
+                continue
+            if fact.scene_number <= from_scene_number or fact.scene_number >= to_scene_number:
+                continue
+            holder = self._ownership_holder(fact)
+            recipient: Optional[str] = None
+            gives_match = re.search(
+                r"gives\s+.+?\s+to\s+(.+)$",
+                fact.value,
+                re.IGNORECASE,
+            )
+            if gives_match:
+                recipient = _clean_entity(gives_match.group(1))
+
+            if holder and _normalize_token(holder) == _normalize_token(previous_owner):
+                if recipient and _normalize_token(recipient) == _normalize_token(current_owner):
+                    return True
+                if _normalize_token(holder) == _normalize_token(current_owner):
+                    return True
+
+        return False

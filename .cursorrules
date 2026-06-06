@@ -1,0 +1,5 @@
+- Always use the venv Python interpreter
+- All imports must be at the top of the file
+- Every function must have a docstring
+- Every function must have type hints
+- Never use bare except clauses — always catch specific exceptions

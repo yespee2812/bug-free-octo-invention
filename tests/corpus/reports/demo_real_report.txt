@@ -1,0 +1,60 @@
+ScriptLens analysis
+Input: demo_real.fountain
+Format: text
+========================================================================
+
+========================================================================
+SCRIPTLENS STORY REPORT
+========================================================================
+
+YOUR SCRIPT AT A GLANCE
+------------------------------------------------------------------------
+  Scenes:     22
+  Characters: CAPTAIN REED, DETECTIVE ROSS, DETECTIVE VANCE, ELENA, JORDAN, MARCUS, THEO
+  Props:      ADDRESS, ALARMS STROBE RED, BLUE LEDGER, BLUEPRINTS, BOARD, CASH BANDS, CITY, COFFEE, COLD CUP, CRACKED TILE, CREW, DETECTIVE ROSS, DETECTIVE VANCE, DOCK, EDIT BAY, ELENA, ELENA BOARDS, ELENA SIGNS, ENGINE, FENCE LINE, FILES, FOLDERS, FRONT, GUNFIRE, HARBOR RAID, HARBOR SHOOTOUT, INFORMANT, INNER DOOR, ITEMS, JORDAN, LAWYERS, LIGHTS, MAPS, MARCUS, MARCUS LOADS TOOLS, NAPKIN, ONE BAG, PATROL CAR, PEG, PHOTO, PRODUCER, RAIN, RED BRIEFCASE, RED BRIEFCASE PHOTO, REPORTERS, SEGMENT, SHE, SHOOTOUT, SILENCE, SILVER KEY, SMOKE, SQUAD, STACKS, STEPS, SUBPLOT, SURVEILLANCE STILLS, TABLE, TEA, THEO, TIMELINE, TIRES SCREECH, TRUNK, TWO PAGES, VANCE, VAULT SENSORS, VISITOR LOG, WALL, WATCHES, WET ASPHALT, WHISPERS, WINDOW
+
+HOW YOUR SCENES CONNECT
+------------------------------------------------------------------------
+  Your story has 22 scenes linked by 27 story connections.
+  The scene other scenes rely on most: scene_015.
+  On average, each scene builds on about 1.41 earlier scenes.
+  4 scene(s) sit loosely in the story - nothing later depends on them, so they may be easy to cut or need stronger ties.
+
+SCENES YOU SHOULD NOT CUT LIGHTLY
+------------------------------------------------------------------------
+  1. scene_001 - INT. FEDERAL ARCHIVES - DAY
+     Removing this would weaken 14 later scene(s): scene_009, scene_004, scene_017, scene_006, scene_020, scene_019, scene_016, scene_005, scene_008, scene_011, scene_022, scene_021, scene_015, scene_010.
+  2. scene_002 - INT. DETECTIVE BUREAU - DAY
+     Removing this would weaken 5 later scene(s): scene_018, scene_010, scene_020, scene_014, scene_007.
+  3. scene_004 - INT. SAFE APARTMENT - DAY
+     Removing this would weaken 4 later scene(s): scene_006, scene_015, scene_016, scene_009.
+  4. scene_007 - INT. POLICE WAR ROOM - DAY
+     Removing this would weaken 2 later scene(s): scene_014, scene_020.
+  5. scene_011 - INT. PARKING GARAGE - NIGHT
+     Removing this would weaken 2 later scene(s): scene_019, scene_021.
+  ... and 4 more scene(s) with downstream ties.
+
+STORY CONSISTENCY ISSUES
+------------------------------------------------------------------------
+  Found 3 possible inconsistency(ies): 3 clear conflict(s), 0 subtler mismatch(es).
+
+  Issue 1: A character is dead in one scene but alive in another
+    Between scene 3 and scene 18
+    DETECTIVE VANCE was established as dead in scene_003 but appears active in scene_018.
+    Confidence: about 95%
+
+  Issue 2: The timeline or day of the week does not line up
+    Between scene 7 and scene 14
+    day is Monday in scene_007 implies yesterday was Sunday, but yesterday was Wednesday in scene_014 without a flashback marker.
+    Confidence: about 92%
+
+  Issue 3: An important object changes hands with no explanation
+    Between scene 9 and scene 16
+    BLUE LEDGER was last held by ELENA in scene_009, but MARCUS has it in scene_016 with no handoff between scenes.
+    Confidence: about 80%
+
+OVERALL SCRIPT HEALTH
+------------------------------------------------------------------------
+  Score: 64 / 100
+  Worth a revision pass: address contradictions and scenes that feel disconnected.
+

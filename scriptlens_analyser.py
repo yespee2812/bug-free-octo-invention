@@ -1,0 +1,314 @@
+"""Combined ScriptLens analysis: scene dependencies and plot contradictions."""
+
+from pathlib import Path
+from typing import Any
+
+from plot_contradiction import Contradiction, ContradictionEngine
+from scene_dependency import SceneBlock, SceneDependencyEngine
+
+SUPPORTED_TEXT_SUFFIXES: frozenset[str] = frozenset(
+    {".fountain", ".fadein", ".txt", ".md", ".screenplay"}
+)
+
+
+def analyze_screenplay(screenplay_text: str) -> dict[str, Any]:
+    """Parse a Fountain screenplay and return a combined analysis report.
+
+    Runs scene dependency graph construction and Tier 1 + Tier 2 contradiction
+    detection, then assembles a structured result dictionary.
+
+    Args:
+        screenplay_text: Full screenplay in Fountain plain text.
+
+    Returns:
+        Structured analysis with script summary, dependencies, contradictions,
+        and an overall health score.
+    """
+    dependency_engine = SceneDependencyEngine()
+    scenes = dependency_engine.parse_fountain_text(screenplay_text)
+    dependency_engine.build_graph(scenes)
+
+    contradiction_engine = ContradictionEngine()
+    contradictions = contradiction_engine.run_analysis(scenes)
+
+    characters = sorted(
+        {character for scene in scenes for character in scene.characters},
+        key=str.casefold,
+    )
+    objects = sorted(
+        {obj for scene in scenes for obj in scene.objects},
+        key=str.casefold,
+    )
+
+    scene_lookup = {scene.scene_id: scene for scene in scenes}
+    high_risk_scenes = _build_high_risk_scenes(dependency_engine, scene_lookup)
+
+    contradiction_items = [_contradiction_to_dict(item) for item in contradictions]
+    tier1_count = sum(1 for item in contradictions if item.tier == 1)
+    tier2_count = sum(1 for item in contradictions if item.tier == 2)
+
+    orphan_count = len(dependency_engine.get_orphan_scenes())
+    health_score = max(0, 100 - (len(contradictions) * 8) - (orphan_count * 3))
+
+    return {
+        "script_summary": {
+            "total_scenes": len(scenes),
+            "total_characters": characters,
+            "total_objects": objects,
+        },
+        "dependencies": {
+            "graph_summary": dependency_engine.export_graph_summary(),
+            "high_risk_scenes": high_risk_scenes,
+        },
+        "contradictions": {
+            "total_found": len(contradictions),
+            "by_tier": {"tier1": tier1_count, "tier2": tier2_count},
+            "items": contradiction_items,
+        },
+        "health_score": health_score,
+    }
+
+
+def load_screenplay_text(input_path: str | Path) -> tuple[str, str]:
+    """Load screenplay plain text from a PDF or text file.
+
+    Args:
+        input_path: Path to .pdf, .fountain, .txt, or similar.
+
+    Returns:
+        Tuple of (screenplay_text, input_format) where input_format is
+        ``pdf`` or ``text``.
+
+    Raises:
+        FileNotFoundError: If the path does not exist.
+        ValueError: If the file type is not supported.
+    """
+    path = Path(input_path)
+    if not path.is_file():
+        raise FileNotFoundError(f"Input file not found: {path}")
+
+    suffix = path.suffix.lower()
+    if suffix == ".pdf":
+        from pdf_screenplay_loader import load_screenplay_from_pdf
+
+        return load_screenplay_from_pdf(path), "pdf"
+    if suffix in SUPPORTED_TEXT_SUFFIXES:
+        return path.read_text(encoding="utf-8"), "text"
+
+    raise ValueError(
+        f"Unsupported file type '{suffix}' for {path.name}. "
+        f"Use .pdf or one of: {', '.join(sorted(SUPPORTED_TEXT_SUFFIXES))}."
+    )
+
+
+def analyze_from_path(
+    input_path: str | Path,
+    *,
+    include_extracted_text: bool = False,
+) -> dict[str, Any]:
+    """Analyze a screenplay file (PDF or Fountain/text).
+
+    Args:
+        input_path: Path to the screenplay file.
+        include_extracted_text: When True, include normalized text in the
+            result (useful for debugging PDF extraction).
+
+    Returns:
+        Same structure as analyze_screenplay, plus an ``input`` metadata block.
+    """
+    path = Path(input_path).resolve()
+    screenplay_text, input_format = load_screenplay_text(path)
+    results = analyze_screenplay(screenplay_text)
+    results["input"] = {
+        "path": str(path),
+        "filename": path.name,
+        "format": input_format,
+    }
+    if include_extracted_text:
+        results["input"]["extracted_text"] = screenplay_text
+    return results
+
+
+def _build_high_risk_scenes(
+    engine: SceneDependencyEngine,
+    scene_lookup: dict[str, SceneBlock],
+) -> list[dict[str, Any]]:
+    """Rank scenes by how many later scenes depend on them if cut."""
+    ranked: list[dict[str, Any]] = []
+    for scene_id in engine.graph.nodes:
+        impact = engine.get_delete_impact(scene_id)
+        if not impact:
+            continue
+        scene = scene_lookup.get(scene_id)
+        heading = scene.heading if scene else scene_id
+        ranked.append(
+            {
+                "scene_id": scene_id,
+                "heading": heading,
+                "would_break": len(impact),
+                "impacted_scenes": [record["scene_id"] for record in impact],
+            }
+        )
+
+    ranked.sort(key=lambda record: record["would_break"], reverse=True)
+    return ranked
+
+
+def _contradiction_to_dict(contradiction: Contradiction) -> dict[str, Any]:
+    """Convert a Contradiction dataclass to the API result shape."""
+    return {
+        "scenes_involved": [
+            contradiction.scene_number_a,
+            contradiction.scene_number_b,
+        ],
+        "contradiction_type": contradiction.contradiction_type,
+        "explanation": contradiction.explanation,
+        "confidence": contradiction.confidence,
+        "tier": contradiction.tier,
+    }
+
+
+def pretty_print_results(results: dict[str, Any]) -> None:
+    """Print analysis results in plain language for screenwriters."""
+    summary = results["script_summary"]
+    dependencies = results["dependencies"]
+    graph = dependencies["graph_summary"]
+    contradictions = results["contradictions"]
+    health = results["health_score"]
+
+    print()
+    print("=" * 72)
+    print("SCRIPTLENS STORY REPORT")
+    print("=" * 72)
+
+    print()
+    print("YOUR SCRIPT AT A GLANCE")
+    print("-" * 72)
+    print(f"  Scenes:     {summary['total_scenes']}")
+    character_list = summary["total_characters"]
+    if character_list:
+        print(f"  Characters: {', '.join(character_list)}")
+    else:
+        print("  Characters: (none detected)")
+    object_list = summary["total_objects"]
+    if object_list:
+        print(f"  Props:      {', '.join(object_list)}")
+    else:
+        print("  Props:      (none detected)")
+
+    print()
+    print("HOW YOUR SCENES CONNECT")
+    print("-" * 72)
+    print(
+        f"  Your story has {graph['total_scenes']} scenes linked by "
+        f"{graph['total_edges']} story connections."
+    )
+    if graph.get("most_depended_on_scene"):
+        print(
+            f"  The scene other scenes rely on most: "
+            f"{graph['most_depended_on_scene']}."
+        )
+    print(
+        f"  On average, each scene builds on about "
+        f"{graph['avg_dependencies_per_scene']} earlier scenes."
+    )
+    orphan_count = graph.get("orphan_count", 0)
+    if orphan_count:
+        print(
+            f"  {orphan_count} scene(s) sit loosely in the story - nothing later "
+            "depends on them, so they may be easy to cut or need stronger ties."
+        )
+    else:
+        print("  Every scene after the opening is referenced by a later scene.")
+
+    high_risk = dependencies["high_risk_scenes"]
+    print()
+    print("SCENES YOU SHOULD NOT CUT LIGHTLY")
+    print("-" * 72)
+    if not high_risk:
+        print("  No scene removals would knock out later story beats.")
+    else:
+        for index, record in enumerate(high_risk[:5], start=1):
+            print(
+                f"  {index}. {record['scene_id']} - {record['heading']}"
+            )
+            print(
+                f"     Removing this would weaken {record['would_break']} "
+                "later scene(s): "
+                f"{', '.join(record['impacted_scenes'])}."
+            )
+        if len(high_risk) > 5:
+            print(f"  ... and {len(high_risk) - 5} more scene(s) with downstream ties.")
+
+    print()
+    print("STORY CONSISTENCY ISSUES")
+    print("-" * 72)
+    total = contradictions["total_found"]
+    if total == 0:
+        print("  No contradictions found - facts and timeline look consistent.")
+    else:
+        by_tier = contradictions["by_tier"]
+        print(
+            f"  Found {total} possible inconsistency(ies): "
+            f"{by_tier['tier1']} clear conflict(s), "
+            f"{by_tier['tier2']} subtler mismatch(es)."
+        )
+        for index, item in enumerate(contradictions["items"], start=1):
+            scene_a, scene_b = item["scenes_involved"]
+            label = _plain_contradiction_label(item["contradiction_type"])
+            confidence_pct = int(round(item["confidence"] * 100))
+            print()
+            print(f"  Issue {index}: {label}")
+            print(f"    Between scene {scene_a} and scene {scene_b}")
+            print(f"    {item['explanation']}")
+            print(f"    Confidence: about {confidence_pct}%")
+
+    print()
+    print("OVERALL SCRIPT HEALTH")
+    print("-" * 72)
+    print(f"  Score: {health} / 100")
+    if health >= 85:
+        print("  Your draft is in strong shape - few structural or logic concerns.")
+    elif health >= 70:
+        print(
+            "  Solid draft with room to tighten loose scenes or fix a few "
+            "story beats."
+        )
+    elif health >= 50:
+        print(
+            "  Worth a revision pass: address contradictions and scenes that "
+            "feel disconnected."
+        )
+    else:
+        print(
+            "  Several story logic or structure issues - prioritize "
+            "contradictions and scene links before polishing dialogue."
+        )
+    print()
+
+
+def _plain_contradiction_label(contradiction_type: str) -> str:
+    """Map internal contradiction types to screenwriter-friendly labels."""
+    labels = {
+        "character_alive_status": "A character is dead in one scene but alive in another",
+        "timeline_consistency": "The timeline or day of the week does not line up",
+        "character_trait_conflict": "A character's job or role contradicts an earlier scene",
+        "object_ownership": "An important object changes hands with no explanation",
+        "semantic_location": "A place is described differently in two scenes",
+    }
+    return labels.get(
+        contradiction_type,
+        contradiction_type.replace("_", " ").title(),
+    )
+
+
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) > 1:
+        report = analyze_from_path(sys.argv[1])
+    else:
+        from test_contradiction_screenplay import CONTRADICTION_SCREENPLAY
+
+        report = analyze_screenplay(CONTRADICTION_SCREENPLAY)
+    pretty_print_results(report)

@@ -1,0 +1,237 @@
+{
+  "script_summary": {
+    "total_scenes": 22,
+    "total_characters": [
+      "CAPTAIN REED",
+      "DETECTIVE ROSS",
+      "DETECTIVE VANCE",
+      "ELENA",
+      "JORDAN",
+      "MARCUS",
+      "THEO"
+    ],
+    "total_objects": [
+      "ADDRESS",
+      "ALARMS STROBE RED",
+      "BLUE LEDGER",
+      "BLUEPRINTS",
+      "BOARD",
+      "CASH BANDS",
+      "CITY",
+      "COFFEE",
+      "COLD CUP",
+      "CRACKED TILE",
+      "CREW",
+      "DETECTIVE ROSS",
+      "DETECTIVE VANCE",
+      "DOCK",
+      "EDIT BAY",
+      "ELENA",
+      "ELENA BOARDS",
+      "ELENA SIGNS",
+      "ENGINE",
+      "FENCE LINE",
+      "FILES",
+      "FOLDERS",
+      "FRONT",
+      "GUNFIRE",
+      "HARBOR RAID",
+      "HARBOR SHOOTOUT",
+      "INFORMANT",
+      "INNER DOOR",
+      "ITEMS",
+      "JORDAN",
+      "LAWYERS",
+      "LIGHTS",
+      "MAPS",
+      "MARCUS",
+      "MARCUS LOADS TOOLS",
+      "NAPKIN",
+      "ONE BAG",
+      "PATROL CAR",
+      "PEG",
+      "PHOTO",
+      "PRODUCER",
+      "RAIN",
+      "RED BRIEFCASE",
+      "RED BRIEFCASE PHOTO",
+      "REPORTERS",
+      "SEGMENT",
+      "SHE",
+      "SHOOTOUT",
+      "SILENCE",
+      "SILVER KEY",
+      "SMOKE",
+      "SQUAD",
+      "STACKS",
+      "STEPS",
+      "SUBPLOT",
+      "SURVEILLANCE STILLS",
+      "TABLE",
+      "TEA",
+      "THEO",
+      "TIMELINE",
+      "TIRES SCREECH",
+      "TRUNK",
+      "TWO PAGES",
+      "VANCE",
+      "VAULT SENSORS",
+      "VISITOR LOG",
+      "WALL",
+      "WATCHES",
+      "WET ASPHALT",
+      "WHISPERS",
+      "WINDOW"
+    ]
+  },
+  "dependencies": {
+    "graph_summary": {
+      "total_scenes": 22,
+      "total_edges": 27,
+      "most_depended_on_scene": "scene_015",
+      "orphan_count": 4,
+      "avg_dependencies_per_scene": 1.41
+    },
+    "high_risk_scenes": [
+      {
+        "scene_id": "scene_001",
+        "heading": "INT. FEDERAL ARCHIVES - DAY",
+        "would_break": 14,
+        "impacted_scenes": [
+          "scene_009",
+          "scene_004",
+          "scene_017",
+          "scene_006",
+          "scene_020",
+          "scene_019",
+          "scene_016",
+          "scene_005",
+          "scene_008",
+          "scene_011",
+          "scene_022",
+          "scene_021",
+          "scene_015",
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_002",
+        "heading": "INT. DETECTIVE BUREAU - DAY",
+        "would_break": 5,
+        "impacted_scenes": [
+          "scene_018",
+          "scene_010",
+          "scene_020",
+          "scene_014",
+          "scene_007"
+        ]
+      },
+      {
+        "scene_id": "scene_004",
+        "heading": "INT. SAFE APARTMENT - DAY",
+        "would_break": 4,
+        "impacted_scenes": [
+          "scene_006",
+          "scene_015",
+          "scene_016",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_007",
+        "heading": "INT. POLICE WAR ROOM - DAY",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_014",
+          "scene_020"
+        ]
+      },
+      {
+        "scene_id": "scene_011",
+        "heading": "INT. PARKING GARAGE - NIGHT",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_019",
+          "scene_021"
+        ]
+      },
+      {
+        "scene_id": "scene_005",
+        "heading": "INT. BANK VAULT ANTEROOM - NIGHT",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_015"
+        ]
+      },
+      {
+        "scene_id": "scene_008",
+        "heading": "INT. HARBOR CAFE - DAY",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_017"
+        ]
+      },
+      {
+        "scene_id": "scene_009",
+        "heading": "INT. SERVICE TUNNEL - NIGHT",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_016"
+        ]
+      },
+      {
+        "scene_id": "scene_013",
+        "heading": "INT. COURTHOUSE PLAZA - DAY",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_018"
+        ]
+      }
+    ]
+  },
+  "contradictions": {
+    "total_found": 3,
+    "by_tier": {
+      "tier1": 3,
+      "tier2": 0
+    },
+    "items": [
+      {
+        "scenes_involved": [
+          3,
+          18
+        ],
+        "contradiction_type": "character_alive_status",
+        "explanation": "DETECTIVE VANCE was established as dead in scene_003 but appears active in scene_018.",
+        "confidence": 0.95,
+        "tier": 1
+      },
+      {
+        "scenes_involved": [
+          7,
+          14
+        ],
+        "contradiction_type": "timeline_consistency",
+        "explanation": "day is Monday in scene_007 implies yesterday was Sunday, but yesterday was Wednesday in scene_014 without a flashback marker.",
+        "confidence": 0.92,
+        "tier": 1
+      },
+      {
+        "scenes_involved": [
+          9,
+          16
+        ],
+        "contradiction_type": "object_ownership",
+        "explanation": "BLUE LEDGER was last held by ELENA in scene_009, but MARCUS has it in scene_016 with no handoff between scenes.",
+        "confidence": 0.8,
+        "tier": 1
+      }
+    ]
+  },
+  "health_score": 64,
+  "input": {
+    "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\demo_real.fountain",
+    "filename": "demo_real.fountain",
+    "format": "text"
+  }
+}
