@@ -7,6 +7,7 @@ from typing import Any, Optional
 import networkx as nx
 import spacy
 from spacy.language import Language
+from spacy.tokens import Doc
 
 SCENE_HEADING_PATTERN = re.compile(
     r"^(INT\.|EXT\.|INT/EXT\.|I/E\.)\s+(.+)$",
@@ -19,6 +20,59 @@ TRANSITION_PATTERN = re.compile(
 )
 CHARACTER_CUE_PATTERN = re.compile(
     r"^[A-Z][A-Z0-9 .'\-@()]+$"
+)
+CAPS_SPAN_PATTERN = re.compile(
+    r"\b[A-Z][A-Z0-9'\-]+(?:\s+[A-Z][A-Z0-9'\-]+)*\b"
+)
+# First words of all-caps spans that are camera/editorial directions or
+# sound emphasis, not props (e.g. "CLOSE ON", "ANGLE ON", "BANG").
+CAPS_PROP_STOP_FIRST_WORDS: frozenset[str] = frozenset(
+    {
+        "ANGLE", "BACK", "BANG", "BEAT", "BOOM", "CHYRON", "CLOSE",
+        "CONTINUOUS", "CRASH", "END", "FLASHBACK", "INSERT", "INTERCUT",
+        "LATER", "MONTAGE", "NOTE", "POV", "SERIES", "SLAM", "SUPER",
+        "THUD", "TITLE",
+    }
+)
+# Professional titles that mark a multi-word caps span as a character even
+# when that character never receives a dialogue cue (e.g. "DETECTIVE MILLER").
+PERSON_TITLE_WORDS: frozenset[str] = frozenset(
+    {
+        "AGENT", "CAPTAIN", "CHIEF", "COACH", "CORONER", "DEPUTY",
+        "DETECTIVE", "DOCTOR", "DR", "JUDGE", "LIEUTENANT", "MAYOR",
+        "MISS", "MR", "MRS", "MS", "NURSE", "OFFICER", "PROFESSOR",
+        "SENATOR", "SERGEANT", "SHERIFF",
+    }
+)
+# Possession and handoff phrasing. Shared with the contradiction engine's
+# object-ownership facts; objects of these verbs are story props even when
+# the writer never capitalizes them (e.g. "ELENA picks up the blue ledger").
+OBJECT_OWNERSHIP_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (
+        re.compile(
+            r"(?P<owner>[A-Z][A-Z0-9 .'\-]+?)\s+picks\s+up\s+(?:the\s+)?"
+            r"(?P<object>[a-z][a-z0-9\s\-]+?)(?:\s+from|\s+on|\s+and|\.|$)",
+            re.IGNORECASE,
+        ),
+        "picks up",
+    ),
+    (
+        re.compile(
+            r"(?P<owner>[A-Z][A-Z0-9 .'\-]+?)\s+has\s+(?:the\s+)?"
+            r"(?P<object>[a-z][a-z0-9\s\-]+?)(?:\s+and|\s+on|\.|$)",
+            re.IGNORECASE,
+        ),
+        "has",
+    ),
+    (
+        re.compile(
+            r"(?P<owner>[A-Z][A-Z0-9 .'\-]+?)\s+gives\s+(?:the\s+)?"
+            r"(?P<object>[a-z][a-z0-9\s\-]+?)\s+to\s+"
+            r"(?P<recipient>[A-Z][A-Z0-9 .'\-]+)",
+            re.IGNORECASE,
+        ),
+        "gives to",
+    ),
 )
 EDGE_WEIGHTS: dict[str, float] = {
     "character": 1.0,
@@ -140,25 +194,209 @@ def _split_action_and_dialogue(lines: list[str]) -> tuple[list[str], list[str]]:
     return action_lines, character_lines
 
 
-def _extract_objects_from_action(action_lines: list[str], nlp: Language) -> list[str]:
-    """Extract noun phrases from action lines using spaCy noun chunks."""
-    if not action_lines:
-        return []
+def _collect_character_aliases(text: str) -> dict[str, str]:
+    """Map normalized character aliases to canonical cue names for a script.
 
-    text = " ".join(action_lines)
-    doc = nlp(text)
+    Aliases include the cue name itself (with parenthetical extensions
+    removed) and its article-stripped form, so action mentions like
+    "THE INFORMANT" or "INFORMANT" resolve to the same character.
+    """
+    aliases: dict[str, str] = {}
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not _is_character_cue(stripped):
+            continue
+        name = _normalize_token(re.sub(r"\([^)]*\)", "", stripped))
+        if not name:
+            continue
+        aliases.setdefault(name, name)
+        aliases.setdefault(_normalize_object_key(name), name)
+    return aliases
+
+
+def _person_entity_keys(
+    nlp: Language, action_text: str, doc: Optional[Doc]
+) -> set[str]:
+    """Return normalized keys for PERSON entities found in action text.
+
+    NER results differ between ALL-CAPS and title-cased text, so persons are
+    collected from both the raw doc and a copy where caps spans are
+    title-cased (e.g. "MARCUS slumps" becomes "Marcus slumps"). The union
+    maximizes recall of the person filter for cue-less characters.
+
+    Args:
+        nlp: Loaded spaCy pipeline.
+        action_text: Joined action lines of one scene.
+        doc: Already-parsed doc over action_text, or None when empty.
+
+    Returns:
+        Normalized keys (raw and article-stripped) for detected persons.
+    """
+    if not action_text:
+        return set()
+
+    docs: list[Doc] = [doc] if doc is not None else []
+    transformed = CAPS_SPAN_PATTERN.sub(
+        lambda span_match: span_match.group(0).title(), action_text
+    )
+    if transformed != action_text:
+        docs.append(nlp(transformed))
+
+    keys: set[str] = set()
+    for parsed in docs:
+        for ent in parsed.ents:
+            if ent.label_ != "PERSON":
+                continue
+            keys.add(_normalize_token(ent.text))
+            keys.add(_normalize_object_key(ent.text))
+    return keys
+
+
+def _match_prop_by_suffix(key: str, known_props: set[str]) -> Optional[str]:
+    """Resolve a key to an established prop key, exactly or by suffix.
+
+    Args:
+        key: Normalized object key for a mention (e.g. "BRIEFCASE").
+        known_props: Caps prop keys established so far.
+
+    Returns:
+        The canonical prop key (e.g. "RED BRIEFCASE"), or None if unmatched.
+    """
+    if key in known_props:
+        return key
+    for prop in known_props:
+        if prop.endswith(" " + key):
+            return prop
+    return None
+
+
+def _extract_ownership_objects(
+    action_lines: list[str],
+    character_aliases: dict[str, str],
+    known_props: set[str],
+) -> list[str]:
+    """Extract prop keys from possession and handoff verbs in action lines.
+
+    Objects of verbs like "picks up", "has", and "gives ... to" are story
+    props even when never capitalized, so this recovers props that the
+    ALL-CAPS convention misses (e.g. "the blue ledger").
+
+    Args:
+        action_lines: Action (non-dialogue) lines of one scene.
+        character_aliases: Normalized alias -> canonical cue name map.
+        known_props: Established prop keys, used to canonicalize mentions.
+
+    Returns:
+        Ordered, deduplicated prop keys found via ownership phrasing.
+    """
     objects: list[str] = []
     seen: set[str] = set()
+    for line in action_lines:
+        for pattern, _verb in OBJECT_OWNERSHIP_PATTERNS:
+            match = pattern.search(line)
+            if not match:
+                continue
+            key = _normalize_object_key(match.group("object"))
+            if len(key) < 2 or key in character_aliases:
+                continue
+            canonical = _match_prop_by_suffix(key, known_props) or key
+            if canonical in seen:
+                continue
+            seen.add(canonical)
+            objects.append(canonical)
+    return objects
 
+
+def _extract_caps_props_and_presences(
+    action_lines: list[str],
+    character_aliases: dict[str, str],
+    person_keys: set[str],
+) -> tuple[list[str], set[str]]:
+    """Split all-caps action spans into prop names and character presences.
+
+    Follows the screenwriting convention that important props are written in
+    ALL CAPS in action lines. Spans matching known character cues count as
+    that character being present in the scene rather than as objects, and
+    multi-word spans starting with a professional title (e.g. "DETECTIVE
+    MILLER") are treated as characters even without a dialogue cue.
+
+    Args:
+        action_lines: Action (non-dialogue) lines of one scene.
+        character_aliases: Normalized alias -> canonical cue name map.
+        person_keys: Normalized PERSON entity keys from spaCy NER.
+
+    Returns:
+        Tuple of (ordered caps prop keys, canonical character names present).
+    """
+    props: list[str] = []
+    seen_props: set[str] = set()
+    presences: set[str] = set()
+
+    for line in action_lines:
+        for span_match in CAPS_SPAN_PATTERN.finditer(line):
+            span = span_match.group(0).strip("'- ")
+            token_key = _normalize_token(span)
+            object_key = _normalize_object_key(span)
+            if len(object_key) < 2:
+                continue
+            canonical_character = character_aliases.get(
+                token_key, character_aliases.get(object_key, "")
+            )
+            if canonical_character:
+                presences.add(canonical_character)
+                continue
+            span_words = object_key.split()
+            if (
+                len(span_words) >= 2
+                and span_words[0].rstrip(".") in PERSON_TITLE_WORDS
+            ):
+                presences.add(token_key)
+                continue
+            if span_words[0] in CAPS_PROP_STOP_FIRST_WORDS:
+                continue
+            if token_key in person_keys or object_key in person_keys:
+                continue
+            if object_key in seen_props:
+                continue
+            seen_props.add(object_key)
+            props.append(object_key)
+
+    return props, presences
+
+
+def _match_known_prop_mentions(
+    doc: Optional[Doc], known_props: set[str]
+) -> list[str]:
+    """Map noun-chunk mentions in action text to established caps props.
+
+    A lowercase mention links to a prop when its normalized key equals the
+    prop key or is a word-boundary suffix of it (e.g. "the briefcase"
+    matches "RED BRIEFCASE"). Unmatched noun chunks are discarded, which
+    keeps scenery and abstract nouns out of the object list.
+
+    Args:
+        doc: spaCy doc over the scene's action text, or None when empty.
+        known_props: Caps prop keys established so far in screenplay order.
+
+    Returns:
+        Canonical prop keys mentioned in this scene's action text.
+    """
+    if doc is None or not known_props:
+        return []
+
+    mentions: list[str] = []
+    seen: set[str] = set()
     for chunk in doc.noun_chunks:
         phrase = " ".join(token.text for token in chunk if not token.is_space)
-        normalized = _normalize_object_key(phrase)
-        if len(normalized) < 2 or normalized in seen:
+        key = _normalize_object_key(phrase)
+        if len(key) < 2:
             continue
-        seen.add(normalized)
-        objects.append(normalized)
+        canonical = _match_prop_by_suffix(key, known_props)
+        if canonical is not None and canonical not in seen:
+            seen.add(canonical)
+            mentions.append(canonical)
 
-    return objects
+    return mentions
 
 
 class SceneDependencyEngine:
@@ -177,6 +415,11 @@ class SceneDependencyEngine:
         Splits the screenplay on scene headings (lines starting with INT. or EXT.),
         then extracts characters, objects, and locations for each scene.
 
+        Characters include dialogue cues plus known characters named in
+        ALL CAPS in action lines. Objects follow the screenwriting caps
+        convention: a prop must be introduced in ALL CAPS in action; later
+        lowercase mentions are linked back to the established prop.
+
         Args:
             text: Raw Fountain screenplay text.
 
@@ -189,6 +432,9 @@ class SceneDependencyEngine:
         if not matches:
             return scenes
 
+        character_aliases = _collect_character_aliases(text)
+        known_props: set[str] = set()
+
         for index, match in enumerate(matches, start=1):
             prefix = match.group(1).upper()
             location_tail = match.group(2).strip()
@@ -199,11 +445,28 @@ class SceneDependencyEngine:
             body_lines = raw_text.splitlines()[1:]
 
             action_lines, character_lines = _split_action_and_dialogue(body_lines)
-            characters = sorted(
-                {_normalize_token(name) for name in character_lines},
-                key=str.lower,
+            cue_names = {_normalize_token(name) for name in character_lines}
+
+            action_text = " ".join(action_lines)
+            doc: Optional[Doc] = self.nlp(action_text) if action_text else None
+            person_keys = _person_entity_keys(self.nlp, action_text, doc)
+
+            caps_props, action_presences = _extract_caps_props_and_presences(
+                action_lines, character_aliases, person_keys
             )
-            objects = _extract_objects_from_action(action_lines, self.nlp)
+            ownership_props = _extract_ownership_objects(
+                action_lines, character_aliases, known_props | set(caps_props)
+            )
+            known_props.update(caps_props)
+            known_props.update(ownership_props)
+            mention_props = _match_known_prop_mentions(doc, known_props)
+
+            objects: list[str] = []
+            for prop_name in caps_props + ownership_props + mention_props:
+                if prop_name not in objects:
+                    objects.append(prop_name)
+
+            characters = sorted(cue_names | action_presences, key=str.lower)
             location = _extract_location_from_heading(heading)
             locations = [location] if location else []
 

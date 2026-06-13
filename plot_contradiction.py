@@ -8,7 +8,13 @@ from typing import Optional
 import spacy
 from spacy.language import Language
 
-from scene_dependency import SceneBlock, _is_character_cue, _normalize_token
+from scene_dependency import (
+    OBJECT_OWNERSHIP_PATTERNS,
+    SceneBlock,
+    _is_character_cue,
+    _is_transition,
+    _normalize_token,
+)
 
 FACT_TYPES: tuple[str, ...] = (
     "character_trait",
@@ -85,34 +91,6 @@ CHARACTER_TRAIT_PATTERNS: tuple[re.Pattern[str], ...] = (
     ),
 )
 
-OBJECT_OWNERSHIP_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
-    (
-        re.compile(
-            r"(?P<owner>[A-Z][A-Z0-9 .'\-]+?)\s+picks\s+up\s+(?:the\s+)?"
-            r"(?P<object>[a-z][a-z0-9\s\-]+?)(?:\s+from|\s+on|\s+and|\.|$)",
-            re.IGNORECASE,
-        ),
-        "picks up",
-    ),
-    (
-        re.compile(
-            r"(?P<owner>[A-Z][A-Z0-9 .'\-]+?)\s+has\s+(?:the\s+)?"
-            r"(?P<object>[a-z][a-z0-9\s\-]+?)(?:\s+and|\s+on|\.|$)",
-            re.IGNORECASE,
-        ),
-        "has",
-    ),
-    (
-        re.compile(
-            r"(?P<owner>[A-Z][A-Z0-9 .'\-]+?)\s+gives\s+(?:the\s+)?"
-            r"(?P<object>[a-z][a-z0-9\s\-]+?)\s+to\s+"
-            r"(?P<recipient>[A-Z][A-Z0-9 .'\-]+)",
-            re.IGNORECASE,
-        ),
-        "gives to",
-    ),
-)
-
 LOCATION_DESCRIPTION_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(
         r"the\s+(?P<location>[a-z][a-z0-9\s\-]+?)\s+was\s+(?P<state>.+?)(?:\.|$)",
@@ -135,6 +113,33 @@ OPPOSING_STATE_TERMS: tuple[tuple[str, str], ...] = (
     ("empty", "staffed"),
     ("decay", "operational"),
     ("derelict", "busy"),
+)
+
+# Words that turn "dead"/"killed" into an idiom rather than a death fact,
+# e.g. "dead tired", "dead serious", "dead wrong", "dead ahead".
+DEAD_IDIOM_FOLLOWERS: frozenset[str] = frozenset(
+    {
+        "ahead", "asleep", "broke", "center", "certain", "drunk", "even",
+        "last", "on", "quiet", "right", "serious", "set", "silent", "slow",
+        "still", "sure", "tired", "wrong",
+    }
+)
+
+# Generic head nouns that describe a person without asserting a profession
+# or role, e.g. "Marcus is a good man" should not become a trait fact.
+GENERIC_TRAIT_TERMS: frozenset[str] = frozenset(
+    {
+        "bit", "boy", "child", "few", "friend", "girl", "guy", "joke", "kid",
+        "little", "lot", "man", "mess", "moment", "one", "person",
+        "stranger", "while", "woman",
+    }
+)
+
+# Words allowed directly after a weekday in a timeline statement,
+# e.g. "Today is Monday morning". Any other trailing word (such as
+# "It is Friday somewhere") disqualifies the line as a timeline anchor.
+TIME_OF_DAY_FOLLOWERS: frozenset[str] = frozenset(
+    {"afternoon", "evening", "morning", "night"}
 )
 
 
@@ -219,6 +224,58 @@ def _scene_body_lines(scene: SceneBlock) -> list[str]:
     if not lines:
         return []
     return [line.strip() for line in lines[1:] if line.strip()]
+
+
+def _scene_lines_by_source(scene: SceneBlock) -> tuple[list[str], list[str]]:
+    """Split a scene's body lines into action lines and dialogue lines.
+
+    Mirrors the dialogue-block logic used by the scene parser: lines after a
+    character cue are dialogue until a blank line or transition resets state.
+
+    Args:
+        scene: A parsed scene block.
+
+    Returns:
+        Tuple of (action_lines, dialogue_lines), both stripped and non-empty.
+    """
+    action_lines: list[str] = []
+    dialogue_lines: list[str] = []
+    in_dialogue = False
+
+    for line in scene.raw_text.splitlines()[1:]:
+        stripped = line.strip()
+        if not stripped:
+            in_dialogue = False
+            continue
+        if _is_transition(stripped):
+            in_dialogue = False
+            continue
+        if _is_character_cue(stripped):
+            in_dialogue = True
+            continue
+        if in_dialogue and (stripped.startswith("(") or not stripped.isupper()):
+            dialogue_lines.append(stripped)
+            continue
+        in_dialogue = False
+        action_lines.append(stripped)
+
+    return action_lines, dialogue_lines
+
+
+def _first_word_after(line: str, end_index: int) -> str:
+    """Return the lowercase word immediately following an index in a line.
+
+    Args:
+        line: The full text line.
+        end_index: Index where a regex match ended.
+
+    Returns:
+        The next word in lowercase, or an empty string when the match is
+        followed by punctuation or the end of the line.
+    """
+    rest = line[end_index:].lstrip()
+    match = re.match(r"[A-Za-z]+", rest)
+    return match.group(0).lower() if match else ""
 
 
 def _character_appears_in_scene(scene: SceneBlock, entity: str) -> tuple[bool, str]:
@@ -327,11 +384,19 @@ class ContradictionEngine:
     def _extract_character_status_facts(
         self, scene: SceneBlock, store: FactStore
     ) -> None:
-        """Extract character life/death status facts from scene text."""
-        for line in _scene_body_lines(scene):
+        """Extract character life/death status facts from action lines only.
+
+        Dialogue is excluded so spoken claims and slang do not create death
+        facts, and idioms such as "dead tired" are rejected by checking the
+        word that follows the death term.
+        """
+        action_lines, _ = _scene_lines_by_source(scene)
+        for line in action_lines:
             for pattern in CHARACTER_STATUS_PATTERNS:
                 match = pattern.search(line)
                 if not match:
+                    continue
+                if _first_word_after(line, match.end()) in DEAD_IDIOM_FOLLOWERS:
                     continue
                 entity = _clean_entity(match.group("entity"))
                 store.add_fact(
@@ -345,14 +410,23 @@ class ContradictionEngine:
                 )
 
     def _extract_timeline_facts(self, scene: SceneBlock, store: FactStore) -> None:
-        """Extract explicit timeline references from scene text."""
-        for line in _scene_body_lines(scene):
+        """Extract explicit timeline references from action and dialogue.
+
+        Dialogue is included because day anchors are usually spoken
+        ("Today is Monday"), but a weekday followed by another word that is
+        not a time of day (e.g. "It is Friday somewhere") is rejected.
+        """
+        action_lines, dialogue_lines = _scene_lines_by_source(scene)
+        for line in action_lines + dialogue_lines:
             for pattern in TIMELINE_PATTERNS:
                 match = pattern.search(line)
                 if not match:
                     continue
                 groups = match.groupdict()
                 if groups.get("day"):
+                    follower = _first_word_after(line, match.end())
+                    if follower and follower not in TIME_OF_DAY_FOLLOWERS:
+                        continue
                     day = match.group("day")
                     if "yesterday" in line.lower():
                         value = f"yesterday was {day}"
@@ -378,14 +452,22 @@ class ContradictionEngine:
     def _extract_character_trait_facts(
         self, scene: SceneBlock, store: FactStore
     ) -> None:
-        """Extract profession and role trait facts from scene text."""
-        for line in _scene_body_lines(scene):
+        """Extract profession and role trait facts from action lines only.
+
+        Dialogue is excluded so insults and figures of speech do not become
+        trait facts, and generic descriptions ("is a good man") are dropped
+        when the trait's head noun carries no role information.
+        """
+        action_lines, _ = _scene_lines_by_source(scene)
+        for line in action_lines:
             for pattern in CHARACTER_TRAIT_PATTERNS:
                 match = pattern.search(line)
                 if not match:
                     continue
                 entity = _clean_entity(match.group("entity"))
                 trait = _clean_value(match.group("trait"))
+                if trait.split()[-1].lower() in GENERIC_TRAIT_TERMS:
+                    continue
                 store.add_fact(
                     self._make_fact(
                         scene,
@@ -399,8 +481,13 @@ class ContradictionEngine:
     def _extract_object_ownership_facts(
         self, scene: SceneBlock, store: FactStore
     ) -> None:
-        """Extract object possession and transfer facts from scene text."""
-        for line in _scene_body_lines(scene):
+        """Extract object possession and transfer facts from action lines only.
+
+        Dialogue is excluded so figurative possession ("She has the nerve")
+        does not create ownership facts.
+        """
+        action_lines, _ = _scene_lines_by_source(scene)
+        for line in action_lines:
             for pattern, verb in OBJECT_OWNERSHIP_PATTERNS:
                 match = pattern.search(line)
                 if not match:
@@ -442,8 +529,9 @@ class ContradictionEngine:
     def _extract_location_description_facts(
         self, scene: SceneBlock, store: FactStore
     ) -> None:
-        """Extract descriptive location-state facts from action lines."""
-        for line in _scene_body_lines(scene):
+        """Extract descriptive location-state facts from action lines only."""
+        action_lines, _ = _scene_lines_by_source(scene)
+        for line in action_lines:
             for pattern in LOCATION_DESCRIPTION_PATTERNS:
                 match = pattern.search(line)
                 if not match:
