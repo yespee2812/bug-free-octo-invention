@@ -44,6 +44,62 @@ PERSON_TITLE_WORDS: frozenset[str] = frozenset(
         "SENATOR", "SERGEANT", "SHERIFF",
     }
 )
+# Constructions whose subject is a person by construction. They recover
+# cue-less characters that NER misses on ALL-CAPS action text, mirroring the
+# contradiction engine's character_status / character_trait facts (e.g.
+# "MARCUS is a surgeon", "COLE is dead", "VANCE works as a fixer").
+CHARACTER_FACT_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(
+        r"(?<![A-Za-z0-9])(?P<entity>[A-Za-z][A-Za-z0-9 .'\-]+?)\s+"
+        r"(?:is|was)\s+(?:dead|killed)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?<![A-Za-z0-9])(?P<entity>[A-Za-z][A-Za-z0-9 .'\-]+?)\s+"
+        r"(?:has\s+)?died\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?<![A-Za-z0-9])(?P<entity>[A-Za-z][A-Za-z0-9 .'\-]+?)\s+"
+        r"works\s+as\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?<![A-Za-z0-9])(?P<entity>[A-Za-z][A-Za-z0-9 .'\-]+?)\s+"
+        r"is\s+(?:a|an)\s+(?P<role>[A-Za-z][A-Za-z\-]+)",
+        re.IGNORECASE,
+    ),
+)
+# Pronouns and indefinite words that can head a fact construction but never
+# name a character.
+NON_CHARACTER_WORDS: frozenset[str] = frozenset(
+    {
+        "ALL", "ANYONE", "BOTH", "EITHER", "EVERYBODY", "EVERYONE",
+        "EVERYTHING", "HE", "HERE", "I", "IT", "NEITHER", "NOBODY",
+        "NONE", "NOTHING", "ONE", "SHE", "SOMEONE", "SOMETHING", "THAT",
+        "THERE", "THESE", "THEY", "THIS", "THOSE", "WE", "WHAT", "WHO",
+        "YOU",
+    }
+)
+# Inanimate nouns that "die"/"are dead" idiomatically (e.g. "the engine
+# died"), so such a construction is never a character fact.
+INANIMATE_DEATH_NOUNS: frozenset[str] = frozenset(
+    {
+        "BATTERY", "CAR", "CHATTER", "CONVERSATION", "CROWD", "ENGINE",
+        "LIGHT", "LIGHTS", "LINE", "MOTOR", "MUSIC", "NOISE", "PARTY",
+        "PHONE", "RADIO", "SIGNAL", "SOUND",
+    }
+)
+# Generic head nouns for "X is a <role>" that describe anyone or anything
+# rather than establishing a character role.
+GENERIC_ROLE_TERMS: frozenset[str] = frozenset(
+    {
+        "beast", "bit", "blast", "boy", "child", "disaster", "dream",
+        "few", "friend", "girl", "guy", "joke", "kid", "lot", "man",
+        "mess", "moment", "one", "person", "stranger", "thing", "while",
+        "woman", "wonder",
+    }
+)
 # Possession and handoff phrasing. Shared with the contradiction engine's
 # object-ownership facts; objects of these verbs are story props even when
 # the writer never capitalizes them (e.g. "ELENA picks up the blue ledger").
@@ -252,6 +308,59 @@ def _person_entity_keys(
     return keys
 
 
+def _trailing_caps_name(entity_text: str) -> str:
+    """Return the last ALL-CAPS span in a captured entity, or empty string.
+
+    Fact patterns can over-capture leading prose (e.g. "Smoke fills the dock.
+    DETECTIVE VANCE"), so the trailing caps run isolates the actual name and,
+    by requiring caps, keeps the signal to screenplay-style names rather than
+    sentence-cased nouns like "The engine".
+
+    Args:
+        entity_text: Raw entity group captured by a character-fact pattern.
+
+    Returns:
+        The final ALL-CAPS word span, or an empty string when none is found.
+    """
+    spans = CAPS_SPAN_PATTERN.findall(entity_text)
+    return spans[-1] if spans else ""
+
+
+def _extract_structural_characters(
+    action_lines: list[str], character_aliases: dict[str, str]
+) -> set[str]:
+    """Return character keys named in structural personhood constructions.
+
+    The subject of "X is dead", "X died", "X works as ...", and "X is a
+    <role>" is a person by construction, so these recover cue-less characters
+    that NER misses on ALL-CAPS action text. Pronouns, inanimate nouns that
+    die idiomatically, and generic role nouns are filtered for precision, and
+    only ALL-CAPS names are promoted.
+
+    Args:
+        action_lines: Action (non-dialogue) lines of one scene.
+        character_aliases: Normalized alias -> canonical cue name map.
+
+    Returns:
+        Normalized character keys detected from fact phrasing.
+    """
+    characters: set[str] = set()
+    for line in action_lines:
+        for pattern in CHARACTER_FACT_PATTERNS:
+            for match in pattern.finditer(line):
+                role = match.groupdict().get("role")
+                if role and role.lower() in GENERIC_ROLE_TERMS:
+                    continue
+                name = _trailing_caps_name(match.group("entity"))
+                key = _normalize_object_key(name)
+                if len(key) < 2 or key in INANIMATE_DEATH_NOUNS:
+                    continue
+                if all(word in NON_CHARACTER_WORDS for word in key.split()):
+                    continue
+                characters.add(character_aliases.get(key, key))
+    return characters
+
+
 def _match_prop_by_suffix(key: str, known_props: set[str]) -> Optional[str]:
     """Resolve a key to an established prop key, exactly or by suffix.
 
@@ -450,6 +559,10 @@ class SceneDependencyEngine:
             action_text = " ".join(action_lines)
             doc: Optional[Doc] = self.nlp(action_text) if action_text else None
             person_keys = _person_entity_keys(self.nlp, action_text, doc)
+            structural_chars = _extract_structural_characters(
+                action_lines, character_aliases
+            )
+            person_keys |= structural_chars
 
             caps_props, action_presences = _extract_caps_props_and_presences(
                 action_lines, character_aliases, person_keys
@@ -466,7 +579,9 @@ class SceneDependencyEngine:
                 if prop_name not in objects:
                     objects.append(prop_name)
 
-            characters = sorted(cue_names | action_presences, key=str.lower)
+            characters = sorted(
+                cue_names | action_presences | structural_chars, key=str.lower
+            )
             location = _extract_location_from_heading(heading)
             locations = [location] if location else []
 
