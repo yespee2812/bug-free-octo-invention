@@ -9,12 +9,18 @@ import spacy
 from spacy.language import Language
 
 from scene_dependency import (
+    HANDOFF_VERBS,
     OBJECT_OWNERSHIP_PATTERNS,
+    POSSESSION_VERB_LABELS,
     SceneBlock,
     _is_character_cue,
     _is_transition,
     _normalize_token,
 )
+
+# Alternation of handoff verbs (e.g. "gives|hands") for parsing transfer
+# facts back out of a stored ownership value string.
+_HANDOFF_VERBS_ALT = "|".join(HANDOFF_VERBS)
 
 FACT_TYPES: tuple[str, ...] = (
     "character_trait",
@@ -494,13 +500,13 @@ class ContradictionEngine:
                     continue
                 owner = _clean_entity(match.group("owner"))
                 object_name = _clean_value(match.group("object"))
-                if verb == "gives to":
-                    recipient = _clean_entity(match.group("recipient"))
-                    value = f"{owner} gives {object_name} to {recipient}"
-                    entity = object_name.upper()
+                recipient_raw = match.groupdict().get("recipient")
+                if recipient_raw:
+                    recipient = _clean_entity(recipient_raw)
+                    value = f"{owner} {verb} {object_name} to {recipient}"
                 else:
                     value = f"{owner} {verb} {object_name}"
-                    entity = object_name.upper()
+                entity = object_name.upper()
                 store.add_fact(
                     self._make_fact(
                         scene,
@@ -1005,17 +1011,18 @@ class ContradictionEngine:
     def _ownership_holder(self, fact: Fact) -> Optional[str]:
         """Parse the current holder from an object ownership fact value."""
         value = fact.value
-        gives_match = re.match(
-            r"^(.+?)\s+gives\s+.+?\s+to\s+(.+)$",
+        handoff_match = re.match(
+            rf"^(.+?)\s+(?:{_HANDOFF_VERBS_ALT})\s+.+?\s+to\s+(.+)$",
             value,
             re.IGNORECASE,
         )
-        if gives_match:
-            return _clean_entity(gives_match.group(1))
+        if handoff_match:
+            return _clean_entity(handoff_match.group(1))
 
-        for prefix in ("picks up", "has"):
-            if prefix in value.lower():
-                owner = value.split(prefix, maxsplit=1)[0].strip()
+        spaced_value = f" {value.lower()} "
+        for prefix in POSSESSION_VERB_LABELS:
+            if f" {prefix} " in spaced_value:
+                owner = value.split(f" {prefix} ", maxsplit=1)[0].strip()
                 return _clean_entity(owner)
 
         return None
@@ -1040,13 +1047,13 @@ class ContradictionEngine:
                 continue
             holder = self._ownership_holder(fact)
             recipient: Optional[str] = None
-            gives_match = re.search(
-                r"gives\s+.+?\s+to\s+(.+)$",
+            handoff_match = re.search(
+                rf"(?:{_HANDOFF_VERBS_ALT})\s+.+?\s+to\s+(.+)$",
                 fact.value,
                 re.IGNORECASE,
             )
-            if gives_match:
-                recipient = _clean_entity(gives_match.group(1))
+            if handoff_match:
+                recipient = _clean_entity(handoff_match.group(1))
 
             if holder and _normalize_token(holder) == _normalize_token(previous_owner):
                 if recipient and _normalize_token(recipient) == _normalize_token(current_owner):

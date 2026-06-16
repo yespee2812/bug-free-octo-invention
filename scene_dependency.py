@@ -7,7 +7,7 @@ from typing import Any, Optional
 import networkx as nx
 import spacy
 from spacy.language import Language
-from spacy.tokens import Doc
+from spacy.tokens import Doc, Token
 
 SCENE_HEADING_PATTERN = re.compile(
     r"^(INT\.|EXT\.|INT/EXT\.|I/E\.)\s+(.+)$",
@@ -103,32 +103,174 @@ GENERIC_ROLE_TERMS: frozenset[str] = frozenset(
 # Possession and handoff phrasing. Shared with the contradiction engine's
 # object-ownership facts; objects of these verbs are story props even when
 # the writer never capitalizes them (e.g. "ELENA picks up the blue ledger").
+#
+# Verbs are grouped by grammatical shape so the patterns are generated from
+# plain lists and can be extended without hand-writing each regex:
+#   * possession -> "OWNER verb (the) object"             (grabs, holds, ...)
+#   * phrasal    -> "OWNER verb particle (the) object"    (picks up, sets down)
+#   * handoff    -> "OWNER verb (the) object to RECIPIENT" (gives, hands)
+POSSESSION_VERBS: tuple[str, ...] = (
+    "has",
+    "grabs",
+    "holds",
+    "pockets",
+    "carries",
+    "takes",
+    "hides",
+    "steals",
+    "drops",
+)
+PHRASAL_POSSESSION_VERBS: tuple[tuple[str, str], ...] = (
+    ("picks", "up"),
+    ("sets", "down"),
+)
+HANDOFF_VERBS: tuple[str, ...] = ("gives", "hands")
+# Canonical verb labels (longest phrasal forms first) used to recover the
+# holder from a stored fact value such as "ELENA picks up the blue ledger".
+POSSESSION_VERB_LABELS: tuple[str, ...] = (
+    "picks up",
+    "sets down",
+    "has",
+    "grabs",
+    "holds",
+    "pockets",
+    "carries",
+    "takes",
+    "hides",
+    "steals",
+    "drops",
+)
+# Lowercase noun phrases that handling verbs commonly take in a figurative or
+# non-prop sense (e.g. "holds her breath", "takes the stairs", "has a plan").
+# Filters dependency-parse and regex prop candidates to protect precision.
+NON_PROP_OBJECTS: frozenset[str] = frozenset(
+    {
+        # Body / physical idioms
+        "aim", "arm", "arms", "back", "breath", "chest", "eye", "eyes",
+        "face", "feet", "finger", "fingers", "fist", "fists", "foot",
+        "hair", "hand", "hands", "head", "heart", "knee", "knees", "leg",
+        "legs", "mouth", "neck", "shoulder", "shoulders", "throat", "tongue",
+        # Abstractions / figures of speech
+        "advantage", "attention", "blame", "chance", "charge", "choice",
+        "comfort", "command", "control", "course", "credit", "doubt", "edge",
+        "fear", "feeling", "focus", "ground", "guard", "hope", "idea",
+        "interest", "lead", "look", "moment", "note", "notice", "office",
+        "order", "orders", "pace", "patience", "place", "plan", "point",
+        "position", "power", "pride", "problem", "reason", "respect",
+        "responsibility", "risk", "say", "seat", "sense", "shape", "side",
+        "sight", "silence", "step", "steps", "stock", "thought", "time",
+        "track", "turn", "view", "voice", "watch", "way", "word", "words",
+        # Movement / setting idioms ("takes the stairs", "holds the line")
+        "corner", "lead", "line", "road", "stairs", "stand", "street",
+        "trail", "wheel",
+    }
+)
+# Physical possession/handling verb lemmas. The dependency parser already runs
+# on each scene, so matching the direct object of any verb whose lemma is in
+# this set covers every tense and inflection (grabs/grabbed/grabbing) from one
+# list, rather than enumerating each surface form as a regex. Lemmas only —
+# kept to genuinely object-handling verbs so prop recall scales without the
+# precision collapse of a giant flat keyword list.
+HANDLING_VERB_LEMMAS: frozenset[str] = frozenset(
+    {
+        # Acquire / take possession
+        "have", "hold", "grab", "grasp", "clutch", "clasp", "grip", "seize",
+        "snatch", "take", "acquire", "obtain", "procure", "secure", "claim",
+        "collect", "gather", "retrieve", "fetch", "scoop", "win", "buy",
+        "purchase",
+        # Lift / move / carry
+        "lift", "raise", "hoist", "heft", "heave", "haul", "lug", "carry",
+        "tote", "bear", "cart", "drag", "pull", "push", "shove", "slide",
+        "swing", "wave", "shoulder", "sling",
+        # Place / release / discard
+        "set", "place", "put", "lay", "rest", "prop", "drop", "release",
+        "dump", "discard", "ditch", "abandon", "leave", "plant", "deposit",
+        # Throw / catch
+        "throw", "toss", "hurl", "fling", "chuck", "cast", "pitch", "lob",
+        "catch",
+        # Conceal / store
+        "pocket", "stash", "stow", "store", "hide", "conceal", "bury",
+        "tuck", "slip", "sheathe", "holster", "wrap", "pack", "unpack",
+        # Transfer / handoff
+        "hand", "pass", "give", "offer", "present", "deliver", "surrender",
+        "relinquish", "yield", "transfer", "trade", "swap", "exchange",
+        "return", "share", "lend", "loan", "donate", "gift", "sell",
+        # Take wrongfully
+        "steal", "swipe", "pilfer", "nick", "pinch", "filch", "confiscate",
+        "wrest", "wrench", "pry", "yank", "tug",
+        # Weapons / operate
+        "draw", "unsheathe", "brandish", "wield", "flourish", "cock",
+        "load", "reload", "unload", "aim", "point", "level", "fire",
+        # Handle / manipulate
+        "handle", "wield", "use", "operate", "manipulate", "deploy",
+        "grip", "clench", "fumble", "finger", "twist", "turn", "rotate",
+        "spin", "shake", "rattle", "tap", "press",
+        # Wear / open / fasten
+        "wear", "don", "remove", "doff", "open", "unwrap", "unbox",
+        "tie", "untie", "fasten", "unfasten", "clip", "attach", "detach",
+    }
+)
+
+_OWNER_GROUP = r"(?P<owner>[A-Z][A-Z0-9 .'\-]+?)"
+_OBJECT_GROUP = r"(?P<object>[a-z][a-z0-9\s\-]+?)"
+# Words that mark the end of an object noun phrase (a following
+# preposition/conjunction). Kept broad so trailing prepositional phrases
+# ("the revolver under the floorboard") do not bloat the captured object.
+_OBJECT_BOUNDARY_WORDS: tuple[str, ...] = (
+    "from", "on", "onto", "into", "in", "to", "under", "over", "behind",
+    "beneath", "below", "above", "inside", "near", "beside", "against",
+    "with", "for", "as", "and", "then", "but", "while", "before", "after",
+)
+# Object phrase ends at a boundary word, punctuation, or end of line.
+_OBJECT_TERMINATOR = (
+    r"(?:\s+(?:" + "|".join(_OBJECT_BOUNDARY_WORDS) + r")\b|[.,;:]|$)"
+)
+
+
+def _compile_possession_pattern(verb_phrase: str) -> re.Pattern[str]:
+    """Compile an "OWNER verb (the) object" possession regex for a verb."""
+    return re.compile(
+        rf"{_OWNER_GROUP}\s+{verb_phrase}\s+(?:the\s+)?"
+        rf"{_OBJECT_GROUP}{_OBJECT_TERMINATOR}",
+        re.IGNORECASE,
+    )
+
+
+def _compile_handoff_pattern(verb: str) -> re.Pattern[str]:
+    """Compile an "OWNER verb (the) object to RECIPIENT" handoff regex."""
+    return re.compile(
+        rf"{_OWNER_GROUP}\s+{verb}\s+(?:the\s+)?{_OBJECT_GROUP}\s+to\s+"
+        rf"(?P<recipient>[A-Z][A-Z0-9 .'\-]+)",
+        re.IGNORECASE,
+    )
+
+
+def _build_ownership_patterns() -> tuple[tuple[re.Pattern[str], str], ...]:
+    """Build the shared possession/handoff (pattern, verb-label) tuples.
+
+    Handoff patterns come first so "gives the X to Y" is read as a transfer
+    rather than plain possession of an object literally named "X to Y".
+
+    Returns:
+        Ordered (compiled pattern, canonical verb label) pairs.
+    """
+    patterns: list[tuple[re.Pattern[str], str]] = []
+    for verb in HANDOFF_VERBS:
+        patterns.append((_compile_handoff_pattern(verb), verb))
+    for first, particle in PHRASAL_POSSESSION_VERBS:
+        patterns.append(
+            (
+                _compile_possession_pattern(rf"{first}\s+{particle}"),
+                f"{first} {particle}",
+            )
+        )
+    for verb in POSSESSION_VERBS:
+        patterns.append((_compile_possession_pattern(verb), verb))
+    return tuple(patterns)
+
+
 OBJECT_OWNERSHIP_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
-    (
-        re.compile(
-            r"(?P<owner>[A-Z][A-Z0-9 .'\-]+?)\s+picks\s+up\s+(?:the\s+)?"
-            r"(?P<object>[a-z][a-z0-9\s\-]+?)(?:\s+from|\s+on|\s+and|\.|$)",
-            re.IGNORECASE,
-        ),
-        "picks up",
-    ),
-    (
-        re.compile(
-            r"(?P<owner>[A-Z][A-Z0-9 .'\-]+?)\s+has\s+(?:the\s+)?"
-            r"(?P<object>[a-z][a-z0-9\s\-]+?)(?:\s+and|\s+on|\.|$)",
-            re.IGNORECASE,
-        ),
-        "has",
-    ),
-    (
-        re.compile(
-            r"(?P<owner>[A-Z][A-Z0-9 .'\-]+?)\s+gives\s+(?:the\s+)?"
-            r"(?P<object>[a-z][a-z0-9\s\-]+?)\s+to\s+"
-            r"(?P<recipient>[A-Z][A-Z0-9 .'\-]+)",
-            re.IGNORECASE,
-        ),
-        "gives to",
-    ),
+    _build_ownership_patterns()
 )
 EDGE_WEIGHTS: dict[str, float] = {
     "character": 1.0,
@@ -386,9 +528,11 @@ def _extract_ownership_objects(
 ) -> list[str]:
     """Extract prop keys from possession and handoff verbs in action lines.
 
-    Objects of verbs like "picks up", "has", and "gives ... to" are story
-    props even when never capitalized, so this recovers props that the
-    ALL-CAPS convention misses (e.g. "the blue ledger").
+    Objects of handling verbs (picks up, grabs, holds, hands, pockets,
+    carries, takes, hides, steals, drops, sets down, has, gives ... to) are
+    story props even when never capitalized, so this recovers props that the
+    ALL-CAPS convention misses (e.g. "the blue ledger"). A small non-prop
+    stoplist filters figurative objects ("holds her breath").
 
     Args:
         action_lines: Action (non-dialogue) lines of one scene.
@@ -407,6 +551,84 @@ def _extract_ownership_objects(
                 continue
             key = _normalize_object_key(match.group("object"))
             if len(key) < 2 or key in character_aliases:
+                continue
+            if any(word.lower() in NON_PROP_OBJECTS for word in key.split()):
+                continue
+            canonical = _match_prop_by_suffix(key, known_props) or key
+            if canonical in seen:
+                continue
+            seen.add(canonical)
+            objects.append(canonical)
+    return objects
+
+
+def _candidate_prop_key(
+    token: Token,
+    chunk_by_root: dict[int, str],
+) -> str:
+    """Return the normalized prop key for a direct-object token.
+
+    Prefers the noun chunk rooted at the token (so "the blue ledger" stays
+    intact) and falls back to the token text, then strips leading articles
+    and possessives via the shared object-key normalizer.
+
+    Args:
+        token: The direct-object token of a handling verb.
+        chunk_by_root: Map of noun-chunk root index to chunk text for the doc.
+
+    Returns:
+        A normalized, uppercase object key (possibly empty).
+    """
+    phrase = chunk_by_root.get(token.i, token.text)
+    return _normalize_object_key(phrase)
+
+
+def _extract_handling_verb_objects(
+    doc: Optional[Doc],
+    character_aliases: dict[str, str],
+    person_keys: set[str],
+    known_props: set[str],
+) -> list[str]:
+    """Extract prop keys as direct objects of physical handling verbs.
+
+    Uses the dependency parse instead of a fixed regex list: any verb whose
+    lemma is in ``HANDLING_VERB_LEMMAS`` contributes its direct object as a
+    prop. This covers every tense and inflection from one lemma set and scales
+    to large scripts without enumerating each surface form. Person objects,
+    pronouns, and figurative/abstract objects (``NON_PROP_OBJECTS``) are
+    filtered to protect precision; the same spaCy doc the caller already built
+    is reused, so there is no extra NLP pass.
+
+    Args:
+        doc: Parsed spaCy doc for the scene's action text, or None.
+        character_aliases: Normalized alias -> canonical cue name map.
+        person_keys: Normalized PERSON entity keys to exclude from props.
+        known_props: Established prop keys, used to canonicalize mentions.
+
+    Returns:
+        Ordered, deduplicated prop keys found via handling-verb objects.
+    """
+    if doc is None:
+        return []
+    chunk_by_root: dict[int, str] = {
+        chunk.root.i: chunk.text for chunk in doc.noun_chunks
+    }
+    objects: list[str] = []
+    seen: set[str] = set()
+    for token in doc:
+        if token.pos_ != "VERB":
+            continue
+        if token.lemma_.lower() not in HANDLING_VERB_LEMMAS:
+            continue
+        for child in token.children:
+            if child.dep_ != "dobj" or child.pos_ not in ("NOUN", "PROPN"):
+                continue
+            if child.ent_type_ == "PERSON":
+                continue
+            key = _candidate_prop_key(child, chunk_by_root)
+            if len(key) < 2 or key in character_aliases or key in person_keys:
+                continue
+            if any(word.lower() in NON_PROP_OBJECTS for word in key.split()):
                 continue
             canonical = _match_prop_by_suffix(key, known_props) or key
             if canonical in seen:
@@ -570,12 +792,21 @@ class SceneDependencyEngine:
             ownership_props = _extract_ownership_objects(
                 action_lines, character_aliases, known_props | set(caps_props)
             )
+            handling_props = _extract_handling_verb_objects(
+                doc,
+                character_aliases,
+                person_keys,
+                known_props | set(caps_props) | set(ownership_props),
+            )
             known_props.update(caps_props)
             known_props.update(ownership_props)
+            known_props.update(handling_props)
             mention_props = _match_known_prop_mentions(doc, known_props)
 
             objects: list[str] = []
-            for prop_name in caps_props + ownership_props + mention_props:
+            for prop_name in (
+                caps_props + ownership_props + handling_props + mention_props
+            ):
                 if prop_name not in objects:
                     objects.append(prop_name)
 
