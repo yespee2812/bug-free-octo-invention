@@ -165,6 +165,7 @@ def _contradiction_to_dict(contradiction: Contradiction) -> dict[str, Any]:
         "explanation": contradiction.explanation,
         "confidence": contradiction.confidence,
         "tier": contradiction.tier,
+        "status": contradiction.status,
     }
 
 
@@ -257,8 +258,9 @@ def pretty_print_results(results: dict[str, Any]) -> None:
             scene_a, scene_b = item["scenes_involved"]
             label = _plain_contradiction_label(item["contradiction_type"])
             confidence_pct = int(round(item["confidence"] * 100))
+            prefix = "Possible issue" if item.get("status") == "possible" else "Issue"
             print()
-            print(f"  Issue {index}: {label}")
+            print(f"  {prefix} {index}: {label}")
             print(f"    Between scene {scene_a} and scene {scene_b}")
             print(f"    {item['explanation']}")
             print(f"    Confidence: about {confidence_pct}%")
@@ -294,6 +296,8 @@ def _plain_contradiction_label(contradiction_type: str) -> str:
         "timeline_consistency": "The timeline or day of the week does not line up",
         "character_trait_conflict": "A character's job or role contradicts an earlier scene",
         "object_ownership": "An important object changes hands with no explanation",
+        "object_destroyed": "An object is destroyed but appears again later",
+        "object_lost": "An object is lost or left behind but turns up again",
         "semantic_location": "A place is described differently in two scenes",
     }
     return labels.get(

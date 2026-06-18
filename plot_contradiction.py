@@ -10,6 +10,7 @@ from spacy.language import Language
 
 from scene_dependency import (
     HANDOFF_VERBS,
+    NON_PROP_OBJECTS,
     OBJECT_OWNERSHIP_PATTERNS,
     POSSESSION_VERB_LABELS,
     SceneBlock,
@@ -27,6 +28,7 @@ FACT_TYPES: tuple[str, ...] = (
     "location",
     "timeline",
     "object_ownership",
+    "object_state",
     "character_status",
     "relationship",
 )
@@ -108,6 +110,66 @@ LOCATION_DESCRIPTION_PATTERNS: tuple[re.Pattern[str], ...] = (
     ),
 )
 
+# Object-continuity (Phase 1 possessions) phrasing. Destruction removes an
+# object from the story; loss separates it from its owner. Both are extracted
+# from action lines only and feed the object-continuity contradiction checks.
+_OBJECT_GONE_GROUP = r"(?P<object>[a-z][a-z0-9\s\-]+?)"
+_OBJECT_GONE_TERMINATOR = (
+    r"(?:\s+(?:from|on|in|to|into|onto|under|behind|near|with|for|and|but|"
+    r"then|when|after|before|while)\b|[.,;:]|$)"
+)
+_DESTRUCTION_VERB_ALT = (
+    "destroys|burns|incinerates|smashes|shatters|melts|crushes|shreds|tears\\s+up"
+)
+_LOSS_VERB_ALT = "loses|abandons|forgets|leaves\\s+behind|misplaces"
+
+OBJECT_DESTRUCTION_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    # Active: "MARCUS destroys the ledger"
+    (
+        re.compile(
+            rf"(?P<owner>[A-Z][A-Za-z0-9 .'\-]+?)\s+(?:{_DESTRUCTION_VERB_ALT})\s+"
+            rf"(?:the\s+|his\s+|her\s+|their\s+|its\s+)?"
+            rf"{_OBJECT_GONE_GROUP}{_OBJECT_GONE_TERMINATOR}",
+            re.IGNORECASE,
+        ),
+        "active",
+    ),
+    # Passive/state: "the ledger is destroyed", "the only key was burned"
+    (
+        re.compile(
+            rf"the\s+(?:only\s+|last\s+)?{_OBJECT_GONE_GROUP}\s+"
+            rf"(?:is|was|gets|got|has\s+been|had\s+been)\s+"
+            rf"(?:destroyed|burned|burnt|incinerated|shattered|smashed|"
+            rf"melted|shredded|gone)\b",
+            re.IGNORECASE,
+        ),
+        "passive",
+    ),
+)
+OBJECT_LOSS_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (
+        re.compile(
+            rf"(?P<owner>[A-Z][A-Za-z0-9 .'\-]+?)\s+(?:{_LOSS_VERB_ALT})\s+"
+            rf"(?:the\s+|his\s+|her\s+|their\s+|its\s+)?"
+            rf"{_OBJECT_GONE_GROUP}{_OBJECT_GONE_TERMINATOR}",
+            re.IGNORECASE,
+        ),
+        "active",
+    ),
+)
+# Verbs that re-introduce a missing object between scenes ("retrieves the gun",
+# "finds the key"), explaining why it can appear again. Used as an exception in
+# the object-continuity checks.
+_REACQUIRE_VERB_ALT = (
+    "retrieves|recovers|finds|grabs|picks\\s+up|reclaims|digs\\s+up|"
+    "pulls\\s+out|takes\\s+back"
+)
+OBJECT_REACQUIRE_PATTERN: re.Pattern[str] = re.compile(
+    rf"(?:{_REACQUIRE_VERB_ALT})\s+(?:the\s+|his\s+|her\s+|their\s+|its\s+|"
+    rf"another\s+|a\s+new\s+)?{_OBJECT_GONE_GROUP}{_OBJECT_GONE_TERMINATOR}",
+    re.IGNORECASE,
+)
+
 TIER2_SIMILARITY_THRESHOLD = 0.35
 TIER2_MIN_CONFIDENCE = 0.55
 
@@ -162,6 +224,13 @@ class Fact:
     raw_excerpt: str
 
 
+# Contradiction confidence bands. "confirmed" is a clear rule violation;
+# "possible" is a conservative finding (e.g. a state change that could be
+# explained off-screen) surfaced for writer review rather than asserted.
+STATUS_CONFIRMED: str = "confirmed"
+STATUS_POSSIBLE: str = "possible"
+
+
 @dataclass
 class Contradiction:
     """A detected contradiction between facts in two scenes."""
@@ -177,6 +246,7 @@ class Contradiction:
     explanation: str
     confidence: float
     tier: int
+    status: str = STATUS_CONFIRMED
 
 
 class FactStore:
@@ -382,6 +452,7 @@ class ContradictionEngine:
             self._extract_timeline_facts(scene, store)
             self._extract_character_trait_facts(scene, store)
             self._extract_object_ownership_facts(scene, store)
+            self._extract_object_state_facts(scene, store)
             self._extract_location_facts(scene, store)
             self._extract_location_description_facts(scene, store)
 
@@ -517,6 +588,63 @@ class ContradictionEngine:
                     )
                 )
 
+    def _extract_object_state_facts(
+        self, scene: SceneBlock, store: FactStore
+    ) -> None:
+        """Extract object destruction and loss facts from action lines only.
+
+        Records when a prop is destroyed ("MARCUS burns the ledger", "the only
+        key is destroyed") or lost ("ELENA loses the badge", "leaves behind the
+        gun"). These feed the object-continuity checks. Dialogue is excluded so
+        spoken/figurative phrasing does not create state facts, and figurative
+        objects (``NON_PROP_OBJECTS``) are filtered to protect precision.
+        """
+        action_lines, _ = _scene_lines_by_source(scene)
+        for line in action_lines:
+            self._add_object_state_facts(
+                scene, store, line, OBJECT_DESTRUCTION_PATTERNS, "destroyed"
+            )
+            self._add_object_state_facts(
+                scene, store, line, OBJECT_LOSS_PATTERNS, "lost"
+            )
+
+    def _add_object_state_facts(
+        self,
+        scene: SceneBlock,
+        store: FactStore,
+        line: str,
+        patterns: tuple[tuple[re.Pattern[str], str], ...],
+        state: str,
+    ) -> None:
+        """Add object_state facts for one line, one state kind.
+
+        Args:
+            scene: The scene the line belongs to.
+            store: Fact store to append to.
+            line: A single action line.
+            patterns: (compiled pattern, shape) pairs to try.
+            state: The state label to record ("destroyed" or "lost").
+        """
+        for pattern, _shape in patterns:
+            match = pattern.search(line)
+            if not match:
+                continue
+            object_name = _clean_value(match.group("object"))
+            object_key = _normalize_token(object_name)
+            if len(object_key) < 2:
+                continue
+            if any(word.lower() in NON_PROP_OBJECTS for word in object_key.split()):
+                continue
+            owner_raw = match.groupdict().get("owner")
+            if owner_raw:
+                owner = _clean_entity(owner_raw)
+                value = f"{state} by {owner}"
+            else:
+                value = state
+            store.add_fact(
+                self._make_fact(scene, "object_state", object_key, value, line)
+            )
+
     def _extract_location_facts(self, scene: SceneBlock, store: FactStore) -> None:
         """Extract location facts from scene headings."""
         if not scene.locations:
@@ -580,6 +708,9 @@ class ContradictionEngine:
         contradictions.extend(
             self._check_object_ownership(fact_store, scenes, scene_lookup)
         )
+        contradictions.extend(
+            self._check_object_state(fact_store, scenes, scene_lookup)
+        )
         contradictions.sort(key=lambda item: item.confidence, reverse=True)
         return contradictions
 
@@ -612,6 +743,11 @@ class ContradictionEngine:
                 and fact.fact_type == "location"
                 and fact.raw_excerpt == scene.heading
             ):
+                continue
+            # Object continuity is handled deterministically in Tier 1; its
+            # short state values ("destroyed"/"lost") are not meaningful for
+            # similarity comparison.
+            if fact.fact_type == "object_state":
                 continue
             facts_by_entity.setdefault(fact.entity, []).append(fact)
 
@@ -1008,6 +1144,154 @@ class ContradictionEngine:
 
         return results
 
+    def _check_object_state(
+        self,
+        fact_store: FactStore,
+        scenes: list[SceneBlock],
+        scene_lookup: dict[str, SceneBlock],
+    ) -> list[Contradiction]:
+        """Flag props that reappear after being destroyed or lost.
+
+        Two rules, both keyed on a later possession of the same object:
+
+        - R1 (destroyed -> reappears): a destroyed object that someone holds or
+          handles in a later scene, with no on-screen re-acquisition between, is
+          a confirmed continuity error.
+        - R2 (lost -> reappears): an object lost/left behind by a character that
+          the same character holds again later, with no re-acquisition between,
+          is surfaced as a *possible* issue (props are often recovered
+          off-screen, so this stays conservative).
+
+        Args:
+            fact_store: All extracted facts.
+            scenes: Parsed scenes in screenplay order.
+            scene_lookup: Scene id -> scene mapping.
+
+        Returns:
+            Object-continuity contradictions.
+        """
+        results: list[Contradiction] = []
+        state_facts = sorted(
+            fact_store.get_facts_by_type("object_state"),
+            key=lambda fact: (fact.scene_number, fact.fact_id),
+        )
+        for state_fact in state_facts:
+            object_key = _normalize_token(state_fact.entity)
+            is_destroyed = state_fact.value.lower().startswith("destroyed")
+            state_owner = self._object_state_owner(state_fact)
+
+            for owner_fact in fact_store.get_facts_by_type("object_ownership"):
+                if _normalize_token(owner_fact.entity) != object_key:
+                    continue
+                if owner_fact.scene_number <= state_fact.scene_number:
+                    continue
+                if _has_flashback_marker(owner_fact.raw_excerpt):
+                    continue
+                if self._object_reacquired_between(
+                    scenes,
+                    object_key,
+                    state_fact.scene_number,
+                    owner_fact.scene_number,
+                ):
+                    continue
+
+                holder = self._ownership_holder(owner_fact)
+                if is_destroyed:
+                    results.append(
+                        self._object_state_contradiction(
+                            state_fact,
+                            owner_fact,
+                            "object_destroyed",
+                            (
+                                f"{object_key} was destroyed in "
+                                f"{state_fact.scene_id}, but it is handled again "
+                                f"in {owner_fact.scene_id} with no re-creation."
+                            ),
+                            confidence=0.82,
+                            status=STATUS_CONFIRMED,
+                        )
+                    )
+                    break
+                if (
+                    state_owner
+                    and holder
+                    and _normalize_token(holder) == _normalize_token(state_owner)
+                ):
+                    results.append(
+                        self._object_state_contradiction(
+                            state_fact,
+                            owner_fact,
+                            "object_lost",
+                            (
+                                f"{object_key} was lost by {state_owner} in "
+                                f"{state_fact.scene_id}, but {state_owner} has it "
+                                f"again in {owner_fact.scene_id} with no on-screen "
+                                f"recovery."
+                            ),
+                            confidence=0.6,
+                            status=STATUS_POSSIBLE,
+                        )
+                    )
+                    break
+
+        return results
+
+    def _object_state_contradiction(
+        self,
+        state_fact: Fact,
+        owner_fact: Fact,
+        contradiction_type: str,
+        explanation: str,
+        confidence: float,
+        status: str,
+    ) -> Contradiction:
+        """Build an object-continuity Contradiction from two facts."""
+        return Contradiction(
+            contradiction_id=_new_contradiction_id(),
+            scene_id_a=state_fact.scene_id,
+            scene_id_b=owner_fact.scene_id,
+            scene_number_a=state_fact.scene_number,
+            scene_number_b=owner_fact.scene_number,
+            fact_a=state_fact,
+            excerpt_b=owner_fact.raw_excerpt,
+            contradiction_type=contradiction_type,
+            explanation=explanation,
+            confidence=confidence,
+            tier=1,
+            status=status,
+        )
+
+    def _object_state_owner(self, fact: Fact) -> Optional[str]:
+        """Parse the acting character from an object_state value, if present."""
+        match = re.match(r"^(?:destroyed|lost)\s+by\s+(.+)$", fact.value, re.IGNORECASE)
+        if match:
+            return _clean_entity(match.group(1))
+        return None
+
+    def _object_reacquired_between(
+        self,
+        scenes: list[SceneBlock],
+        object_key: str,
+        from_scene_number: int,
+        to_scene_number: int,
+    ) -> bool:
+        """Return True when the object is recovered/re-introduced between scenes.
+
+        Scans the action lines of intervening scenes for a re-acquisition verb
+        ("retrieves the key", "finds the gun") naming the same object, which
+        explains an otherwise-suspicious reappearance.
+        """
+        for scene in scenes:
+            if not (from_scene_number < scene.scene_number < to_scene_number):
+                continue
+            action_lines, _ = _scene_lines_by_source(scene)
+            for line in action_lines:
+                for match in OBJECT_REACQUIRE_PATTERN.finditer(line):
+                    found_key = _normalize_token(_clean_value(match.group("object")))
+                    if found_key == object_key:
+                        return True
+        return False
+
     def _ownership_holder(self, fact: Fact) -> Optional[str]:
         """Parse the current holder from an object ownership fact value."""
         value = fact.value
@@ -1027,6 +1311,40 @@ class ContradictionEngine:
 
         return None
 
+    def _facts_between_scenes(
+        self,
+        fact_store: FactStore,
+        fact_type: str,
+        entity_key: str,
+        from_scene_number: int,
+        to_scene_number: int,
+    ) -> list[Fact]:
+        """Return facts of a type for an entity strictly between two scenes.
+
+        Shared primitive for "is there an intervening explanation?" checks used
+        by the stateful trackers (ownership handoff, object continuity). A fact
+        qualifies when its normalized entity matches ``entity_key`` and its scene
+        number lies strictly inside ``(from_scene_number, to_scene_number)``.
+
+        Args:
+            fact_store: All extracted facts.
+            fact_type: Fact type to scan (e.g. "object_ownership").
+            entity_key: Normalized entity key to match (see ``_normalize_token``).
+            from_scene_number: Exclusive lower scene bound.
+            to_scene_number: Exclusive upper scene bound.
+
+        Returns:
+            Matching facts in screenplay order.
+        """
+        results: list[Fact] = []
+        for fact in fact_store.get_facts_by_type(fact_type):
+            if _normalize_token(fact.entity) != entity_key:
+                continue
+            if from_scene_number < fact.scene_number < to_scene_number:
+                results.append(fact)
+        results.sort(key=lambda item: (item.scene_number, item.fact_id))
+        return results
+
     def _has_handoff_between(
         self,
         fact_store: FactStore,
@@ -1040,11 +1358,13 @@ class ContradictionEngine:
         if to_scene_number - from_scene_number <= 1:
             return True
 
-        for fact in fact_store.get_facts_by_type("object_ownership"):
-            if _normalize_token(fact.entity) != object_key:
-                continue
-            if fact.scene_number <= from_scene_number or fact.scene_number >= to_scene_number:
-                continue
+        for fact in self._facts_between_scenes(
+            fact_store,
+            "object_ownership",
+            object_key,
+            from_scene_number,
+            to_scene_number,
+        ):
             holder = self._ownership_holder(fact)
             recipient: Optional[str] = None
             handoff_match = re.search(
