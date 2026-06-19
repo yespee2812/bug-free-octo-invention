@@ -10,13 +10,17 @@ from spacy.language import Language
 
 from scene_dependency import (
     HANDOFF_VERBS,
+    INANIMATE_DEATH_NOUNS,
+    NON_CHARACTER_WORDS,
     NON_PROP_OBJECTS,
     OBJECT_OWNERSHIP_PATTERNS,
     POSSESSION_VERB_LABELS,
     SceneBlock,
     _is_character_cue,
     _is_transition,
+    _normalize_object_key,
     _normalize_token,
+    _trailing_caps_name,
 )
 
 # Alternation of handoff verbs (e.g. "gives|hands") for parsing transfer
@@ -54,12 +58,12 @@ FLASHBACK_MARKERS: tuple[str, ...] = (
 
 CHARACTER_STATUS_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(
-        r"(?<![A-Za-z0-9])(?P<entity>[A-Z][A-Z0-9 .'\-]+?)\s+(?:is|was)\s+"
+        r"(?<![A-Za-z0-9])(?P<entity>[A-Z][A-Z0-9 '\-]+?)\s+(?:is|was)\s+"
         r"(?:dead|killed)",
         re.IGNORECASE,
     ),
     re.compile(
-        r"(?<![A-Za-z0-9])(?P<entity>[A-Z][A-Z0-9 .'\-]+?)\s+(?:has\s+)?died",
+        r"(?<![A-Za-z0-9])(?P<entity>[A-Z][A-Z0-9 '\-]+?)\s+(?:has\s+)?died",
         re.IGNORECASE,
     ),
 )
@@ -84,11 +88,11 @@ TIMELINE_PATTERNS: tuple[re.Pattern[str], ...] = (
 
 CHARACTER_TRAIT_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(
-        r"(?P<entity>[A-Z][A-Z0-9 .'\-]+?)\s+is\s+a\s+(?P<trait>[a-z][a-z\s\-]+)",
+        r"(?P<entity>[A-Z][A-Z0-9 '\-]+?)\s+is\s+a\s+(?P<trait>[a-z][a-z\s\-]+)",
         re.IGNORECASE,
     ),
     re.compile(
-        r"(?P<entity>[A-Z][A-Z0-9 .'\-]+?)\s+works\s+as\s+(?:a\s+)?"
+        r"(?P<entity>[A-Z][A-Z0-9 '\-]+?)\s+works\s+as\s+(?:a\s+)?"
         r"(?P<trait>[a-z][a-z\s\-]+)",
         re.IGNORECASE,
     ),
@@ -284,6 +288,46 @@ def _clean_entity(name: str) -> str:
     return _normalize_token(name.strip(" ."))
 
 
+def _resolve_character_entity(raw_entity: str) -> Optional[str]:
+    """Resolve a captured entity span to a clean character key, or None.
+
+    Guards character_trait / character_status extraction against the C1
+    over-capture failure modes, mirroring the dependency engine's structural
+    -character handling so both engines agree on what counts as a name:
+
+    * Isolates the trailing ALL-CAPS span, so a capture that bled across a
+      sentence boundary ("Smoke fills the dock. DETECTIVE VANCE") resolves to
+      just the screenplay name ("DETECTIVE VANCE").
+    * Falls back to a single clean title-case token (e.g. the appositive
+      "Marcus") when there is no ALL-CAPS span, but rejects multi-word prose
+      and anything containing a period.
+    * Rejects pronouns / indefinite words (``NON_CHARACTER_WORDS``) such as
+      "There", "It", "He" and inanimate nouns that take death verbs
+      idiomatically (``INANIMATE_DEATH_NOUNS``) such as "the engine".
+
+    Args:
+        raw_entity: The raw ``entity`` group captured by a trait/status regex.
+
+    Returns:
+        A normalized uppercase character key, or None when the capture is not
+        a character name.
+    """
+    name = _trailing_caps_name(raw_entity)
+    if not name:
+        candidate = raw_entity.strip()
+        if "." in candidate or len(candidate.split()) != 1:
+            return None
+        if not candidate[:1].isupper():
+            return None
+        name = candidate
+    key = _normalize_object_key(name)
+    if len(key) < 2 or key in INANIMATE_DEATH_NOUNS:
+        return None
+    if all(word in NON_CHARACTER_WORDS for word in key.split()):
+        return None
+    return key
+
+
 def _clean_value(value: str) -> str:
     """Normalize a fact value string."""
     return " ".join(value.strip().split())
@@ -475,7 +519,9 @@ class ContradictionEngine:
                     continue
                 if _first_word_after(line, match.end()) in DEAD_IDIOM_FOLLOWERS:
                     continue
-                entity = _clean_entity(match.group("entity"))
+                entity = _resolve_character_entity(match.group("entity"))
+                if entity is None:
+                    continue
                 store.add_fact(
                     self._make_fact(
                         scene,
@@ -541,7 +587,9 @@ class ContradictionEngine:
                 match = pattern.search(line)
                 if not match:
                     continue
-                entity = _clean_entity(match.group("entity"))
+                entity = _resolve_character_entity(match.group("entity"))
+                if entity is None:
+                    continue
                 trait = _clean_value(match.group("trait"))
                 if trait.split()[-1].lower() in GENERIC_TRAIT_TERMS:
                     continue
