@@ -26,10 +26,18 @@ def analyze_screenplay(screenplay_text: str) -> dict[str, Any]:
     """
     dependency_engine = SceneDependencyEngine()
     scenes = dependency_engine.parse_fountain_text(screenplay_text)
-    dependency_engine.build_graph(scenes)
 
     contradiction_engine = ContradictionEngine()
-    contradictions = contradiction_engine.run_analysis(scenes)
+    fact_store = contradiction_engine.extract_facts(scenes)
+    dependency_engine.build_graph(scenes, fact_store=fact_store)
+
+    tier1_results = contradiction_engine.run_tier1(fact_store, scenes)
+    tier2_results = contradiction_engine.run_tier2(
+        fact_store, scenes, tier1_results
+    )
+    contradictions = contradiction_engine._deduplicate_contradictions(
+        tier1_results + tier2_results
+    )
 
     characters = sorted(
         {character for scene in scenes for character in scene.characters},

@@ -2,7 +2,10 @@
 
 import re
 from dataclasses import asdict, dataclass, field
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from plot_contradiction import Fact, FactStore
 
 import networkx as nx
 import spacy
@@ -310,7 +313,51 @@ EDGE_WEIGHTS: dict[str, float] = {
     "object": 0.7,
     "location": 0.4,
     "fact": 0.5,
+    "causal": 0.5,
 }
+# Fact types whose extraction establishes story state that later scenes may
+# rely on. Used for fact dependency edges (D6); heading-only location facts
+# are excluded at edge-build time.
+ESTABLISHING_FACT_TYPES: frozenset[str] = frozenset(
+    {
+        "character_status",
+        "character_trait",
+        "medical_state",
+        "relationship",
+        "object_state",
+        "object_ownership",
+        "timeline",
+        "location",
+    }
+)
+# Explicit backward-looking causal phrasing in dialogue ("after what you did",
+# "since that night"). v1 links to the most recent prior scene sharing a
+# speaker; open-domain resolution of "what" is deferred to coreference (C4).
+CAUSAL_DIALOGUE_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(
+        r"\bafter\s+what\s+(?:you|he|she|they|we)\s+did\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bbecause\s+of\s+what\s+(?:you|he|she|they|we|happened)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bafter\s+(?:everything|all\s+of\s+that|what\s+happened)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(r"\bsince\s+then\b", re.IGNORECASE),
+    re.compile(
+        r"\bever\s+since\s+(?:that|the|what)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bsince\s+(?:that|the)\s+"
+        r"(?:night|day|morning|evening|incident|explosion|fire|attack|"
+        r"ambush|meeting|fight|accident|murder|heist|job|mission)\b",
+        re.IGNORECASE,
+    ),
+)
 
 
 @dataclass
@@ -423,6 +470,81 @@ def _split_action_and_dialogue(lines: list[str]) -> tuple[list[str], list[str]]:
         action_lines.append(stripped)
 
     return action_lines, character_lines
+
+
+def _extract_dialogue_lines(raw_text: str) -> list[str]:
+    """Return spoken dialogue lines from a scene's raw text.
+
+    Parenthetical stage directions inside dialogue blocks are included so
+    causal-pattern scans see the full spoken block. Character cues and action
+    lines are excluded.
+
+    Args:
+        raw_text: Full scene text including the heading line.
+
+    Returns:
+        Stripped dialogue lines in screenplay order.
+    """
+    dialogue_lines: list[str] = []
+    in_dialogue = False
+
+    for line in raw_text.splitlines()[1:]:
+        stripped = line.strip()
+        if not stripped:
+            in_dialogue = False
+            continue
+        if _is_transition(stripped):
+            in_dialogue = False
+            continue
+        if _is_character_cue(stripped):
+            in_dialogue = True
+            continue
+        if in_dialogue and (stripped.startswith("(") or not stripped.isupper()):
+            dialogue_lines.append(stripped)
+            continue
+        in_dialogue = False
+
+    return dialogue_lines
+
+
+def _scene_speaker_keys(raw_text: str) -> set[str]:
+    """Return normalized character keys for dialogue cues in one scene."""
+    _, character_lines = _split_action_and_dialogue(raw_text.splitlines()[1:])
+    speakers: set[str] = set()
+    for cue in character_lines:
+        name = _normalize_token(re.sub(r"\([^)]*\)", "", cue))
+        if name:
+            speakers.add(name)
+    return speakers
+
+
+def _referenced_entity_keys(scene: SceneBlock) -> set[str]:
+    """Return normalized entity keys a scene references via its parsed fields."""
+    keys: set[str] = set()
+    for character in scene.characters:
+        keys.add(_normalize_token(character))
+    for obj in scene.objects:
+        keys.add(_normalize_object_key(obj))
+    for location in scene.locations:
+        keys.add(_normalize_token(location))
+    return keys
+
+
+def _entity_keys_for_fact(fact_type: str, entity: str) -> set[str]:
+    """Return normalized lookup keys for a fact's subject entity."""
+    if fact_type == "relationship":
+        return {_normalize_token(part) for part in entity.split("|") if part.strip()}
+    if fact_type in ("object_ownership", "object_state"):
+        return {_normalize_object_key(entity)}
+    return {_normalize_token(entity)}
+
+
+def _has_causal_dialogue(raw_text: str) -> bool:
+    """Return True when any dialogue line contains a causal backward reference."""
+    for line in _extract_dialogue_lines(raw_text):
+        if any(pattern.search(line) for pattern in CAUSAL_DIALOGUE_PATTERNS):
+            return True
+    return False
 
 
 def _collect_character_aliases(text: str) -> dict[str, str]:
@@ -953,15 +1075,30 @@ class SceneDependencyEngine:
         self._scene_lookup = {scene.scene_id: scene for scene in scenes}
         return scenes
 
-    def build_graph(self, scenes: list[SceneBlock]) -> None:
+    def build_graph(
+        self,
+        scenes: list[SceneBlock],
+        fact_store: Optional["FactStore"] = None,
+        *,
+        include_fact_edges: bool = True,
+        include_causal_edges: bool = True,
+    ) -> None:
         """Build a directed dependency graph from parsed scenes.
 
         Adds one node per scene and creates edges from earlier scenes to later
-        scenes when characters, objects, or locations first introduced in the
-        earlier scene reappear downstream.
+        scenes when characters, objects, or locations reappear (continuity),
+        when an established plot fact is relied on downstream (fact), or when
+        dialogue explicitly references a prior event (causal).
 
         Args:
             scenes: Parsed scene blocks.
+            fact_store: Optional pre-extracted facts; when omitted and
+                ``include_fact_edges`` is True, facts are extracted via a lazy
+                import of ``ContradictionEngine`` to avoid circular imports.
+            include_fact_edges: When True, add ``fact`` edges from scenes that
+                establish story state to later scenes that reference the entity.
+            include_causal_edges: When True, add ``causal`` edges when dialogue
+                contains an explicit backward-looking temporal reference.
         """
         self.scenes = sorted(scenes, key=lambda scene: scene.scene_number)
         self._scene_lookup = {scene.scene_id: scene for scene in self.scenes}
@@ -1000,6 +1137,17 @@ class SceneDependencyEngine:
                 "location",
                 "Location '{item}' first established",
             )
+
+        if include_fact_edges:
+            resolved_store = fact_store
+            if resolved_store is None:
+                from plot_contradiction import ContradictionEngine
+
+                resolved_store = ContradictionEngine().extract_facts(self.scenes)
+            self._add_fact_dependency_edges(resolved_store)
+
+        if include_causal_edges:
+            self._add_causal_dialogue_edges()
 
     def _add_continuity_edges(
         self,
@@ -1066,6 +1214,115 @@ class SceneDependencyEngine:
                 )
 
             prior_scene_ids.append(scene.scene_id)
+
+    def _add_fact_dependency_edges(self, fact_store: "FactStore") -> None:
+        """Add fact edges from establishing scenes to later entity references.
+
+        When a scene establishes a plot fact (status, trait, injury, relation,
+        object state/ownership, timeline, or descriptive location) and a later
+        scene references the same entity through its parsed characters, objects,
+        or locations, an edge is drawn so delete-impact reflects story-state
+        dependencies beyond bare reappearance. Heading-only location facts are
+        skipped because location continuity already covers them.
+
+        Args:
+            fact_store: Facts extracted from ``self.scenes``.
+        """
+        facts_by_entity: dict[str, list["Fact"]] = {}
+        for fact in fact_store.get_all_facts():
+            if fact.fact_type not in ESTABLISHING_FACT_TYPES:
+                continue
+            origin_scene = self._scene_lookup.get(fact.scene_id)
+            if (
+                fact.fact_type == "location"
+                and origin_scene is not None
+                and fact.raw_excerpt.strip().upper()
+                == origin_scene.heading.strip().upper()
+            ):
+                continue
+            for key in _entity_keys_for_fact(fact.fact_type, fact.entity):
+                facts_by_entity.setdefault(key, []).append(fact)
+
+        for fact_list in facts_by_entity.values():
+            fact_list.sort(key=lambda item: (item.scene_number, item.fact_id))
+
+        weight = EDGE_WEIGHTS["fact"]
+        seen_pairs: set[tuple[str, str, str]] = set()
+
+        for scene in self.scenes:
+            referenced = _referenced_entity_keys(scene)
+            if not referenced:
+                continue
+            for entity_key in referenced:
+                for fact in facts_by_entity.get(entity_key, ()):
+                    if fact.scene_number >= scene.scene_number:
+                        continue
+                    pair_key = (fact.scene_id, scene.scene_id, fact.fact_id)
+                    if pair_key in seen_pairs:
+                        continue
+                    seen_pairs.add(pair_key)
+                    explanation = (
+                        f"Fact ({fact.fact_type}) '{fact.value}' established in "
+                        f"{fact.scene_id}, relied on in {scene.scene_id}"
+                    )
+                    self._upsert_edge(
+                        DependencyEdge(
+                            from_scene_id=fact.scene_id,
+                            to_scene_id=scene.scene_id,
+                            weight=weight,
+                            edge_type="fact",
+                            explanation=explanation,
+                        )
+                    )
+
+    def _add_causal_dialogue_edges(self) -> None:
+        """Add causal edges when dialogue explicitly references a prior event.
+
+        Scans dialogue for backward-looking temporal phrasing ("after what you
+        did", "since that night"). When matched, links the current scene to the
+        most recent prior scene that shares a speaker, because the reference is
+        anchored to that character's ongoing thread. v1 does not resolve open-
+        domain "what" (deferred to coreference, C4).
+
+        Args:
+            None; uses ``self.scenes``.
+        """
+        weight = EDGE_WEIGHTS["causal"]
+        seen_pairs: set[tuple[str, str]] = set()
+
+        for scene in self.scenes:
+            if not _has_causal_dialogue(scene.raw_text):
+                continue
+            speakers = _scene_speaker_keys(scene.raw_text)
+            if not speakers:
+                continue
+            for speaker in speakers:
+                prior_scenes = [
+                    prior
+                    for prior in self.scenes
+                    if prior.scene_number < scene.scene_number
+                    and speaker in {_normalize_token(c) for c in prior.characters}
+                ]
+                if not prior_scenes:
+                    continue
+                origin = max(prior_scenes, key=lambda item: item.scene_number)
+                pair_key = (origin.scene_id, scene.scene_id)
+                if pair_key in seen_pairs:
+                    continue
+                seen_pairs.add(pair_key)
+                explanation = (
+                    f"Causal dialogue in {scene.scene_id} references prior "
+                    f"events involving {speaker} from {origin.scene_id}"
+                )
+                self._upsert_edge(
+                    DependencyEdge(
+                        from_scene_id=origin.scene_id,
+                        to_scene_id=scene.scene_id,
+                        weight=weight,
+                        edge_type="causal",
+                        explanation=explanation,
+                    )
+                )
 
     def _upsert_edge(self, dependency_edge: DependencyEdge) -> None:
         """Insert or merge a dependency edge into the graph."""
