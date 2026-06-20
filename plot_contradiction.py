@@ -36,6 +36,7 @@ FACT_TYPES: tuple[str, ...] = (
     "character_status",
     "medical_state",
     "relationship",
+    "world_rule",
 )
 
 DAYS_OF_WEEK: dict[str, int] = {
@@ -292,6 +293,47 @@ RELATIONSHIP_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(
         rf"(?<![A-Za-z0-9])(?P<subject>{_REL_NAME})\s+and\s+"
         rf"(?P<object>{_REL_NAME})\s+are\s+(?P<relation>[A-Za-z]+)"
+    ),
+)
+
+# --- World rules (Phase 4, capture-only) ----------------------------------
+# Modal/capability phrasing that declares a rule of the fiction: what is or is
+# not possible (magic systems, tech limits, time-travel rules, superpowers).
+# These are CAPTURED as world_rule facts for later Tier 3 violation reasoning;
+# no Tier 1 contradiction is raised from them, because deciding whether a later
+# scene breaks a rule is open-domain semantics, not a rule-based check. The
+# focus is on capability/permission modals ("cannot", "can only", "no one
+# can"), not bare "always/never", to keep captured rules on-signal.
+_RULE_PREDICATE = r"(?P<predicate>[a-z][a-z0-9 ,'\-]+?)(?:[.!?]|$)"
+_RULE_SUBJECT = r"(?P<subject>[A-Za-z][A-Za-z0-9 '\-]+?)"
+
+WORLD_RULE_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    # "No one can leave the dome", "Nothing can stop it"
+    (
+        re.compile(
+            rf"(?<![A-Za-z0-9])(?P<subject>no\s+one|nobody|nothing|none)\s+"
+            rf"can\s+{_RULE_PREDICATE}",
+            re.IGNORECASE,
+        ),
+        "cannot",
+    ),
+    # "Vampires can only enter when invited"
+    (
+        re.compile(
+            rf"(?<![A-Za-z0-9]){_RULE_SUBJECT}\s+can\s+only\s+{_RULE_PREDICATE}",
+            re.IGNORECASE,
+        ),
+        "can only",
+    ),
+    # "The time machine cannot travel to the future"
+    (
+        re.compile(
+            rf"(?<![A-Za-z0-9]){_RULE_SUBJECT}\s+"
+            rf"(?:can\s*not|cannot|can't|can\s+never|may\s+not|must\s+not|"
+            rf"must\s+never)\s+{_RULE_PREDICATE}",
+            re.IGNORECASE,
+        ),
+        "cannot",
     ),
 )
 
@@ -795,6 +837,7 @@ class ContradictionEngine:
             self._extract_object_ownership_facts(scene, store)
             self._extract_object_state_facts(scene, store)
             self._extract_relationship_facts(scene, store)
+            self._extract_world_rule_facts(scene, store)
             self._extract_location_facts(scene, store)
             self._extract_location_description_facts(scene, store)
 
@@ -1065,6 +1108,39 @@ class ContradictionEngine:
                         )
                     )
 
+    def _extract_world_rule_facts(
+        self, scene: SceneBlock, store: FactStore
+    ) -> None:
+        """Capture declared world rules from action lines (capture-only).
+
+        Records capability/permission rules of the fiction such as "The time
+        machine cannot travel to the future" or "Vampires can only enter when
+        invited" as ``world_rule`` facts (entity = rule subject, value =
+        "<modality>: <predicate>"). These are stored for later Tier 3 violation
+        reasoning; no Tier 1 contradiction is raised here, since deciding
+        whether a later scene breaks a rule needs open-domain semantics.
+        Dialogue is excluded to keep captured rules to declarative exposition.
+        """
+        action_lines, _ = _scene_lines_by_source(scene)
+        for line in action_lines:
+            for pattern, modality in WORLD_RULE_PATTERNS:
+                match = pattern.search(line)
+                if not match:
+                    continue
+                subject_key = _normalize_object_key(match.group("subject"))
+                predicate = _clean_value(match.group("predicate"))
+                if len(subject_key) < 2 or len(predicate) < 2:
+                    continue
+                store.add_fact(
+                    self._make_fact(
+                        scene,
+                        "world_rule",
+                        subject_key,
+                        f"{modality}: {predicate}",
+                        line,
+                    )
+                )
+
     def _extract_location_facts(self, scene: SceneBlock, store: FactStore) -> None:
         """Extract location facts from scene headings."""
         if not scene.locations:
@@ -1171,10 +1247,15 @@ class ContradictionEngine:
             ):
                 continue
             # Object continuity, medical state, and relationships are handled
-            # deterministically in Tier 1; their structured/short values
-            # ("destroyed", "unconscious", "parent_child A>B") are not
-            # meaningful for similarity comparison.
-            if fact.fact_type in ("object_state", "medical_state", "relationship"):
+            # deterministically in Tier 1; world rules are capture-only (their
+            # violation reasoning is deferred to Tier 3). None of their
+            # structured/short values are meaningful for similarity comparison.
+            if fact.fact_type in (
+                "object_state",
+                "medical_state",
+                "relationship",
+                "world_rule",
+            ):
                 continue
             facts_by_entity.setdefault(fact.entity, []).append(fact)
 
