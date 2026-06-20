@@ -211,6 +211,39 @@ HANDLING_VERB_LEMMAS: frozenset[str] = frozenset(
     }
 )
 
+# Animate-only verb lemmas for grammatical-role (agentive-subject) character
+# detection (Signal 3 / Caveat D3). A capitalized name parsed as the subject of
+# one of these verbs is a person, because inanimate props do not communicate,
+# make facial expressions, gesture, or think. The set is deliberately narrow:
+# generic motion ("race", "run", "move") and machine verbs ("ring", "beep",
+# "fire", "hum") are excluded so action props ("the DELOREAN races", "the PHONE
+# rings") are never promoted to characters. Lemmas only, so every inflection
+# (whispers/whispered/whispering) is covered by the dependency parse.
+AGENTIVE_PERSON_VERB_LEMMAS: frozenset[str] = frozenset(
+    {
+        # Communication
+        "say", "speak", "ask", "reply", "answer", "respond", "whisper",
+        "mutter", "murmur", "mumble", "shout", "yell", "scream", "retort",
+        "exclaim", "declare", "insist", "demand", "warn", "explain", "repeat",
+        "greet", "apologize", "apologise", "agree", "argue", "beg", "plead",
+        "promise", "swear", "joke", "scold", "taunt", "confess", "admit",
+        "announce", "remark", "interrupt", "stammer", "stutter", "order",
+        "command", "mention", "suggest", "propose", "recount", "chant",
+        "introduce", "greet", "lecture", "reassure", "console",
+        # Facial expression / gesture / embodied human action
+        "nod", "smile", "grin", "frown", "scowl", "glare", "smirk", "wink",
+        "blink", "squint", "laugh", "chuckle", "giggle", "snicker", "sigh",
+        "gasp", "grimace", "shrug", "wince", "flinch", "cringe", "gulp",
+        "sob", "weep", "sniffle", "yawn", "kneel", "crouch", "slump",
+        "gesture", "beckon", "salute", "bow", "pout", "grumble", "nudge",
+        "frown", "clap", "applaud", "embrace", "hug", "kiss", "wave",
+        # Cognition (props do not think or remember)
+        "think", "realize", "realise", "remember", "recall", "wonder",
+        "ponder", "consider", "hesitate", "suspect", "recognize",
+        "recognise", "imagine", "regret", "decide",
+    }
+)
+
 _OWNER_GROUP = r"(?P<owner>[A-Z][A-Z0-9 .'\-]+?)"
 _OBJECT_GROUP = r"(?P<object>[a-z][a-z0-9\s\-]+?)"
 # Words that mark the end of an object noun phrase (a following
@@ -503,6 +536,91 @@ def _extract_structural_characters(
     return characters
 
 
+def _extract_agentive_subject_characters(
+    nlp: Language,
+    action_text: str,
+    doc: Optional[Doc],
+    character_aliases: dict[str, str],
+    known_props: set[str],
+) -> set[str]:
+    """Return caps names that are the subject of an animate-only action verb.
+
+    Implements grammatical-role (agentive-subject) character detection, the
+    Signal 3 fix for Caveat D3: a capitalized name written in action and parsed
+    as the ``nsubj``/``nsubjpass`` of a verb that only a person performs
+    (communication, facial expression, gesture, or cognition) is treated as a
+    character even with no dialogue cue, no professional title, no fact phrasing,
+    and no NER hit -- the exact case where spaCy NER is weakest on ALL-CAPS text.
+
+    The verb lexicon (``AGENTIVE_PERSON_VERB_LEMMAS``) is restricted to verbs
+    inanimate props do not perform, so action props that take motion or machine
+    verbs ("the DELOREAN races", "the PHONE rings") are never promoted. Detection
+    runs on both the raw doc and a title-cased copy (the parser is more reliable
+    on title case than on ALL CAPS), and a candidate is kept only when its name
+    actually appears as an ALL-CAPS span in the action, enforcing the screenplay
+    naming convention. Established props, pronouns/indefinites, inanimate-death
+    nouns, non-prop idiom words, and camera-direction first words are filtered.
+
+    Args:
+        nlp: Loaded spaCy pipeline.
+        action_text: Joined action lines of one scene.
+        doc: Already-parsed doc over action_text, or None when empty.
+        character_aliases: Normalized alias -> canonical cue name map.
+        known_props: Prop keys established so far, excluded so a known object is
+            never flipped into a character.
+
+    Returns:
+        Normalized character keys detected from agentive subjects.
+    """
+    if not action_text:
+        return set()
+
+    caps_spans = {
+        _normalize_object_key(span_match.group(0))
+        for span_match in CAPS_SPAN_PATTERN.finditer(action_text)
+    }
+    if not caps_spans:
+        return set()
+
+    docs: list[Doc] = [doc] if doc is not None else []
+    transformed = CAPS_SPAN_PATTERN.sub(
+        lambda span_match: span_match.group(0).title(), action_text
+    )
+    if transformed != action_text:
+        docs.append(nlp(transformed))
+
+    characters: set[str] = set()
+    for parsed in docs:
+        chunk_by_root = {chunk.root.i: chunk.text for chunk in parsed.noun_chunks}
+        for token in parsed:
+            if token.pos_ != "VERB":
+                continue
+            if token.lemma_.lower() not in AGENTIVE_PERSON_VERB_LEMMAS:
+                continue
+            for child in token.children:
+                if child.dep_ not in ("nsubj", "nsubjpass"):
+                    continue
+                if child.pos_ not in ("PROPN", "NOUN"):
+                    continue
+                phrase = chunk_by_root.get(child.i, child.text)
+                key = _normalize_object_key(phrase)
+                if key not in caps_spans:
+                    continue
+                if len(key) < 2 or key in known_props:
+                    continue
+                if key in INANIMATE_DEATH_NOUNS:
+                    continue
+                words = key.split()
+                if words[0] in CAPS_PROP_STOP_FIRST_WORDS:
+                    continue
+                if any(word.lower() in NON_PROP_OBJECTS for word in words):
+                    continue
+                if all(word in NON_CHARACTER_WORDS for word in words):
+                    continue
+                characters.add(character_aliases.get(key, key))
+    return characters
+
+
 def _match_prop_by_suffix(key: str, known_props: set[str]) -> Optional[str]:
     """Resolve a key to an established prop key, exactly or by suffix.
 
@@ -784,7 +902,10 @@ class SceneDependencyEngine:
             structural_chars = _extract_structural_characters(
                 action_lines, character_aliases
             )
-            person_keys |= structural_chars
+            agentive_chars = _extract_agentive_subject_characters(
+                self.nlp, action_text, doc, character_aliases, known_props
+            )
+            person_keys |= structural_chars | agentive_chars
 
             caps_props, action_presences = _extract_caps_props_and_presences(
                 action_lines, character_aliases, person_keys
@@ -811,7 +932,8 @@ class SceneDependencyEngine:
                     objects.append(prop_name)
 
             characters = sorted(
-                cue_names | action_presences | structural_chars, key=str.lower
+                cue_names | action_presences | structural_chars | agentive_chars,
+                key=str.lower,
             )
             location = _extract_location_from_heading(heading)
             locations = [location] if location else []

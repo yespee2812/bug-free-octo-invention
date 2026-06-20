@@ -86,6 +86,7 @@ Input can be Fountain/plain text or PDF (`pdf_screenplay_loader.py` → text via
 |--------|----------------|--------|
 | **Caveat 1** — lowercase props missed | Objects of ownership/handling verbs are now tracked even when never capitalized (e.g. "the blue ledger"), with suffix-based canonicalization of later mentions. | `485db26` |
 | **Caveat 2 (partial)** — cue-less characters | Title lexicon + title-case NER re-check (already present) **plus** new structural detection: the subject of "is dead / died / works as / is a `<role>`" is treated as a character, so a cue-less ALL-CAPS name is no longer misclassified as a prop. Pronoun / inanimate-death / generic-role guards keep it precise. | `4d1c8a4` |
+| **Caveat 2 / D3** — Signal 3 grammatical-role detection | A caps name parsed as the `nsubj`/`nsubjpass` of an **animate-only verb** (communication, expression, gesture, cognition — `AGENTIVE_PERSON_VERB_LEMMAS`) is now promoted to a character and excluded from props, recovering invented names with no cue, title, fact phrasing, or NER hit ("KORREK whispers"). Motion/machine verbs are excluded so action props ("the DELOREAN races", "the PHONE rings") are not promoted; detection runs on both raw and title-cased parses and requires the name to appear as an ALL-CAPS span. | _pending_ |
 
 ---
 
@@ -97,7 +98,7 @@ Input can be Fountain/plain text or PDF (`pdf_screenplay_loader.py` → text via
 |---|--------|--------|----------|
 | D1 | **Tiny ownership-verb list** (only `picks up`, `has`, `gives … to`). Handling verbs from the design (grabs, holds, hands, pockets, carries, takes, hides, steals, drops, sets down) are not covered. | Lowercase props introduced via other verbs are still missed. | Medium |
 | D2 | **NER-detected characters in action are excluded from props but never added as characters.** A cue-less, title-less name that *only* NER catches creates **no character edges** — it is silently dropped. | Recall gap in the dependency graph. | Medium |
-| D3 | **ALL-CAPS is exactly where spaCy NER is weakest** (root of Caveat 2). Signal 3 (grammatical-role / agentive-subject detection) is **not yet implemented**. | Invented names with no title and no fact phrasing are missed or mis-typed. | Medium |
+| D3 | ~~**ALL-CAPS is exactly where spaCy NER is weakest** (root of Caveat 2). Signal 3 (grammatical-role / agentive-subject detection) is **not yet implemented**.~~ **RESOLVED** — Signal 3 now promotes the caps subject of an animate-only verb to a character (see §3), guarded against motion/machine-verb props. Remaining gap: names that only appear as the subject of *generic* verbs (walks, enters) are still out of scope by design (false-positive risk). | Invented names with no title and no fact phrasing are now recovered when they act via a person-only verb. | ~~Medium~~ Low |
 | D4 | **First-seen-only edges.** Reuse links back to the *first* scene, not each prior scene. Deleting an intermediate scene won't show downstream breakage that conceptually flows through it. | `get_delete_impact` can under-state ripple effects on chained setups. | Medium |
 | D5 | **Suffix prop-matching can over-merge.** "THE KEY" could resolve to "SILVER KEY" *or* "MASTER KEY" (first match wins). | Wrong prop edges when two props share a head noun. | Low–Med |
 | D6 | **`fact` and `causal` dependency edges are unimplemented** (`fact` weight exists but is never produced; causal/dialogue edges from the spec are absent). | Story dependencies carried by dialogue ("after what you did") are invisible. | Medium |
@@ -142,7 +143,7 @@ Input can be Fountain/plain text or PDF (`pdf_screenplay_loader.py` → text via
 6. **Promote NER-detected action characters to scene characters (D2)** — close the dependency recall gap, gated by the existing person filters.
 
 ### P2 — Higher-value but needs the corpus first (tune against real numbers)
-7. **Signal 3 — grammatical-role character detection (D3).** Classify a caps span as a character when it is the `nsubj` of an agentive verb (vs `dobj`/`pobj` for props). This is the real fix for invented names NER misses, **but** it has known false-positive risk (e.g. "DELOREAN races") and needs threshold/lexicon tuning.
+7. ~~**Signal 3 — grammatical-role character detection (D3).**~~ **DONE.** Classifies a caps span as a character when it is the `nsubj`/`nsubjpass` of an **animate-only** verb (communication/expression/gesture/cognition). The false-positive risk (e.g. "DELOREAN races") is handled by restricting the verb lexicon to verbs props never perform and excluding known props; full suite stays at 1.00 P/R/F1, 0 FP. Future tuning (broadening the lexicon) still benefits from the labeled corpus.
 8. **Recurrence promotion for weak props** — a recurring lowercase noun chunk across 2+ scenes becomes a low-weight prop. Reintroduces a noise channel; only ship with corpus measurement.
 9. **Upgrade Tier-2 to `en_core_web_md` (C2)** — real word vectors make semantic similarity meaningful; re-tune `TIER2_SIMILARITY_THRESHOLD`.
 10. **Coreference resolution (C4)** — pronoun → entity, to recover dropped facts.
