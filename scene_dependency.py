@@ -974,72 +974,98 @@ class SceneDependencyEngine:
                 scene_number=scene.scene_number,
             )
 
-        first_seen_character: dict[str, str] = {}
-        first_seen_object: dict[str, str] = {}
-        first_seen_location: dict[str, str] = {}
+        seen_character_scenes: dict[str, list[str]] = {}
+        seen_object_scenes: dict[str, list[str]] = {}
+        seen_location_scenes: dict[str, list[str]] = {}
 
         for scene in self.scenes:
-            self._add_first_seen_edges(
+            self._add_continuity_edges(
                 scene,
                 scene.characters,
-                first_seen_character,
+                seen_character_scenes,
                 "character",
                 "Character '{item}' first introduced",
             )
-            self._add_first_seen_edges(
+            self._add_continuity_edges(
                 scene,
                 scene.objects,
-                first_seen_object,
+                seen_object_scenes,
                 "object",
                 "Object '{item}' first mentioned",
             )
-            self._add_first_seen_edges(
+            self._add_continuity_edges(
                 scene,
                 scene.locations,
-                first_seen_location,
+                seen_location_scenes,
                 "location",
                 "Location '{item}' first established",
             )
 
-    def _add_first_seen_edges(
+    def _add_continuity_edges(
         self,
         scene: SceneBlock,
         items: list[str],
-        first_seen: dict[str, str],
+        seen_scenes: dict[str, list[str]],
         edge_type: str,
-        explanation_template: str,
+        first_seen_template: str,
     ) -> None:
-        """Add dependency edges based on first-seen tracking for a category."""
+        """Add dependency edges from every prior scene that featured an item.
+
+        For each shared item, an edge is drawn from *each* earlier scene that
+        featured it to the current scene, not only from the first occurrence
+        (Caveat D4). The first-occurrence edge keeps its original "first
+        introduced/mentioned/established" explanation, and the additional
+        intermediate edges are labelled "also appears", so deleting an
+        intermediate scene now surfaces downstream scenes whose dependency
+        conceptually flows through it. The change is additive: every edge the
+        first-seen model produced is still produced, plus the intermediate ones.
+
+        Args:
+            scene: The current scene being linked.
+            items: The scene's characters, objects, or locations.
+            seen_scenes: Map of item key -> prior scene ids that featured it,
+                in screenplay order; updated in place.
+            edge_type: Dependency category ("character", "object", "location").
+            first_seen_template: Explanation template for the introducing edge.
+        """
         weight = EDGE_WEIGHTS[edge_type]
 
         for item in items:
             key = (
-                _normalize_token(item)
-                if edge_type == "character"
-                else _normalize_object_key(item)
+                _normalize_object_key(item)
                 if edge_type == "object"
                 else _normalize_token(item)
             )
             if not key:
                 continue
 
-            if key in first_seen:
-                origin_scene_id = first_seen[key]
-                if origin_scene_id != scene.scene_id:
-                    explanation = (
-                        f"{explanation_template.format(item=key)} in "
-                        f"{origin_scene_id}, reused in {scene.scene_id}"
-                    )
-                    dependency_edge = DependencyEdge(
+            prior_scene_ids = seen_scenes.get(key)
+            if not prior_scene_ids:
+                seen_scenes[key] = [scene.scene_id]
+                continue
+
+            for position, origin_scene_id in enumerate(prior_scene_ids):
+                if origin_scene_id == scene.scene_id:
+                    continue
+                if position == 0:
+                    relation = first_seen_template.format(item=key)
+                else:
+                    relation = f"'{key}' also appears"
+                explanation = (
+                    f"{relation} in {origin_scene_id}, "
+                    f"reused in {scene.scene_id}"
+                )
+                self._upsert_edge(
+                    DependencyEdge(
                         from_scene_id=origin_scene_id,
                         to_scene_id=scene.scene_id,
                         weight=weight,
                         edge_type=edge_type,
                         explanation=explanation,
                     )
-                    self._upsert_edge(dependency_edge)
-            else:
-                first_seen[key] = scene.scene_id
+                )
+
+            prior_scene_ids.append(scene.scene_id)
 
     def _upsert_edge(self, dependency_edge: DependencyEdge) -> None:
         """Insert or merge a dependency edge into the graph."""

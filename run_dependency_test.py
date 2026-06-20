@@ -67,7 +67,10 @@ def main() -> None:
             )
 
     print_delete_impact(engine, "scene_005")
-    print("  (Expected affected scenes: scene_011, scene_012)")
+    print(
+        "  (Expected affected scenes: scene_009, scene_010, scene_011, scene_012 "
+        "- D4 now ripples through intermediate carrier scenes)"
+    )
 
     print_delete_impact(engine, "scene_001")
     print("  (Expected: many downstream scenes - briefcase and Marcus ripple forward)")
