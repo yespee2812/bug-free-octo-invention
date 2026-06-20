@@ -220,6 +220,81 @@ CHARACTER_TRAIT_PATTERNS: tuple[re.Pattern[str], ...] = (
     ),
 )
 
+# --- Relationship facts (Phase 3) -----------------------------------------
+# Surface relation terms (singular + plural) mapped to a canonical category
+# and a role. "parent"/"child" are the two asymmetric directions of the
+# parent_child category; every other relation is symmetric.
+RELATION_TERMS: dict[str, tuple[str, str]] = {
+    "husband": ("spouse", "symmetric"),
+    "wife": ("spouse", "symmetric"),
+    "spouse": ("spouse", "symmetric"),
+    "spouses": ("spouse", "symmetric"),
+    "married": ("spouse", "symmetric"),
+    "brother": ("sibling", "symmetric"),
+    "sister": ("sibling", "symmetric"),
+    "brothers": ("sibling", "symmetric"),
+    "sisters": ("sibling", "symmetric"),
+    "sibling": ("sibling", "symmetric"),
+    "siblings": ("sibling", "symmetric"),
+    "twin": ("sibling", "symmetric"),
+    "twins": ("sibling", "symmetric"),
+    "father": ("parent_child", "parent"),
+    "mother": ("parent_child", "parent"),
+    "dad": ("parent_child", "parent"),
+    "mom": ("parent_child", "parent"),
+    "mum": ("parent_child", "parent"),
+    "parent": ("parent_child", "parent"),
+    "son": ("parent_child", "child"),
+    "daughter": ("parent_child", "child"),
+    "child": ("parent_child", "child"),
+    "kid": ("parent_child", "child"),
+    "boyfriend": ("lover", "symmetric"),
+    "girlfriend": ("lover", "symmetric"),
+    "lover": ("lover", "symmetric"),
+    "lovers": ("lover", "symmetric"),
+    "fiance": ("lover", "symmetric"),
+    "fiancee": ("lover", "symmetric"),
+    "friend": ("friend", "symmetric"),
+    "friends": ("friend", "symmetric"),
+    "ally": ("friend", "symmetric"),
+    "enemy": ("enemy", "symmetric"),
+    "enemies": ("enemy", "symmetric"),
+    "nemesis": ("enemy", "symmetric"),
+    "rival": ("enemy", "symmetric"),
+}
+# Category pairs that cannot describe the same two people. Only immutable
+# blood relations (sibling, parent_child) clashing with each other or with a
+# romantic bond are included, because social/romantic ties legitimately change
+# over a story (enemies -> friends, married -> divorced) and must NOT be
+# flagged as contradictions.
+INCOMPATIBLE_RELATION_CATEGORIES: tuple[frozenset[str], ...] = (
+    frozenset({"sibling", "parent_child"}),
+    frozenset({"sibling", "spouse"}),
+    frozenset({"sibling", "lover"}),
+    frozenset({"parent_child", "spouse"}),
+    frozenset({"parent_child", "lover"}),
+)
+
+_REL_NAME = r"[A-Z][A-Za-z0-9 '\-]+?"
+
+RELATIONSHIP_PATTERNS: tuple[re.Pattern[str], ...] = (
+    # Possessive: "MARCUS is ELENA's brother"
+    re.compile(
+        rf"(?<![A-Za-z0-9])(?P<subject>{_REL_NAME})\s+is\s+"
+        rf"(?P<object>{_REL_NAME})'s\s+(?P<relation>[A-Za-z]+)"
+    ),
+    # Appositive: "MARCUS, ELENA's brother, enters"
+    re.compile(
+        rf"(?<![A-Za-z0-9])(?P<subject>{_REL_NAME}),\s+"
+        rf"(?P<object>{_REL_NAME})'s\s+(?P<relation>[A-Za-z]+),"
+    ),
+    # Symmetric conjunction: "MARCUS and ELENA are married"
+    re.compile(
+        rf"(?<![A-Za-z0-9])(?P<subject>{_REL_NAME})\s+and\s+"
+        rf"(?P<object>{_REL_NAME})\s+are\s+(?P<relation>[A-Za-z]+)"
+    ),
+)
+
 LOCATION_DESCRIPTION_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(
         r"the\s+(?P<location>[a-z][a-z0-9\s\-]+?)\s+was\s+(?P<state>.+?)(?:\.|$)",
@@ -591,6 +666,31 @@ def _build_medical_value(groups: dict[str, Optional[str]]) -> str:
     return " ".join(pieces)
 
 
+def _parse_relationship_value(
+    value: str,
+) -> tuple[str, Optional[tuple[str, str]]]:
+    """Parse a relationship fact value into (category, direction).
+
+    Symmetric relations store just the category ("sibling", "spouse"); the
+    parent_child category stores a directed "parent>child" pair so role
+    inversion can be detected.
+
+    Args:
+        value: The stored relationship fact value.
+
+    Returns:
+        A tuple of (category, direction), where direction is a (parent, child)
+        tuple for parent_child relations and None otherwise.
+    """
+    if value.startswith("parent_child"):
+        rest = value[len("parent_child") :].strip()
+        if ">" in rest:
+            parent, child = rest.split(">", 1)
+            return ("parent_child", (parent.strip(), child.strip()))
+        return ("parent_child", None)
+    return (value.strip(), None)
+
+
 def _classify_medical_value(value: str) -> tuple[str, Optional[str], Optional[str]]:
     """Classify a medical_state fact value into (kind, body_part, side).
 
@@ -694,6 +794,7 @@ class ContradictionEngine:
             self._extract_character_trait_facts(scene, store)
             self._extract_object_ownership_facts(scene, store)
             self._extract_object_state_facts(scene, store)
+            self._extract_relationship_facts(scene, store)
             self._extract_location_facts(scene, store)
             self._extract_location_description_facts(scene, store)
 
@@ -925,6 +1026,45 @@ class ContradictionEngine:
                 self._make_fact(scene, "object_state", object_key, value, line)
             )
 
+    def _extract_relationship_facts(
+        self, scene: SceneBlock, store: FactStore
+    ) -> None:
+        """Extract character-relationship facts from action lines only.
+
+        Captures "MARCUS is ELENA's brother", the appositive "MARCUS, ELENA's
+        brother, ...", and the symmetric "MARCUS and ELENA are married". Only
+        relations in ``RELATION_TERMS`` are kept, and both names are resolved
+        through the shared character guard so pronouns and prose are rejected.
+        Facts are keyed on the unordered character pair; parent_child relations
+        also record direction so role inversion can be detected. Dialogue is
+        excluded because relationships there are usually pronoun-based
+        ("he's my brother"), which needs coreference (deferred, C4).
+        """
+        action_lines, _ = _scene_lines_by_source(scene)
+        for line in action_lines:
+            for pattern in RELATIONSHIP_PATTERNS:
+                for match in pattern.finditer(line):
+                    subject = _resolve_character_entity(match.group("subject"))
+                    other = _resolve_character_entity(match.group("object"))
+                    if subject is None or other is None or subject == other:
+                        continue
+                    mapped = RELATION_TERMS.get(match.group("relation").lower())
+                    if mapped is None:
+                        continue
+                    category, role = mapped
+                    pair_key = "|".join(sorted([subject, other]))
+                    if role == "parent":
+                        value = f"parent_child {subject}>{other}"
+                    elif role == "child":
+                        value = f"parent_child {other}>{subject}"
+                    else:
+                        value = category
+                    store.add_fact(
+                        self._make_fact(
+                            scene, "relationship", pair_key, value, line
+                        )
+                    )
+
     def _extract_location_facts(self, scene: SceneBlock, store: FactStore) -> None:
         """Extract location facts from scene headings."""
         if not scene.locations:
@@ -994,6 +1134,9 @@ class ContradictionEngine:
         contradictions.extend(
             self._check_object_state(fact_store, scenes, scene_lookup)
         )
+        contradictions.extend(
+            self._check_relationship(fact_store, scenes, scene_lookup)
+        )
         contradictions.sort(key=lambda item: item.confidence, reverse=True)
         return contradictions
 
@@ -1027,10 +1170,11 @@ class ContradictionEngine:
                 and fact.raw_excerpt == scene.heading
             ):
                 continue
-            # Object continuity and medical state are handled deterministically
-            # in Tier 1; their short state values ("destroyed", "unconscious")
-            # are not meaningful for similarity comparison.
-            if fact.fact_type in ("object_state", "medical_state"):
+            # Object continuity, medical state, and relationships are handled
+            # deterministically in Tier 1; their structured/short values
+            # ("destroyed", "unconscious", "parent_child A>B") are not
+            # meaningful for similarity comparison.
+            if fact.fact_type in ("object_state", "medical_state", "relationship"):
                 continue
             facts_by_entity.setdefault(fact.entity, []).append(fact)
 
@@ -1365,6 +1509,104 @@ class ContradictionEngine:
             if MEDICAL_EXPLANATION_PATTERN.search(scene.raw_text):
                 return True
         return False
+
+    def _check_relationship(
+        self,
+        fact_store: FactStore,
+        scenes: list[SceneBlock],
+        scene_lookup: dict[str, SceneBlock],
+    ) -> list[Contradiction]:
+        """Flag contradictory family relationships between the same two people.
+
+        Two rules, both confirmed because they target immutable blood relations
+        (social/romantic ties legitimately change over a story and are not
+        flagged):
+
+        - Incompatible relation: the pair is described with two relations that
+          cannot co-exist (e.g. siblings vs spouses, sibling vs parent/child).
+        - Role inversion: a parent_child relation is asserted in both
+          directions (X is Y's father, then Y is X's father).
+
+        Args:
+            fact_store: All extracted facts.
+            scenes: Parsed scenes in screenplay order.
+            scene_lookup: Scene id -> scene mapping.
+
+        Returns:
+            Relationship contradictions.
+        """
+        results: list[Contradiction] = []
+        facts_by_pair: dict[str, list[Fact]] = {}
+        for fact in fact_store.get_facts_by_type("relationship"):
+            facts_by_pair.setdefault(fact.entity, []).append(fact)
+
+        for facts in facts_by_pair.values():
+            ordered = sorted(
+                facts, key=lambda item: (item.scene_number, item.fact_id)
+            )
+            for index, earlier in enumerate(ordered):
+                cat_e, dir_e = _parse_relationship_value(earlier.value)
+                for later in ordered[index + 1 :]:
+                    cat_l, dir_l = _parse_relationship_value(later.value)
+
+                    if cat_e == "parent_child" and cat_l == "parent_child":
+                        if dir_e and dir_l and dir_e != dir_l:
+                            results.append(
+                                self._relationship_contradiction(
+                                    earlier,
+                                    later,
+                                    "relationship_role_inversion",
+                                    (
+                                        f"{dir_e[0]} is the parent of {dir_e[1]} "
+                                        f"in {earlier.scene_id} but {dir_l[0]} is "
+                                        f"the parent of {dir_l[1]} in "
+                                        f"{later.scene_id}."
+                                    ),
+                                )
+                            )
+                            break
+                        continue
+
+                    if frozenset({cat_e, cat_l}) in INCOMPATIBLE_RELATION_CATEGORIES:
+                        names = earlier.entity.replace("|", " and ")
+                        results.append(
+                            self._relationship_contradiction(
+                                earlier,
+                                later,
+                                "relationship_conflict",
+                                (
+                                    f"{names} are described as {cat_e} in "
+                                    f"{earlier.scene_id} but {cat_l} in "
+                                    f"{later.scene_id}."
+                                ),
+                            )
+                        )
+                        break
+
+        return results
+
+    def _relationship_contradiction(
+        self,
+        earlier: Fact,
+        later: Fact,
+        contradiction_type: str,
+        explanation: str,
+    ) -> Contradiction:
+        """Build a confirmed relationship Contradiction from two facts."""
+        return Contradiction(
+            contradiction_id=_new_contradiction_id(),
+            scene_id_a=earlier.scene_id,
+            scene_id_b=later.scene_id,
+            scene_number_a=earlier.scene_number,
+            scene_number_b=later.scene_number,
+            fact_a=earlier,
+            excerpt_b=later.raw_excerpt,
+            contradiction_type=contradiction_type,
+            explanation=explanation,
+            confidence=0.85,
+            tier=1,
+            status=STATUS_CONFIRMED,
+        )
 
     def _check_timeline_consistency(
         self,

@@ -300,6 +300,8 @@ def _plain_contradiction_label(contradiction_type: str) -> str:
         "object_lost": "An object is lost or left behind but turns up again",
         "medical_laterality": "An injury switches sides of the body between scenes",
         "medical_recovery": "A serious injury or condition vanishes with no recovery",
+        "relationship_conflict": "Two characters' relationship contradicts an earlier scene",
+        "relationship_role_inversion": "A family role is reversed between two characters",
         "semantic_location": "A place is described differently in two scenes",
     }
     return labels.get(
