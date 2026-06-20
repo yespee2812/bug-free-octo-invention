@@ -34,6 +34,7 @@ FACT_TYPES: tuple[str, ...] = (
     "object_ownership",
     "object_state",
     "character_status",
+    "medical_state",
     "relationship",
 )
 
@@ -64,6 +65,122 @@ CHARACTER_STATUS_PATTERNS: tuple[re.Pattern[str], ...] = (
     ),
     re.compile(
         r"(?<![A-Za-z0-9])(?P<entity>[A-Z][A-Z0-9 '\-]+?)\s+(?:has\s+)?died",
+        re.IGNORECASE,
+    ),
+)
+
+# --- Injuries & medical state (Phase 2) -----------------------------------
+# Body parts that take a left/right laterality in injury descriptions. Used to
+# reject figurative captures such as "shot in the dark" or "breaks his promise".
+MEDICAL_BODY_PARTS: frozenset[str] = frozenset(
+    {
+        "ankle", "arm", "back", "calf", "cheek", "chest", "ear", "elbow",
+        "eye", "finger", "foot", "forearm", "hand", "head", "hip", "jaw",
+        "knee", "leg", "neck", "nose", "rib", "ribs", "shin", "shoulder",
+        "side", "temple", "thigh", "thumb", "toe", "wrist",
+    }
+)
+# Severe states that incapacitate a character (no body part required).
+INCAPACITATING_CONDITIONS: frozenset[str] = frozenset(
+    {
+        "unconscious", "comatose", "paralyzed", "paralysed", "blind", "deaf",
+        "crippled", "dying", "bedridden", "immobile", "sedated", "catatonic",
+        "incapacitated",
+    }
+)
+# Injury terms that usually attach to a body part and a left/right side.
+INJURY_CONDITIONS: frozenset[str] = frozenset(
+    {
+        "shot", "wounded", "stabbed", "injured", "hurt", "bleeding", "burned",
+        "burnt", "fractured", "sprained", "broken", "bruised", "cut", "gashed",
+    }
+)
+# Explicit healthy / unimpaired states used to detect a contradicted recovery.
+HEALTHY_CONDITIONS: frozenset[str] = frozenset(
+    {
+        "fine", "unharmed", "uninjured", "unhurt", "healthy", "intact", "well",
+    }
+)
+# Words that turn a condition into an idiom rather than a medical fact, keyed
+# by the condition word (e.g. "dying to leave", "blind faith", "paralyzed with
+# fear"). Followers are chosen to stay clear of literal medical phrasing:
+# "blind to"/"deaf to" are always figurative, and "paralyzed/crippled with|by"
+# introduce an abstract cause, whereas literal forms use "from"/"in"
+# ("paralyzed from the waist", "blind in one eye") which are deliberately
+# absent so real injuries still register.
+MEDICAL_IDIOM_FOLLOWERS: dict[str, frozenset[str]] = {
+    "blind": frozenset(
+        {"faith", "spot", "luck", "date", "alley", "rage", "trust", "panic",
+         "ambition", "obedience", "eye", "to", "with"}
+    ),
+    "deaf": frozenset({"ear", "ears", "to"}),
+    "paralyzed": frozenset({"with", "by"}),
+    "paralysed": frozenset({"with", "by"}),
+    "crippled": frozenset({"with", "by"}),
+    "broken": frozenset(
+        {"heart", "home", "promise", "record", "english", "silence", "spirit",
+         "dream", "dreams"}
+    ),
+    "dying": frozenset({"breath", "light", "day", "art", "wish", "embers",
+                        "words", "to", "for"}),
+    "bleeding": frozenset({"heart", "edge"}),
+    "hurt": frozenset({"feelings", "pride"}),
+    "cut": frozenset({"corners", "ties", "loose", "short", "deal", "class"}),
+}
+# Forward time-jump and treatment phrasing that legitimately explains a later
+# healthy state, so a recovery between scenes is not flagged.
+_RECOVERY_VERB_ALT = (
+    r"heals|healed|healing|recovers|recovered|recovering|recuperates|"
+    r"recuperated|recuperating|treated|treats|bandaged|bandages|stitched|"
+    r"stitches|patched\s+up|operated\s+on|mends|mended|rehabilitated|rests|"
+    r"rested|bandages\s+up"
+)
+_TIME_GAP_ALT = (
+    r"later|afterward|afterwards|recovery|hospital|"
+    r"next\s+(?:day|morning|week|month|year)|"
+    r"(?:\w+\s+)?(?:hours?|days?|weeks?|months?|years?)\s+(?:later|pass|passed)"
+)
+MEDICAL_EXPLANATION_PATTERN: re.Pattern[str] = re.compile(
+    rf"\b(?:{_RECOVERY_VERB_ALT}|{_TIME_GAP_ALT})\b",
+    re.IGNORECASE,
+)
+
+_MED_ENTITY = r"(?P<entity>[A-Z][A-Z0-9 '\-]+?)"
+_MED_SIDE = r"(?:(?P<side>left|right)\s+)?"
+_MED_COPULA = r"(?:is|was|gets|got|has\s+been|had\s+been|seems|looks|appears)"
+
+MEDICAL_STATE_PATTERNS: tuple[re.Pattern[str], ...] = (
+    # "X is shot in the left arm", "X was stabbed in the leg"
+    re.compile(
+        rf"(?<![A-Za-z0-9]){_MED_ENTITY}\s+{_MED_COPULA}\s+"
+        rf"(?P<condition>shot|wounded|stabbed|injured|hurt|burned|burnt|cut|"
+        rf"gashed|bruised|bleeding)\s+in\s+the\s+{_MED_SIDE}(?P<part>[a-z]+)",
+        re.IGNORECASE,
+    ),
+    # "X breaks his left leg", "X fractured her right wrist"
+    re.compile(
+        rf"(?<![A-Za-z0-9]){_MED_ENTITY}\s+"
+        rf"(?P<condition>breaks|broke|fractures|fractured|sprains|sprained)\s+"
+        rf"(?:his|her|their|the)\s+{_MED_SIDE}(?P<part>[a-z]+)",
+        re.IGNORECASE,
+    ),
+    # "X is unconscious", "X was paralyzed" (incapacitating, no body part)
+    re.compile(
+        rf"(?<![A-Za-z0-9]){_MED_ENTITY}\s+{_MED_COPULA}\s+"
+        rf"(?P<condition>unconscious|comatose|paralyzed|paralysed|blind|deaf|"
+        rf"crippled|dying|bedridden|immobile|sedated|catatonic|incapacitated)\b",
+        re.IGNORECASE,
+    ),
+    # "X is in a coma", "X falls into a coma"
+    re.compile(
+        rf"(?<![A-Za-z0-9]){_MED_ENTITY}\s+(?:is|was|remains|remained|fell|"
+        rf"falls|slips|slipped)\s+(?:in|into)\s+a\s+coma\b",
+        re.IGNORECASE,
+    ),
+    # "X is fine", "X looks unharmed" (explicit healthy state)
+    re.compile(
+        rf"(?<![A-Za-z0-9]){_MED_ENTITY}\s+{_MED_COPULA}\s+"
+        rf"(?P<healthy>fine|unharmed|uninjured|unhurt|healthy|intact|well)\b",
         re.IGNORECASE,
     ),
 )
@@ -429,6 +546,85 @@ def _has_flashback_marker(text: str) -> bool:
     return any(marker in lowered for marker in FLASHBACK_MARKERS)
 
 
+# Inflected injury verbs mapped to the canonical condition word stored in the
+# fact value, so "breaks"/"broke" both record as "broken".
+_INJURY_VERB_CANONICAL: dict[str, str] = {
+    "breaks": "broken",
+    "broke": "broken",
+    "fractures": "fractured",
+    "fractured": "fractured",
+    "sprains": "sprained",
+    "sprained": "sprained",
+}
+
+
+def _build_medical_value(groups: dict[str, Optional[str]]) -> str:
+    """Build the canonical medical_state value from regex groups.
+
+    Returns an empty string when a body part was captured but is not a real
+    body part (e.g. "shot in the dark", "breaks his promise"), so the caller
+    can skip the figurative match.
+
+    Args:
+        groups: The ``groupdict`` of a matched ``MEDICAL_STATE_PATTERNS`` regex.
+
+    Returns:
+        A canonical value string such as "unconscious", "in a coma",
+        "shot left arm", or "unharmed"; empty when the match is figurative.
+    """
+    healthy = groups.get("healthy")
+    if healthy:
+        return healthy.lower()
+    condition = groups.get("condition")
+    if not condition:
+        return "in a coma"
+    canonical = _INJURY_VERB_CANONICAL.get(condition.lower(), condition.lower())
+    part = groups.get("part")
+    side = groups.get("side")
+    if part is not None and part.lower() not in MEDICAL_BODY_PARTS:
+        return ""
+    pieces = [canonical]
+    if side:
+        pieces.append(side.lower())
+    if part:
+        pieces.append(part.lower())
+    return " ".join(pieces)
+
+
+def _classify_medical_value(value: str) -> tuple[str, Optional[str], Optional[str]]:
+    """Classify a medical_state fact value into (kind, body_part, side).
+
+    The value is the canonical string stored at extraction time, e.g.
+    "unconscious", "in a coma", "shot left arm", "broken right leg", or a
+    healthy state like "unharmed".
+
+    Args:
+        value: The stored medical_state fact value.
+
+    Returns:
+        A tuple of (kind, body_part, side) where kind is one of
+        "incapacitated", "injured", or "healthy"; body_part and side are
+        present only for injuries and may be None.
+    """
+    tokens = value.lower().split()
+    if not tokens:
+        return ("injured", None, None)
+    head = tokens[0]
+    if head in HEALTHY_CONDITIONS:
+        return ("healthy", None, None)
+    if value.lower().startswith("in a coma") or head in INCAPACITATING_CONDITIONS:
+        return ("incapacitated", None, None)
+    rest = tokens[1:]
+    side: Optional[str] = None
+    part: Optional[str] = None
+    if rest and rest[0] in ("left", "right"):
+        side = rest[0]
+        rest = rest[1:]
+    if rest:
+        part = rest[0]
+    return ("injured", part, side)
+
+
 def _parse_day_number(value: str) -> Optional[int]:
     """Parse a weekday number from a timeline fact value, if present."""
     lowered = value.lower()
@@ -493,6 +689,7 @@ class ContradictionEngine:
 
         for scene in sorted_scenes:
             self._extract_character_status_facts(scene, store)
+            self._extract_medical_state_facts(scene, store)
             self._extract_timeline_facts(scene, store)
             self._extract_character_trait_facts(scene, store)
             self._extract_object_ownership_facts(scene, store)
@@ -530,6 +727,41 @@ class ContradictionEngine:
                         "is dead",
                         line,
                     )
+                )
+
+    def _extract_medical_state_facts(
+        self, scene: SceneBlock, store: FactStore
+    ) -> None:
+        """Extract injury and medical-state facts from action lines only.
+
+        Records incapacitating states ("MARCUS is unconscious", "ELENA is in a
+        coma"), localized injuries with optional laterality ("RAY is shot in
+        the left arm", "DANA breaks her right leg"), and explicit healthy
+        states ("MARCUS is fine"). Dialogue is excluded so spoken/figurative
+        phrasing does not create medical facts, entities are resolved with the
+        shared character guard, and figurative idioms ("dying to leave") are
+        rejected via ``MEDICAL_IDIOM_FOLLOWERS``.
+        """
+        action_lines, _ = _scene_lines_by_source(scene)
+        for line in action_lines:
+            for pattern in MEDICAL_STATE_PATTERNS:
+                match = pattern.search(line)
+                if not match:
+                    continue
+                entity = _resolve_character_entity(match.group("entity"))
+                if entity is None:
+                    continue
+                groups = match.groupdict()
+                condition = (groups.get("condition") or "").lower()
+                if condition in MEDICAL_IDIOM_FOLLOWERS:
+                    follower = _first_word_after(line, match.end())
+                    if follower in MEDICAL_IDIOM_FOLLOWERS[condition]:
+                        continue
+                value = _build_medical_value(groups)
+                if not value:
+                    continue
+                store.add_fact(
+                    self._make_fact(scene, "medical_state", entity, value, line)
                 )
 
     def _extract_timeline_facts(self, scene: SceneBlock, store: FactStore) -> None:
@@ -748,6 +980,9 @@ class ContradictionEngine:
             self._check_character_alive_status(fact_store, scenes, scene_lookup)
         )
         contradictions.extend(
+            self._check_medical_state(fact_store, scenes, scene_lookup)
+        )
+        contradictions.extend(
             self._check_timeline_consistency(fact_store, scenes, scene_lookup)
         )
         contradictions.extend(
@@ -792,10 +1027,10 @@ class ContradictionEngine:
                 and fact.raw_excerpt == scene.heading
             ):
                 continue
-            # Object continuity is handled deterministically in Tier 1; its
-            # short state values ("destroyed"/"lost") are not meaningful for
-            # similarity comparison.
-            if fact.fact_type == "object_state":
+            # Object continuity and medical state are handled deterministically
+            # in Tier 1; their short state values ("destroyed", "unconscious")
+            # are not meaningful for similarity comparison.
+            if fact.fact_type in ("object_state", "medical_state"):
                 continue
             facts_by_entity.setdefault(fact.entity, []).append(fact)
 
@@ -995,6 +1230,141 @@ class ContradictionEngine:
                 )
 
         return results
+
+    def _check_medical_state(
+        self,
+        fact_store: FactStore,
+        scenes: list[SceneBlock],
+        scene_lookup: dict[str, SceneBlock],
+    ) -> list[Contradiction]:
+        """Flag injury/medical-state continuity problems for a character.
+
+        Two conservative rules, both surfaced as *possible* because injuries
+        are routinely treated or healed off-screen:
+
+        - Laterality conflict: the same body part is injured on the left in one
+          scene and the right in a later scene.
+        - Contradicted recovery: an incapacitating state or injury is followed
+          by an explicit healthy state ("fine", "unharmed") with no recovery
+          action or time-jump between the two scenes.
+
+        Args:
+            fact_store: All extracted facts.
+            scenes: Parsed scenes in screenplay order.
+            scene_lookup: Scene id -> scene mapping.
+
+        Returns:
+            Medical-state contradictions.
+        """
+        results: list[Contradiction] = []
+        facts_by_entity: dict[str, list[Fact]] = {}
+        for fact in fact_store.get_facts_by_type("medical_state"):
+            facts_by_entity.setdefault(fact.entity, []).append(fact)
+
+        for entity, entity_facts in facts_by_entity.items():
+            ordered = sorted(
+                entity_facts, key=lambda item: (item.scene_number, item.fact_id)
+            )
+            for index, earlier in enumerate(ordered):
+                kind_e, part_e, side_e = _classify_medical_value(earlier.value)
+                for later in ordered[index + 1 :]:
+                    if later.scene_number <= earlier.scene_number:
+                        continue
+                    if _has_flashback_marker(later.raw_excerpt):
+                        continue
+                    kind_l, part_l, side_l = _classify_medical_value(later.value)
+
+                    if (
+                        kind_e == "injured"
+                        and kind_l == "injured"
+                        and part_e is not None
+                        and part_e == part_l
+                        and side_e is not None
+                        and side_l is not None
+                        and side_e != side_l
+                    ):
+                        if self._medical_explanation_between(
+                            scenes, earlier.scene_number, later.scene_number
+                        ):
+                            continue
+                        results.append(
+                            self._medical_contradiction(
+                                earlier,
+                                later,
+                                "medical_laterality",
+                                (
+                                    f"{entity} is injured on the {side_e} "
+                                    f"{part_e} in {earlier.scene_id} but the "
+                                    f"{side_l} {part_l} in {later.scene_id}."
+                                ),
+                            )
+                        )
+                        break
+
+                    if kind_e in ("incapacitated", "injured") and kind_l == "healthy":
+                        if self._medical_explanation_between(
+                            scenes, earlier.scene_number, later.scene_number
+                        ):
+                            continue
+                        results.append(
+                            self._medical_contradiction(
+                                earlier,
+                                later,
+                                "medical_recovery",
+                                (
+                                    f"{entity} was '{earlier.value}' in "
+                                    f"{earlier.scene_id} but is described as "
+                                    f"'{later.value}' in {later.scene_id} with no "
+                                    f"recovery or time jump in between."
+                                ),
+                            )
+                        )
+                        break
+
+        return results
+
+    def _medical_contradiction(
+        self,
+        earlier: Fact,
+        later: Fact,
+        contradiction_type: str,
+        explanation: str,
+    ) -> Contradiction:
+        """Build a *possible* medical-state Contradiction from two facts."""
+        return Contradiction(
+            contradiction_id=_new_contradiction_id(),
+            scene_id_a=earlier.scene_id,
+            scene_id_b=later.scene_id,
+            scene_number_a=earlier.scene_number,
+            scene_number_b=later.scene_number,
+            fact_a=earlier,
+            excerpt_b=later.raw_excerpt,
+            contradiction_type=contradiction_type,
+            explanation=explanation,
+            confidence=0.6,
+            tier=1,
+            status=STATUS_POSSIBLE,
+        )
+
+    def _medical_explanation_between(
+        self,
+        scenes: list[SceneBlock],
+        from_scene_number: int,
+        to_scene_number: int,
+    ) -> bool:
+        """Return True when a recovery or time-jump explains a later state.
+
+        Scans the text of the contradicting scene and any scenes strictly
+        between it and the establishing scene for a recovery action
+        ("treated", "heals") or a forward time-jump ("weeks later", "next
+        morning"), either of which makes a changed condition plausible.
+        """
+        for scene in scenes:
+            if not (from_scene_number < scene.scene_number <= to_scene_number):
+                continue
+            if MEDICAL_EXPLANATION_PATTERN.search(scene.raw_text):
+                return True
+        return False
 
     def _check_timeline_consistency(
         self,

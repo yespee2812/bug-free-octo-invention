@@ -298,6 +298,8 @@ def _plain_contradiction_label(contradiction_type: str) -> str:
         "object_ownership": "An important object changes hands with no explanation",
         "object_destroyed": "An object is destroyed but appears again later",
         "object_lost": "An object is lost or left behind but turns up again",
+        "medical_laterality": "An injury switches sides of the body between scenes",
+        "medical_recovery": "A serious injury or condition vanishes with no recovery",
         "semantic_location": "A place is described differently in two scenes",
     }
     return labels.get(
