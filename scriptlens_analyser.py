@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from plot_contradiction import Contradiction, ContradictionEngine
+from nlp_shared import get_shared_nlp
 from scene_dependency import SceneBlock, SceneDependencyEngine
 
 SUPPORTED_TEXT_SUFFIXES: frozenset[str] = frozenset(
@@ -24,10 +25,11 @@ def analyze_screenplay(screenplay_text: str) -> dict[str, Any]:
         Structured analysis with script summary, dependencies, contradictions,
         and an overall health score.
     """
-    dependency_engine = SceneDependencyEngine()
+    shared_nlp = get_shared_nlp()
+    dependency_engine = SceneDependencyEngine(nlp=shared_nlp)
     scenes = dependency_engine.parse_fountain_text(screenplay_text)
 
-    contradiction_engine = ContradictionEngine()
+    contradiction_engine = ContradictionEngine(nlp=shared_nlp)
     fact_store = contradiction_engine.extract_facts(scenes)
     dependency_engine.build_graph(scenes, fact_store=fact_store)
 

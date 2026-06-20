@@ -8,6 +8,7 @@ from typing import Optional
 import spacy
 from spacy.language import Language
 
+from nlp_shared import get_shared_nlp
 from scene_dependency import (
     HANDOFF_VERBS,
     INANIMATE_DEATH_NOUNS,
@@ -792,9 +793,9 @@ def _day_name(day_number: int) -> str:
 class ContradictionEngine:
     """Extract facts and run Tier 1 deterministic contradiction checks."""
 
-    def __init__(self) -> None:
-        """Initialize the engine and load the spaCy English model once."""
-        self.nlp: Language = spacy.load("en_core_web_sm")
+    def __init__(self, nlp: Optional[Language] = None) -> None:
+        """Initialize the engine and load or reuse the spaCy English model."""
+        self.nlp: Language = nlp if nlp is not None else get_shared_nlp()
         self._fact_counter: int = 0
 
     def _make_fact(

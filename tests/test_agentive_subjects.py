@@ -9,8 +9,9 @@ tests pin both the recall win and the precision guards.
 """
 
 from scene_dependency import (
-    _extract_agentive_subject_characters,
     SceneDependencyEngine,
+    _extract_agentive_subject_characters,
+    _parse_action_docs,
 )
 
 _engine = SceneDependencyEngine()
@@ -61,10 +62,12 @@ def test_lowercase_subject_is_not_promoted() -> None:
 
 def test_pronoun_subject_is_not_promoted() -> None:
     """A pronoun subject of a person verb never names a character."""
+    action_text = "IT whispers in the dark."
+    raw_doc, title_doc = _parse_action_docs(_engine.nlp, action_text)
     chars = _extract_agentive_subject_characters(
-        _engine.nlp,
-        "IT whispers in the dark.",
-        _engine.nlp("IT whispers in the dark."),
+        action_text,
+        raw_doc,
+        title_doc,
         {},
         set(),
     )

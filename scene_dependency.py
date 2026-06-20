@@ -12,6 +12,8 @@ import spacy
 from spacy.language import Language
 from spacy.tokens import Doc, Token
 
+from nlp_shared import get_shared_nlp
+
 SCENE_HEADING_PATTERN = re.compile(
     r"^(INT\.|EXT\.|INT/EXT\.|I/E\.)\s+(.+)$",
     re.IGNORECASE | re.MULTILINE,
@@ -35,6 +37,22 @@ CAPS_PROP_STOP_FIRST_WORDS: frozenset[str] = frozenset(
         "CONTINUOUS", "CRASH", "END", "FLASHBACK", "INSERT", "INTERCUT",
         "LATER", "MONTAGE", "NOTE", "POV", "SERIES", "SLAM", "SUPER",
         "THUD", "TITLE",
+    }
+)
+# Trailing heading segments that denote time of day rather than place, e.g.
+# "INT. HOUSE - KITCHEN - DAY" -> locations are HOUSE and HOUSE KITCHEN.
+TIME_OF_DAY_HEADING_TOKENS: frozenset[str] = frozenset(
+    {
+        "CONTINUOUS", "DAWN", "DAY", "DUSK", "EVENING", "LATER", "MORNING",
+        "NIGHT", "NOON", "AFTERNOON", "SAME", "SUNRISE", "SUNSET", "MIDNIGHT",
+    }
+)
+MULTI_WORD_TIME_HEADING_SUFFIXES: frozenset[str] = frozenset(
+    {
+        "LATER THAT DAY",
+        "LATER THAT NIGHT",
+        "MOMENTS LATER",
+        "SAME TIME",
     }
 )
 # Professional titles that mark a multi-word caps span as a character even
@@ -430,20 +448,97 @@ def _is_character_cue(line: str) -> bool:
 
 
 def _extract_location_from_heading(heading: str) -> str:
-    """Extract the primary location name from a scene heading."""
+    """Extract the primary location name from a scene heading.
+
+    Returns the first (broadest) location key. For the full location hierarchy
+    including sub-locations, use ``_extract_locations_from_heading``.
+    """
+    locations = _extract_locations_from_heading(heading)
+    return locations[0] if locations else ""
+
+
+def _is_time_of_day_heading_segment(segment: str) -> bool:
+    """Return True when a heading segment denotes time of day, not place."""
+    normalized = _normalize_token(segment)
+    if normalized in TIME_OF_DAY_HEADING_TOKENS:
+        return True
+    return normalized in MULTI_WORD_TIME_HEADING_SUFFIXES
+
+
+def _extract_locations_from_heading(heading: str) -> list[str]:
+    """Extract primary and sub-location keys from a scene heading.
+
+    Parses ``INT. HOUSE - KITCHEN - DAY`` into ``["HOUSE", "HOUSE KITCHEN"]``,
+    stripping the trailing time-of-day segment. Each prefix of the place chain
+    is returned so sub-locations stay distinct (Caveat D8): kitchen and bedroom
+    scenes share ``HOUSE`` but not ``HOUSE KITCHEN`` vs ``HOUSE BEDROOM``.
+
+    Args:
+        heading: A Fountain scene heading line.
+
+    Returns:
+        Ordered location keys from broadest to most specific, or an empty list.
+    """
     match = re.match(
         r"^(INT\.|EXT\.|INT/EXT\.|I/E\.)\s+(.+)$",
         heading.strip(),
         re.IGNORECASE,
     )
     if not match:
-        return ""
-    location_part = match.group(2).strip()
-    if " - " in location_part:
-        location_part = location_part.split(" - ", maxsplit=1)[0].strip()
-    if " – " in location_part:
-        location_part = location_part.split(" – ", maxsplit=1)[0].strip()
-    return location_part.upper()
+        return []
+    parts = [
+        part.strip()
+        for part in re.split(r"\s[-–]\s", match.group(2).strip())
+        if part.strip()
+    ]
+    while parts and _is_time_of_day_heading_segment(parts[-1]):
+        parts.pop()
+    if not parts:
+        return []
+    return [
+        _normalize_token(" ".join(parts[: depth + 1]))
+        for depth in range(len(parts))
+    ]
+
+
+def _parse_action_docs(
+    nlp: Language, action_text: str
+) -> tuple[Optional[Doc], Optional[Doc]]:
+    """Parse action text once, optionally with a title-cased ALL-CAPS copy.
+
+    spaCy is more reliable on title case than on ALL-CAPS action lines, so a
+    second doc is built only when caps spans were transformed. Callers share the
+    returned docs across NER and agentive-subject detection to avoid duplicate
+    NLP passes per scene (Caveat D7).
+
+    Args:
+        nlp: Loaded spaCy pipeline.
+        action_text: Joined action lines of one scene.
+
+    Returns:
+        Tuple of (raw_doc, title_doc). Both are None when ``action_text`` is
+        empty; ``title_doc`` is None when no title-casing was needed.
+    """
+    if not action_text:
+        return None, None
+    raw_doc = nlp(action_text)
+    transformed = CAPS_SPAN_PATTERN.sub(
+        lambda span_match: span_match.group(0).title(), action_text
+    )
+    title_doc = nlp(transformed) if transformed != action_text else None
+    return raw_doc, title_doc
+
+
+def _iter_action_docs(
+    raw_doc: Optional[Doc], title_doc: Optional[Doc]
+) -> list[Doc]:
+    """Return non-None action docs in parse order (raw, then title-cased)."""
+    docs: list[Doc] = []
+    if raw_doc is not None:
+        docs.append(raw_doc)
+    if title_doc is not None:
+        docs.append(title_doc)
+    return docs
 
 
 def _split_action_and_dialogue(lines: list[str]) -> tuple[list[str], list[str]]:
@@ -568,35 +663,25 @@ def _collect_character_aliases(text: str) -> dict[str, str]:
 
 
 def _person_entity_keys(
-    nlp: Language, action_text: str, doc: Optional[Doc]
+    raw_doc: Optional[Doc], title_doc: Optional[Doc]
 ) -> set[str]:
     """Return normalized keys for PERSON entities found in action text.
 
     NER results differ between ALL-CAPS and title-cased text, so persons are
-    collected from both the raw doc and a copy where caps spans are
-    title-cased (e.g. "MARCUS slumps" becomes "Marcus slumps"). The union
-    maximizes recall of the person filter for cue-less characters.
+    collected from both the raw doc and a title-cased copy (e.g. "MARCUS
+    slumps" becomes "Marcus slumps"). The union maximizes recall of the person
+    filter for cue-less characters. Docs must be pre-parsed via
+    ``_parse_action_docs`` so the title-cased copy is not parsed twice (D7).
 
     Args:
-        nlp: Loaded spaCy pipeline.
-        action_text: Joined action lines of one scene.
-        doc: Already-parsed doc over action_text, or None when empty.
+        raw_doc: spaCy doc over the scene's raw action text, or None.
+        title_doc: spaCy doc over the title-cased action text, or None.
 
     Returns:
         Normalized keys (raw and article-stripped) for detected persons.
     """
-    if not action_text:
-        return set()
-
-    docs: list[Doc] = [doc] if doc is not None else []
-    transformed = CAPS_SPAN_PATTERN.sub(
-        lambda span_match: span_match.group(0).title(), action_text
-    )
-    if transformed != action_text:
-        docs.append(nlp(transformed))
-
     keys: set[str] = set()
-    for parsed in docs:
+    for parsed in _iter_action_docs(raw_doc, title_doc):
         for ent in parsed.ents:
             if ent.label_ != "PERSON":
                 continue
@@ -659,9 +744,9 @@ def _extract_structural_characters(
 
 
 def _extract_agentive_subject_characters(
-    nlp: Language,
     action_text: str,
-    doc: Optional[Doc],
+    raw_doc: Optional[Doc],
+    title_doc: Optional[Doc],
     character_aliases: dict[str, str],
     known_props: set[str],
 ) -> set[str]:
@@ -682,11 +767,12 @@ def _extract_agentive_subject_characters(
     actually appears as an ALL-CAPS span in the action, enforcing the screenplay
     naming convention. Established props, pronouns/indefinites, inanimate-death
     nouns, non-prop idiom words, and camera-direction first words are filtered.
+    Docs must be pre-parsed via ``_parse_action_docs`` (D7).
 
     Args:
-        nlp: Loaded spaCy pipeline.
-        action_text: Joined action lines of one scene.
-        doc: Already-parsed doc over action_text, or None when empty.
+        action_text: Joined action lines of one scene (for caps-span lookup).
+        raw_doc: spaCy doc over the scene's raw action text, or None.
+        title_doc: spaCy doc over the title-cased action text, or None.
         character_aliases: Normalized alias -> canonical cue name map.
         known_props: Prop keys established so far, excluded so a known object is
             never flipped into a character.
@@ -704,15 +790,8 @@ def _extract_agentive_subject_characters(
     if not caps_spans:
         return set()
 
-    docs: list[Doc] = [doc] if doc is not None else []
-    transformed = CAPS_SPAN_PATTERN.sub(
-        lambda span_match: span_match.group(0).title(), action_text
-    )
-    if transformed != action_text:
-        docs.append(nlp(transformed))
-
     characters: set[str] = set()
-    for parsed in docs:
+    for parsed in _iter_action_docs(raw_doc, title_doc):
         chunk_by_root = {chunk.root.i: chunk.text for chunk in parsed.noun_chunks}
         for token in parsed:
             if token.pos_ != "VERB":
@@ -973,9 +1052,9 @@ def _match_known_prop_mentions(
 class SceneDependencyEngine:
     """Build and query a scene dependency graph from Fountain screenplay text."""
 
-    def __init__(self) -> None:
-        """Initialize the engine and load the spaCy English model once."""
-        self.nlp: Language = spacy.load("en_core_web_sm")
+    def __init__(self, nlp: Optional[Language] = None) -> None:
+        """Initialize the engine and load or reuse the spaCy English model."""
+        self.nlp: Language = nlp if nlp is not None else get_shared_nlp()
         self.graph: nx.DiGraph = nx.DiGraph()
         self.scenes: list[SceneBlock] = []
         self._scene_lookup: dict[str, SceneBlock] = {}
@@ -1019,13 +1098,13 @@ class SceneDependencyEngine:
             cue_names = {_normalize_token(name) for name in character_lines}
 
             action_text = " ".join(action_lines)
-            doc: Optional[Doc] = self.nlp(action_text) if action_text else None
-            person_keys = _person_entity_keys(self.nlp, action_text, doc)
+            raw_doc, title_doc = _parse_action_docs(self.nlp, action_text)
+            person_keys = _person_entity_keys(raw_doc, title_doc)
             structural_chars = _extract_structural_characters(
                 action_lines, character_aliases
             )
             agentive_chars = _extract_agentive_subject_characters(
-                self.nlp, action_text, doc, character_aliases, known_props
+                action_text, raw_doc, title_doc, character_aliases, known_props
             )
             person_keys |= structural_chars | agentive_chars
 
@@ -1036,7 +1115,7 @@ class SceneDependencyEngine:
                 action_lines, character_aliases, known_props | set(caps_props)
             )
             handling_props = _extract_handling_verb_objects(
-                doc,
+                raw_doc,
                 character_aliases,
                 person_keys,
                 known_props | set(caps_props) | set(ownership_props),
@@ -1044,7 +1123,7 @@ class SceneDependencyEngine:
             known_props.update(caps_props)
             known_props.update(ownership_props)
             known_props.update(handling_props)
-            mention_props = _match_known_prop_mentions(doc, known_props)
+            mention_props = _match_known_prop_mentions(raw_doc, known_props)
 
             objects: list[str] = []
             for prop_name in (
@@ -1057,8 +1136,7 @@ class SceneDependencyEngine:
                 cue_names | action_presences | structural_chars | agentive_chars,
                 key=str.lower,
             )
-            location = _extract_location_from_heading(heading)
-            locations = [location] if location else []
+            locations = _extract_locations_from_heading(heading)
 
             scene = SceneBlock(
                 scene_id=f"scene_{index:03d}",
@@ -1143,7 +1221,9 @@ class SceneDependencyEngine:
             if resolved_store is None:
                 from plot_contradiction import ContradictionEngine
 
-                resolved_store = ContradictionEngine().extract_facts(self.scenes)
+                resolved_store = ContradictionEngine(nlp=self.nlp).extract_facts(
+                    self.scenes
+                )
             self._add_fact_dependency_edges(resolved_store)
 
         if include_causal_edges:
