@@ -1,0 +1,33 @@
+# ScriptLens Error Injection Log (production corpus)
+# One file per script: [script_filename]_ERROR_LOG.yaml
+
+script_title: ""
+filename: ""
+writer_name: ""
+date: ""
+script_type: ""                     # "5-scene" | "10-scene" | "full-length"
+total_scenes:
+base_script_provided_by_us: true
+
+planted_errors:
+
+  - error_number: 1
+    category: ""                    # plain English, e.g. "Timeline slip"
+    establishing_scene:
+    contradicting_scene:
+    characters_involved: []
+    objects_involved: []
+    establishing_moment: |
+    contradicting_moment: |
+    how_a_reader_notices: ""
+    writer_intent: deliberate
+
+scene_index:
+  - scene_number: 1
+    heading: ""
+
+summary:
+  total_planted_errors:
+  categories_used: []
+
+notes: ""

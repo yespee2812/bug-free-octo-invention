@@ -6,10 +6,11 @@ from scriptlens_analyser import analyze_screenplay, pretty_print_results
 # Planted contradictions (for manual verification):
 #   1. character_alive_status — scene ~5: DETECTIVE VANCE is dead;
 #      scene ~18: DETECTIVE VANCE appears alive again.
-#   2. timeline_consistency — scene ~7: "Today is Monday";
-#      scene ~14: "Yesterday was Wednesday" (no flashback).
-#   3. object_ownership — scene ~9: ELENA picks up the blue ledger;
+#   2. object_ownership — scene ~9: ELENA picks up the blue ledger;
 #      scene ~16: MARCUS has the blue ledger (no handoff).
+# Note: the script still contains "Today is Monday" / "Yesterday was
+# Wednesday", but timeline_consistency detection is disabled by design, so it
+# is no longer a planted/expected contradiction.
 # ---------------------------------------------------------------------------
 
 REAL_SCREENPLAY = """
@@ -165,7 +166,6 @@ FADE OUT.
 
 PLANTED_CONTRADICTION_TYPES: tuple[str, ...] = (
     "character_alive_status",
-    "timeline_consistency",
     "object_ownership",
 )
 

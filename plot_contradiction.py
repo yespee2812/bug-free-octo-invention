@@ -338,6 +338,19 @@ WORLD_RULE_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     ),
 )
 
+# Indefinite rule subjects ("no one can leave the dome") state a blanket
+# constraint with no concrete noun to match against a later scene, so they are
+# captured but not evaluated for violations (matching their head word would be
+# noisy, e.g. "one" appears everywhere).
+WORLD_RULE_INDEFINITE_SUBJECTS: frozenset[str] = frozenset(
+    {"NO ONE", "NOBODY", "NOTHING", "NONE"}
+)
+# Tokens that mark a line as negated, so a restated prohibition ("the machine
+# cannot travel") is never mistaken for an affirmative violation of the rule.
+WORLD_RULE_NEGATION_TERMS: frozenset[str] = frozenset(
+    {"not", "never", "no", "none", "nobody", "nothing", "without"}
+)
+
 LOCATION_DESCRIPTION_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(
         r"the\s+(?P<location>[a-z][a-z0-9\s\-]+?)\s+was\s+(?P<state>.+?)(?:\.|$)",
@@ -833,7 +846,9 @@ class ContradictionEngine:
         for scene in sorted_scenes:
             self._extract_character_status_facts(scene, store)
             self._extract_medical_state_facts(scene, store)
-            self._extract_timeline_facts(scene, store)
+            # Timeline detection disabled: plot contradictions are the focus,
+            # and weekday/day-sequence tracking is intentionally turned off.
+            # self._extract_timeline_facts(scene, store)
             self._extract_character_trait_facts(scene, store)
             self._extract_object_ownership_facts(scene, store)
             self._extract_object_state_facts(scene, store)
@@ -1199,9 +1214,12 @@ class ContradictionEngine:
         contradictions.extend(
             self._check_medical_state(fact_store, scenes, scene_lookup)
         )
-        contradictions.extend(
-            self._check_timeline_consistency(fact_store, scenes, scene_lookup)
-        )
+        # Timeline consistency check disabled: day-of-week / day-sequence
+        # contradictions are intentionally not reported. The extraction and
+        # check methods are retained (unused) so this can be re-enabled.
+        # contradictions.extend(
+        #     self._check_timeline_consistency(fact_store, scenes, scene_lookup)
+        # )
         contradictions.extend(
             self._check_character_trait_conflict(fact_store, scene_lookup)
         )
@@ -1213,6 +1231,9 @@ class ContradictionEngine:
         )
         contradictions.extend(
             self._check_relationship(fact_store, scenes, scene_lookup)
+        )
+        contradictions.extend(
+            self._check_world_rule_violation(fact_store, scenes, scene_lookup)
         )
         contradictions.sort(key=lambda item: item.confidence, reverse=True)
         return contradictions
@@ -1664,6 +1685,160 @@ class ContradictionEngine:
                             )
                         )
                         break
+
+        return results
+
+    def _content_lemmas(self, text: str) -> set[str]:
+        """Return lowercased, non-stopword alphabetic lemmas from text.
+
+        Used to compare a captured world rule's subject/predicate against a
+        later action line robustly across inflection ("travels" -> "travel").
+
+        Args:
+            text: Arbitrary text span (rule subject, predicate, or a line).
+
+        Returns:
+            The set of content-word lemmas, lowercased.
+        """
+        return {
+            token.lemma_.lower()
+            for token in self.nlp(text)
+            if token.is_alpha and not token.is_stop
+        }
+
+    def _is_world_rule_statement(self, line: str) -> bool:
+        """Return True when a line is itself a world-rule declaration.
+
+        Such lines (re)state a rule rather than break it, so they must be
+        skipped when scanning for affirmative violations.
+
+        Args:
+            line: A single action line.
+
+        Returns:
+            True when any world-rule pattern matches the line.
+        """
+        return any(pattern.search(line) for pattern, _ in WORLD_RULE_PATTERNS)
+
+    def _line_asserts_negation(self, line: str) -> bool:
+        """Return True when a line contains negation (so it cannot be a break).
+
+        Args:
+            line: A single action line.
+
+        Returns:
+            True when the line is negated (e.g. "cannot travel", "never opens").
+        """
+        lowered = line.lower()
+        if "n't" in lowered or "cannot" in lowered:
+            return True
+        words = set(re.findall(r"[a-z']+", lowered))
+        return bool(words & WORLD_RULE_NEGATION_TERMS)
+
+    def _find_rule_violation_line(
+        self,
+        action_lines: list[str],
+        subject_lemmas: set[str],
+        predicate_lemmas: set[str],
+    ) -> Optional[str]:
+        """Return the first action line that affirmatively breaks a rule.
+
+        A line breaks a "cannot" rule when it names the rule's subject and
+        asserts every content word of the forbidden predicate, in the
+        affirmative and outside of any rule restatement.
+
+        Args:
+            action_lines: Action lines of a candidate later scene.
+            subject_lemmas: Content lemmas of the rule subject.
+            predicate_lemmas: Content lemmas of the forbidden predicate.
+
+        Returns:
+            The violating line, or None when the rule is not broken here.
+        """
+        for line in action_lines:
+            if self._is_world_rule_statement(line):
+                continue
+            if self._line_asserts_negation(line):
+                continue
+            line_lemmas = self._content_lemmas(line)
+            if not (subject_lemmas & line_lemmas):
+                continue
+            if predicate_lemmas <= line_lemmas:
+                return line
+        return None
+
+    def _check_world_rule_violation(
+        self,
+        fact_store: FactStore,
+        scenes: list[SceneBlock],
+        scene_lookup: dict[str, SceneBlock],
+    ) -> list[Contradiction]:
+        """Flag later scenes that break an established "cannot" world rule.
+
+        Conservative check (status=possible). Only "cannot" rules with a
+        concrete noun subject are evaluated: a rule like "The time machine
+        cannot travel to the future" is violated when a later action line
+        affirmatively asserts the same subject performing the forbidden
+        predicate ("The machine travels to the future"). "Can only" rules
+        require conditional reasoning and indefinite subjects ("no one can
+        leave") have no concrete noun to track, so both are skipped.
+
+        Args:
+            fact_store: All extracted facts.
+            scenes: Parsed scenes in screenplay order.
+            scene_lookup: Scene id -> scene mapping.
+
+        Returns:
+            World-rule violation contradictions.
+        """
+        results: list[Contradiction] = []
+        rule_facts = sorted(
+            fact_store.get_facts_by_type("world_rule"),
+            key=lambda item: (item.scene_number, item.fact_id),
+        )
+        for rule in rule_facts:
+            modality, _, predicate = rule.value.partition(":")
+            if modality.strip().lower() != "cannot":
+                continue
+            if _normalize_token(rule.entity) in WORLD_RULE_INDEFINITE_SUBJECTS:
+                continue
+            subject_lemmas = self._content_lemmas(rule.entity)
+            predicate_lemmas = self._content_lemmas(predicate)
+            if not subject_lemmas or not predicate_lemmas:
+                continue
+
+            for scene in scenes:
+                if scene.scene_number <= rule.scene_number:
+                    continue
+                if _has_flashback_marker(scene.raw_text):
+                    continue
+                action_lines, _ = _scene_lines_by_source(scene)
+                violation_line = self._find_rule_violation_line(
+                    action_lines, subject_lemmas, predicate_lemmas
+                )
+                if violation_line is None:
+                    continue
+                results.append(
+                    Contradiction(
+                        contradiction_id=_new_contradiction_id(),
+                        scene_id_a=rule.scene_id,
+                        scene_id_b=scene.scene_id,
+                        scene_number_a=rule.scene_number,
+                        scene_number_b=scene.scene_number,
+                        fact_a=rule,
+                        excerpt_b=violation_line,
+                        contradiction_type="world_rule_violation",
+                        explanation=(
+                            f"{rule.entity} was established as unable to "
+                            f"'{predicate.strip()}' in {rule.scene_id}, but "
+                            f"{scene.scene_id} shows it happening anyway."
+                        ),
+                        confidence=0.6,
+                        tier=1,
+                        status=STATUS_POSSIBLE,
+                    )
+                )
+                break
 
         return results
 

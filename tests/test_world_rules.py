@@ -1,8 +1,10 @@
-"""Feature tests for world-rule capture (Phase 4).
+"""Feature tests for world-rule capture and violation detection (Phase 4).
 
-World rules are capture-only: declared rules of the fiction are extracted as
-world_rule facts for later Tier 3 violation reasoning, but no Tier 1
-contradiction is raised from them. These tests pin both behaviors.
+Declared rules of the fiction are extracted as world_rule facts. A later scene
+that affirmatively breaks a concrete-subject "cannot" rule is flagged as a
+conservative (possible) world_rule_violation. "Can only" rules and
+indefinite-subject rules ("no one can leave") are captured but not evaluated
+for violations. These tests pin both the capture and the violation behavior.
 """
 
 from plot_contradiction import Contradiction, ContradictionEngine, Fact
@@ -54,12 +56,39 @@ def test_world_rules_are_captured() -> None:
     assert "VAMPIRES" in entities
 
 
-def test_world_rules_raise_no_tier1_contradiction() -> None:
-    """Capture-only: even an obvious rule break is not flagged in Tier 1."""
+def test_world_rule_violation_detected() -> None:
+    """A later scene that breaks a 'cannot' rule is flagged as a violation."""
     contradictions = _analyze(WORLD_RULES_SCRIPT)
+    violations = [
+        c for c in contradictions if c.contradiction_type == "world_rule_violation"
+    ]
+    assert len(violations) == 1
+    violation = violations[0]
+    assert violation.status == "possible"
+    assert violation.fact_a.entity == "TIME MACHINE"
+    assert violation.scene_number_b > violation.scene_number_a
+
+
+def test_can_only_and_indefinite_rules_not_violated() -> None:
+    """'Can only' and indefinite-subject rules are captured but never flagged."""
+    contradictions = _analyze(WORLD_RULES_SCRIPT)
+    violations = [
+        c for c in contradictions if c.contradiction_type == "world_rule_violation"
+    ]
+    assert all(c.fact_a.entity == "TIME MACHINE" for c in violations)
+
+
+def test_respected_cannot_rule_has_no_violation() -> None:
+    """A 'cannot' rule that is never broken raises no violation."""
+    script = (
+        "INT. LAB - NIGHT\n\n"
+        "The portal cannot open during daylight.\n\n"
+        "INT. LAB - DAY\n\n"
+        "The portal stays sealed as the sun rises.\n"
+    )
+    contradictions = _analyze(script)
     assert all(
-        c.contradiction_type not in ("world_rule", "world_rule_violation")
-        for c in contradictions
+        c.contradiction_type != "world_rule_violation" for c in contradictions
     )
 
 

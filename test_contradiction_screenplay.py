@@ -72,7 +72,7 @@ FADE OUT.
 # Expected Tier 1 contradictions (type, establishing scene, contradicting scene).
 EXPECTED_CONTRADICTIONS: list[tuple[str, str, str]] = [
     ("character_alive_status", "scene_002", "scene_008"),
-    ("timeline_consistency", "scene_003", "scene_006"),
+    # timeline_consistency disabled: day-sequence detection is turned off.
     ("character_trait_conflict", "scene_001", "scene_009"),
     ("object_ownership", "scene_004", "scene_007"),
 ]
