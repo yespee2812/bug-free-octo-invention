@@ -1,0 +1,25 @@
+script_id: crime_10scene_errors
+filename: crime_10scene_errors.fountain
+
+planted_contradictions:
+  - type: character_knowledge
+    scene_number_a: 8
+    scene_number_b: 4
+    characters: ["PELL"]
+    objects: ["yellow slicker buyer"]
+    engine_detectable: false
+    note: "Pell names the yellow-slicker buyer (sc4) before discovering them (sc8)."
+  - type: relationship_fact
+    scene_number_a: 5
+    scene_number_b: 7
+    characters: ["EDDIE"]
+    objects: []
+    engine_detectable: false
+    note: "Eddie's daughter (sc5) vs Eddie's niece (sc7)."
+  - type: numeric_count
+    scene_number_a: 4
+    scene_number_b: 6
+    characters: ["PELL"]
+    objects: []
+    engine_detectable: false
+    note: "'three identical runs' (sc4) vs 'Four runs in a month' (sc6)."

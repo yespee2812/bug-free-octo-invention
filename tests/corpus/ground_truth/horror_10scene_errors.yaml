@@ -1,0 +1,25 @@
+script_id: horror_10scene_errors
+filename: horror_10scene_errors.fountain
+
+planted_contradictions:
+  - type: numeric_count
+    scene_number_a: 1
+    scene_number_b: 9
+    characters: ["LEAH"]
+    objects: []
+    engine_detectable: false
+    note: "'One week to empty it' (sc1) vs 'Three weeks in this house' (sc9)."
+  - type: date_year
+    scene_number_a: 3
+    scene_number_b: 5
+    characters: ["LEAH"]
+    objects: ["VHS tape"]
+    engine_detectable: false
+    note: "CHRISTMAS '94 (sc3) vs '93 (sc5)."
+  - type: character_age
+    scene_number_a: 7
+    scene_number_b: 10
+    characters: ["LEAH"]
+    objects: []
+    engine_detectable: false
+    note: "'when I was twelve' (sc7) vs 'Not since I was eight' (sc10)."

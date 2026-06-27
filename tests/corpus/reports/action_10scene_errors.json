@@ -1,0 +1,134 @@
+{
+  "script_summary": {
+    "total_scenes": 10,
+    "total_characters": [
+      "CAPTAIN RICO SANTOS",
+      "PARK",
+      "SANTOS",
+      "THE END",
+      "VEGA"
+    ],
+    "total_objects": [
+      "HOSTAGE",
+      "OSEI",
+      "RED FLARE"
+    ]
+  },
+  "dependencies": {
+    "graph_summary": {
+      "total_scenes": 10,
+      "total_edges": 19,
+      "most_depended_on_scene": "scene_010",
+      "orphan_count": 1,
+      "avg_dependencies_per_scene": 2.0
+    },
+    "high_risk_scenes": [
+      {
+        "scene_id": "scene_001",
+        "heading": "INT. SAFE HOUSE - NIGHT",
+        "would_break": 5,
+        "impacted_scenes": [
+          "scene_005",
+          "scene_008",
+          "scene_007",
+          "scene_002",
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_002",
+        "heading": "INT. EMBASSY ANNEX - SECURITY HUB - NIGHT",
+        "would_break": 4,
+        "impacted_scenes": [
+          "scene_008",
+          "scene_005",
+          "scene_010",
+          "scene_007"
+        ]
+      },
+      {
+        "scene_id": "scene_003",
+        "heading": "INT. ROOFTOP STAGING - NIGHT",
+        "would_break": 4,
+        "impacted_scenes": [
+          "scene_010",
+          "scene_009",
+          "scene_006",
+          "scene_004"
+        ]
+      },
+      {
+        "scene_id": "scene_005",
+        "heading": "INT. EMBASSY BASEMENT - NIGHT",
+        "would_break": 3,
+        "impacted_scenes": [
+          "scene_008",
+          "scene_010",
+          "scene_007"
+        ]
+      },
+      {
+        "scene_id": "scene_007",
+        "heading": "INT. STAIRWELL - NIGHT",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_008",
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_008",
+        "heading": "INT. UPPER FLOOR - NIGHT",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_009",
+        "heading": "EXT. EMBASSY ROOFTOP - NIGHT",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_010"
+        ]
+      }
+    ]
+  },
+  "contradictions": {
+    "total_found": 2,
+    "by_tier": {
+      "tier1": 2,
+      "tier2": 0
+    },
+    "items": [
+      {
+        "scenes_involved": [
+          3,
+          9
+        ],
+        "contradiction_type": "object_ownership",
+        "explanation": "RED FLARE was last held by VEGA in scene_003, but PARK has it in scene_009 with no handoff between scenes.",
+        "confidence": 0.8,
+        "tier": 1,
+        "status": "confirmed"
+      },
+      {
+        "scenes_involved": [
+          1,
+          10
+        ],
+        "contradiction_type": "numeric_count",
+        "explanation": "'hostage' count is 3 in scene_001 but 4 in scene_010.",
+        "confidence": 0.5,
+        "tier": 1,
+        "status": "possible"
+      }
+    ]
+  },
+  "health_score": 81,
+  "input": {
+    "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\action_10scene_errors.fountain",
+    "filename": "action_10scene_errors.fountain",
+    "format": "text"
+  }
+}

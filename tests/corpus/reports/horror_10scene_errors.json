@@ -1,0 +1,183 @@
+{
+  "script_summary": {
+    "total_scenes": 10,
+    "total_characters": [
+      "LEAH",
+      "THE END"
+    ],
+    "total_objects": [
+      "AM",
+      "CHRISTMAS",
+      "DOOR",
+      "FATHER",
+      "FLOOR TRAPDOOR",
+      "LEAH PARK",
+      "ON TAPE",
+      "TV",
+      "VHS CAMCORDER"
+    ]
+  },
+  "dependencies": {
+    "graph_summary": {
+      "total_scenes": 10,
+      "total_edges": 36,
+      "most_depended_on_scene": "scene_010",
+      "orphan_count": 0,
+      "avg_dependencies_per_scene": 4.1
+    },
+    "high_risk_scenes": [
+      {
+        "scene_id": "scene_001",
+        "heading": "INT. SUBURBAN HOUSE - FOYER - DAY",
+        "would_break": 9,
+        "impacted_scenes": [
+          "scene_005",
+          "scene_003",
+          "scene_008",
+          "scene_007",
+          "scene_002",
+          "scene_004",
+          "scene_006",
+          "scene_010",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_002",
+        "heading": "INT. BASEMENT - NIGHT",
+        "would_break": 8,
+        "impacted_scenes": [
+          "scene_007",
+          "scene_010",
+          "scene_009",
+          "scene_005",
+          "scene_004",
+          "scene_006",
+          "scene_003",
+          "scene_008"
+        ]
+      },
+      {
+        "scene_id": "scene_003",
+        "heading": "INT. BASEMENT - LATER",
+        "would_break": 5,
+        "impacted_scenes": [
+          "scene_005",
+          "scene_008",
+          "scene_007",
+          "scene_010",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_004",
+        "heading": "INT. KITCHEN - NIGHT",
+        "would_break": 5,
+        "impacted_scenes": [
+          "scene_008",
+          "scene_007",
+          "scene_006",
+          "scene_010",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_005",
+        "heading": "INT. BASEMENT - NIGHT",
+        "would_break": 4,
+        "impacted_scenes": [
+          "scene_008",
+          "scene_010",
+          "scene_007",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_006",
+        "heading": "INT. BASEMENT STAIRS - NIGHT",
+        "would_break": 4,
+        "impacted_scenes": [
+          "scene_008",
+          "scene_010",
+          "scene_007",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_007",
+        "heading": "INT. BASEMENT - NIGHT",
+        "would_break": 3,
+        "impacted_scenes": [
+          "scene_009",
+          "scene_010",
+          "scene_008"
+        ]
+      },
+      {
+        "scene_id": "scene_008",
+        "heading": "INT. BASEMENT - NIGHT",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_010",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_009",
+        "heading": "INT. BASEMENT - NIGHT",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_010"
+        ]
+      }
+    ]
+  },
+  "contradictions": {
+    "total_found": 3,
+    "by_tier": {
+      "tier1": 3,
+      "tier2": 0
+    },
+    "items": [
+      {
+        "scenes_involved": [
+          7,
+          10
+        ],
+        "contradiction_type": "character_age",
+        "explanation": "LEAH is described as age 12 in scene_007 but age 8 in scene_010.",
+        "confidence": 0.7,
+        "tier": 1,
+        "status": "possible"
+      },
+      {
+        "scenes_involved": [
+          3,
+          5
+        ],
+        "contradiction_type": "date_year",
+        "explanation": "The year is 1994 in scene_003 but 1993 in scene_005.",
+        "confidence": 0.55,
+        "tier": 1,
+        "status": "possible"
+      },
+      {
+        "scenes_involved": [
+          1,
+          9
+        ],
+        "contradiction_type": "numeric_count",
+        "explanation": "'week' count is 1 in scene_001 but 3 in scene_009.",
+        "confidence": 0.5,
+        "tier": 1,
+        "status": "possible"
+      }
+    ]
+  },
+  "health_score": 76,
+  "input": {
+    "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\horror_10scene_errors.fountain",
+    "filename": "horror_10scene_errors.fountain",
+    "format": "text"
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "script_summary": {
+    "total_scenes": 10,
+    "total_characters": [
+      "CALLAHAN",
+      "CAPTAIN EDDIE MORAN",
+      "DETECTIVE SARAH PELL",
+      "DUNN",
+      "EDDIE",
+      "PELL",
+      "THE END"
+    ],
+    "total_objects": [
+      "BIGGER FISH"
+    ]
+  },
+  "dependencies": {
+    "graph_summary": {
+      "total_scenes": 10,
+      "total_edges": 13,
+      "most_depended_on_scene": "scene_010",
+      "orphan_count": 3,
+      "avg_dependencies_per_scene": 1.5
+    },
+    "high_risk_scenes": [
+      {
+        "scene_id": "scene_004",
+        "heading": "INT. HARBOR OFFICE - NIGHT",
+        "would_break": 6,
+        "impacted_scenes": [
+          "scene_009",
+          "scene_007",
+          "scene_005",
+          "scene_008",
+          "scene_006",
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_005",
+        "heading": "INT. PELL'S APARTMENT - NIGHT",
+        "would_break": 4,
+        "impacted_scenes": [
+          "scene_009",
+          "scene_008",
+          "scene_010",
+          "scene_006"
+        ]
+      },
+      {
+        "scene_id": "scene_006",
+        "heading": "INT. DOCKSIDE BAR - NIGHT",
+        "would_break": 3,
+        "impacted_scenes": [
+          "scene_008",
+          "scene_010",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_001",
+        "heading": "EXT. HARBOR - ESTABLISHING - NIGHT",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_008",
+        "heading": "INT. WAREHOUSE - NIGHT",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_010"
+        ]
+      }
+    ]
+  },
+  "contradictions": {
+    "total_found": 2,
+    "by_tier": {
+      "tier1": 2,
+      "tier2": 0
+    },
+    "items": [
+      {
+        "scenes_involved": [
+          5,
+          7
+        ],
+        "contradiction_type": "relationship_fact",
+        "explanation": "CAPTAIN EDDIE MORAN is described as having a parent_child relation in scene_005 but a niece_nephew relation in scene_007.",
+        "confidence": 0.85,
+        "tier": 1,
+        "status": "confirmed"
+      },
+      {
+        "scenes_involved": [
+          4,
+          6
+        ],
+        "contradiction_type": "numeric_count",
+        "explanation": "'run' count is 3 in scene_004 but 4 in scene_006.",
+        "confidence": 0.5,
+        "tier": 1,
+        "status": "possible"
+      }
+    ]
+  },
+  "health_score": 75,
+  "input": {
+    "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\crime_10scene_errors.fountain",
+    "filename": "crime_10scene_errors.fountain",
+    "format": "text"
+  }
+}

@@ -1,0 +1,18 @@
+script_id: thriller_5scene_errors
+filename: thriller_5scene_errors.fountain
+
+planted_contradictions:
+  - type: object_identity
+    scene_number_a: 1
+    scene_number_b: 4
+    characters: ["LENA"]
+    objects: ["DUFFEL"]
+    engine_detectable: false
+    note: "Black duffel (sc1) vs 'gray duffel' (sc4)."
+  - type: numeric_count
+    scene_number_a: 1
+    scene_number_b: 3
+    characters: ["LENA"]
+    objects: []
+    engine_detectable: false
+    note: "Watch reads 11:58 PM (sc1) vs 'not even eleven yet' (sc3)."

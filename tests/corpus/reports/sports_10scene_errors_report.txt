@@ -1,0 +1,55 @@
+ScriptLens analysis
+Input: sports_10scene_errors.fountain
+Format: text
+========================================================================
+
+========================================================================
+SCRIPTLENS STORY REPORT
+========================================================================
+
+YOUR SCRIPT AT A GLANCE
+------------------------------------------------------------------------
+  Scenes:     10
+  Characters: ALMA, COACH ALMA REYES, NINA, THE END
+  Props:      INVITATIONAL INVITE
+
+HOW YOUR SCENES CONNECT
+------------------------------------------------------------------------
+  Your story has 10 scenes linked by 13 story connections.
+  The scene other scenes rely on most: scene_010.
+  On average, each scene builds on about 1.4 earlier scenes.
+  4 scene(s) sit loosely in the story - nothing later depends on them, so they may be easy to cut or need stronger ties.
+
+SCENES YOU SHOULD NOT CUT LIGHTLY
+------------------------------------------------------------------------
+  1. scene_002 - INT. UNIVERSITY POOL - MORNING
+     Removing this would weaken 5 later scene(s): scene_010, scene_005, scene_008, scene_007, scene_009.
+  2. scene_003 - INT. TRAINING ROOM - DAY
+     Removing this would weaken 3 later scene(s): scene_010, scene_007, scene_009.
+  3. scene_005 - INT. COACH'S OFFICE - DAY
+     Removing this would weaken 2 later scene(s): scene_008, scene_010.
+  4. scene_007 - INT. UNIVERSITY POOL - NIGHT
+     Removing this would weaken 2 later scene(s): scene_009, scene_010.
+  5. scene_008 - EXT. POOL DECK - MORNING
+     Removing this would weaken 1 later scene(s): scene_010.
+  ... and 1 more scene(s) with downstream ties.
+
+STORY CONSISTENCY ISSUES
+------------------------------------------------------------------------
+  Found 2 possible inconsistency(ies): 2 clear conflict(s), 0 subtler mismatch(es).
+
+  Possible issue 1: Numeric Count
+    Between scene 3 and scene 8
+    'rank' count is 4 in scene_003 but 3 in scene_008.
+    Confidence: about 50%
+
+  Possible issue 2: Numeric Count
+    Between scene 7 and scene 10
+    'split' count is 150 in scene_007 but 175 in scene_010.
+    Confidence: about 50%
+
+OVERALL SCRIPT HEALTH
+------------------------------------------------------------------------
+  Score: 72 / 100
+  Solid draft with room to tighten loose scenes or fix a few story beats.
+

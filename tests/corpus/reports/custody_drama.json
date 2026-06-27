@@ -1,0 +1,134 @@
+{
+  "script_summary": {
+    "total_scenes": 10,
+    "total_characters": [
+      "ALMA",
+      "ELENA",
+      "GINA",
+      "JUDGE",
+      "RICHARD",
+      "SOFIA"
+    ],
+    "total_objects": [
+      "COFFEE",
+      "PARENTS",
+      "SECOND BEDROOM",
+      "SILVER BAND",
+      "SILVER WEDDING BAND",
+      "TEMPORARY CUSTODY"
+    ]
+  },
+  "dependencies": {
+    "graph_summary": {
+      "total_scenes": 10,
+      "total_edges": 19,
+      "most_depended_on_scene": "scene_010",
+      "orphan_count": 2,
+      "avg_dependencies_per_scene": 2.5
+    },
+    "high_risk_scenes": [
+      {
+        "scene_id": "scene_001",
+        "heading": "INT. COUNTY FAMILY COURT - DAY",
+        "would_break": 5,
+        "impacted_scenes": [
+          "scene_007",
+          "scene_009",
+          "scene_004",
+          "scene_006",
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_002",
+        "heading": "INT. ELENA'S KITCHEN - NIGHT",
+        "would_break": 4,
+        "impacted_scenes": [
+          "scene_010",
+          "scene_005",
+          "scene_007",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_004",
+        "heading": "INT. RICHARD'S APARTMENT - NIGHT",
+        "would_break": 4,
+        "impacted_scenes": [
+          "scene_010",
+          "scene_007",
+          "scene_009",
+          "scene_006"
+        ]
+      },
+      {
+        "scene_id": "scene_005",
+        "heading": "INT. SCHOOL HALLWAY - DAY",
+        "would_break": 3,
+        "impacted_scenes": [
+          "scene_009",
+          "scene_010",
+          "scene_007"
+        ]
+      },
+      {
+        "scene_id": "scene_006",
+        "heading": "INT. THERAPIST OFFICE - DAY",
+        "would_break": 3,
+        "impacted_scenes": [
+          "scene_010",
+          "scene_007",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_003",
+        "heading": "EXT. COMMUNITY POOL - DAY",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_008",
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_007",
+        "heading": "INT. ELENA'S CAR - NIGHT",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_010",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_008",
+        "heading": "EXT. COMMUNITY POOL - MORNING",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_009",
+        "heading": "INT. ELENA'S KITCHEN - NIGHT",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_010"
+        ]
+      }
+    ]
+  },
+  "contradictions": {
+    "total_found": 0,
+    "by_tier": {
+      "tier1": 0,
+      "tier2": 0
+    },
+    "items": []
+  },
+  "health_score": 94,
+  "input": {
+    "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\custody_drama.fountain",
+    "filename": "custody_drama.fountain",
+    "format": "text"
+  }
+}

@@ -1,0 +1,25 @@
+script_id: western_10scene_errors
+filename: western_10scene_errors.fountain
+
+planted_contradictions:
+  - type: location_continuity
+    scene_number_a: 3
+    scene_number_b: 4
+    characters: ["DAWSON"]
+    objects: ["pasture"]
+    engine_detectable: false
+    note: "'his south pasture' (sc3) vs 'My north fields finally drink' (sc4)."
+  - type: character_knowledge
+    scene_number_a: 8
+    scene_number_b: 3
+    characters: ["JESSE"]
+    objects: ["railroad plot"]
+    engine_detectable: false
+    note: "Jesse names the railroad feud (sc3) before Dawson reveals it (sc8)."
+  - type: character_age
+    scene_number_a: 4
+    scene_number_b: 8
+    characters: ["WILL DAWSON"]
+    objects: []
+    engine_detectable: false
+    note: "Will Dawson, 45 (sc4) vs 'Dawson, fifty now' (sc8)."

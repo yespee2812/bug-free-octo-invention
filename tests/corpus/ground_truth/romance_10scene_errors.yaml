@@ -1,0 +1,25 @@
+script_id: romance_10scene_errors
+filename: romance_10scene_errors.fountain
+
+planted_contradictions:
+  - type: object_identity
+    scene_number_a: 2
+    scene_number_b: 8
+    characters: ["JAMES"]
+    objects: ["SATCHEL"]
+    engine_detectable: false
+    note: "Leather satchel (sc2) vs canvas satchel (sc8)."
+  - type: object_identity
+    scene_number_a: 5
+    scene_number_b: 10
+    characters: ["JAMES", "CLAIRE"]
+    objects: ["PHOTO"]
+    engine_detectable: false
+    note: "Photo of the two of them (sc5) vs photo of her parents (sc10)."
+  - type: numeric_count
+    scene_number_a: 7
+    scene_number_b: 10
+    characters: []
+    objects: []
+    engine_detectable: false
+    note: "'Six years of silence' (sc7) vs 'eight years' (sc10)."

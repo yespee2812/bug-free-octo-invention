@@ -1,0 +1,25 @@
+script_id: coming_of_age_10scene_errors
+filename: coming_of_age_10scene_errors.fountain
+
+planted_contradictions:
+  - type: character_fact
+    scene_number_a: 3
+    scene_number_b: 10
+    characters: ["MAYA"]
+    objects: []
+    engine_detectable: false
+    note: "Maya's coast school confirmed (sc3) vs 'State school' (sc10)."
+  - type: numeric_count
+    scene_number_a: 9
+    scene_number_b: 9
+    characters: ["PRINCIPAL", "JORDAN"]
+    objects: []
+    engine_detectable: false
+    note: "Principal 'You broke three rules' vs Jordan 'Five rules' (both sc9)."
+  - type: date_year
+    scene_number_a: 1
+    scene_number_b: 6
+    characters: []
+    objects: ["class banner"]
+    engine_detectable: false
+    note: "Banner CLASS OF 2026 (sc1) vs CLASS OF 2025 (sc6)."

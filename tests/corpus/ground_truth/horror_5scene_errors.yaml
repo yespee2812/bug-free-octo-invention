@@ -1,0 +1,18 @@
+script_id: horror_5scene_errors
+filename: horror_5scene_errors.fountain
+
+planted_contradictions:
+  - type: date_year
+    scene_number_a: 2
+    scene_number_b: 3
+    characters: ["LEAH"]
+    objects: ["VHS tape"]
+    engine_detectable: false
+    note: "Tape labeled CHRISTMAS '94 (sc2) vs '93 (sc3)."
+  - type: character_knowledge
+    scene_number_a: 4
+    scene_number_b: 5
+    characters: ["LEAH"]
+    objects: ["trapdoor"]
+    engine_detectable: false
+    note: "Trapdoor 'stepped over a thousand times' (sc4) vs 'never noticed' (sc5)."

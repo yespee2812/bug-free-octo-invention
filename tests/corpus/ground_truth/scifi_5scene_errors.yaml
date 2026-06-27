@@ -1,0 +1,18 @@
+script_id: scifi_5scene_errors
+filename: scifi_5scene_errors.fountain
+
+planted_contradictions:
+  - type: object_identity
+    scene_number_a: 1
+    scene_number_b: 3
+    characters: ["KARA"]
+    objects: ["DATA CHIP"]
+    engine_detectable: false
+    note: "Gold data chip (sc1) vs silver data chip (sc3)."
+  - type: character_knowledge
+    scene_number_a: 5
+    scene_number_b: 2
+    characters: ["NOLAN"]
+    objects: ["signal"]
+    engine_detectable: false
+    note: "Nolan says the signal is 'meant for me' (sc2) before the reveal (sc5)."

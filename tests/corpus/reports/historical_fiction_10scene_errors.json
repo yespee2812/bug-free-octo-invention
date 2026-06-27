@@ -1,0 +1,133 @@
+{
+  "script_summary": {
+    "total_scenes": 10,
+    "total_characters": [
+      "ANTOINE",
+      "CLAIRE",
+      "LUC",
+      "MARIE",
+      "REYNAUD",
+      "STRASSER",
+      "THE END"
+    ],
+    "total_objects": [
+      "BAKER ANTOINE",
+      "BICYCLE",
+      "BREAD",
+      "FARM CART",
+      "FATHER REYNAUD",
+      "HERBS",
+      "MADAME CLAIRE",
+      "SEALED ENVELOPE",
+      "WARNING",
+      "YOUNG PRIEST"
+    ]
+  },
+  "dependencies": {
+    "graph_summary": {
+      "total_scenes": 10,
+      "total_edges": 12,
+      "most_depended_on_scene": "scene_010",
+      "orphan_count": 4,
+      "avg_dependencies_per_scene": 1.3
+    },
+    "high_risk_scenes": [
+      {
+        "scene_id": "scene_001",
+        "heading": "INT. RESISTANCE SAFE HOUSE - LYON - NIGHT - 1943",
+        "would_break": 5,
+        "impacted_scenes": [
+          "scene_004",
+          "scene_010",
+          "scene_007",
+          "scene_008",
+          "scene_006"
+        ]
+      },
+      {
+        "scene_id": "scene_002",
+        "heading": "INT. GERMAN FIELD OFFICE - DAY",
+        "would_break": 3,
+        "impacted_scenes": [
+          "scene_010",
+          "scene_008",
+          "scene_006"
+        ]
+      },
+      {
+        "scene_id": "scene_004",
+        "heading": "INT. SAFE HOUSE - NIGHT",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_007",
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_006",
+        "heading": "EXT. CANAL PATH - NIGHT",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_008",
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_008",
+        "heading": "EXT. ORCHARD - NIGHT",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_010"
+        ]
+      }
+    ]
+  },
+  "contradictions": {
+    "total_found": 3,
+    "by_tier": {
+      "tier1": 3,
+      "tier2": 0
+    },
+    "items": [
+      {
+        "scenes_involved": [
+          1,
+          4
+        ],
+        "contradiction_type": "relationship_fact",
+        "explanation": "LUC is described with incompatible relations (cousin, sibling) across scene_001 and scene_004.",
+        "confidence": 0.85,
+        "tier": 1,
+        "status": "confirmed"
+      },
+      {
+        "scenes_involved": [
+          1,
+          5
+        ],
+        "contradiction_type": "date_year",
+        "explanation": "The year is 1943 in scene_001 but 1941 in scene_005.",
+        "confidence": 0.55,
+        "tier": 1,
+        "status": "possible"
+      },
+      {
+        "scenes_involved": [
+          5,
+          8
+        ],
+        "contradiction_type": "numeric_count",
+        "explanation": "'group' count is 3 in scene_005 but 4 in scene_008.",
+        "confidence": 0.5,
+        "tier": 1,
+        "status": "possible"
+      }
+    ]
+  },
+  "health_score": 64,
+  "input": {
+    "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\historical_fiction_10scene_errors.fountain",
+    "filename": "historical_fiction_10scene_errors.fountain",
+    "format": "text"
+  }
+}

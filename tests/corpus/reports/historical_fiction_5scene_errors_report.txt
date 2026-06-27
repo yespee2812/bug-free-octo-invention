@@ -1,0 +1,46 @@
+ScriptLens analysis
+Input: historical_fiction_5scene_errors.fountain
+Format: text
+========================================================================
+
+========================================================================
+SCRIPTLENS STORY REPORT
+========================================================================
+
+YOUR SCRIPT AT A GLANCE
+------------------------------------------------------------------------
+  Scenes:     5
+  Characters: ANTOINE, LUC, MARIE, STRASSER, THE END
+  Props:      BICYCLE, CONFISCATED BICYCLE, HERBS, SEALED ENVELOPE, STRASSER KNOWS THE ROUTE, THYME
+
+HOW YOUR SCENES CONNECT
+------------------------------------------------------------------------
+  Your story has 5 scenes linked by 2 story connections.
+  The scene other scenes rely on most: scene_004.
+  On average, each scene builds on about 0.4 earlier scenes.
+  2 scene(s) sit loosely in the story - nothing later depends on them, so they may be easy to cut or need stronger ties.
+
+SCENES YOU SHOULD NOT CUT LIGHTLY
+------------------------------------------------------------------------
+  1. scene_001 - INT. RESISTANCE SAFE HOUSE - LYON - NIGHT - 1943
+     Removing this would weaken 2 later scene(s): scene_005, scene_004.
+
+STORY CONSISTENCY ISSUES
+------------------------------------------------------------------------
+  Found 2 possible inconsistency(ies): 2 clear conflict(s), 0 subtler mismatch(es).
+
+  Issue 1: Relationship Fact
+    Between scene 1 and scene 4
+    LUC is described with incompatible relations (cousin, sibling) across scene_001 and scene_004.
+    Confidence: about 85%
+
+  Possible issue 2: Date Year
+    Between scene 1 and scene 4
+    The year is 1943 in scene_001 but 1942 in scene_004.
+    Confidence: about 55%
+
+OVERALL SCRIPT HEALTH
+------------------------------------------------------------------------
+  Score: 78 / 100
+  Solid draft with room to tighten loose scenes or fix a few story beats.
+

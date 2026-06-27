@@ -1,0 +1,18 @@
+script_id: coming_of_age_5scene_errors
+filename: coming_of_age_5scene_errors.fountain
+
+planted_contradictions:
+  - type: numeric_count
+    scene_number_a: 3
+    scene_number_b: 5
+    characters: []
+    objects: ["cast"]
+    engine_detectable: false
+    note: "'cast of twelve' (sc3) vs 'all fifteen of them' (sc5)."
+  - type: character_fact
+    scene_number_a: 2
+    scene_number_b: 5
+    characters: ["JORDAN"]
+    objects: []
+    engine_detectable: false
+    note: "Jordan bound for state school (sc2) vs 'Coast school for me' (sc5)."

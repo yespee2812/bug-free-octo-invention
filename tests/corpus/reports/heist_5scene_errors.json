@@ -1,0 +1,85 @@
+{
+  "script_summary": {
+    "total_scenes": 5,
+    "total_characters": [
+      "GUARD",
+      "MARCUS",
+      "REESE",
+      "SLOANE",
+      "THE END"
+    ],
+    "total_objects": [
+      "ACTUAL GUARD",
+      "CANVAS TUBE",
+      "PAK",
+      "ROLLED CANVAS TUBE",
+      "THEY KNOW"
+    ]
+  },
+  "dependencies": {
+    "graph_summary": {
+      "total_scenes": 5,
+      "total_edges": 4,
+      "most_depended_on_scene": "scene_005",
+      "orphan_count": 1,
+      "avg_dependencies_per_scene": 0.8
+    },
+    "high_risk_scenes": [
+      {
+        "scene_id": "scene_001",
+        "heading": "INT. ART MUSEUM - CLOSED GALLERY - NIGHT",
+        "would_break": 3,
+        "impacted_scenes": [
+          "scene_003",
+          "scene_002",
+          "scene_005"
+        ]
+      },
+      {
+        "scene_id": "scene_003",
+        "heading": "INT. VAULT ANTEROOM - NIGHT",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_005"
+        ]
+      }
+    ]
+  },
+  "contradictions": {
+    "total_found": 2,
+    "by_tier": {
+      "tier1": 2,
+      "tier2": 0
+    },
+    "items": [
+      {
+        "scenes_involved": [
+          3,
+          5
+        ],
+        "contradiction_type": "object_identity",
+        "explanation": "The sketch is 'vermeer' in scene_003 but 'rembrandt' in scene_005 (artist mismatch).",
+        "confidence": 0.6,
+        "tier": 1,
+        "status": "possible"
+      },
+      {
+        "scenes_involved": [
+          2,
+          3
+        ],
+        "contradiction_type": "numeric_count",
+        "explanation": "'second' count is 12 in scene_002 but 30 in scene_003.",
+        "confidence": 0.5,
+        "tier": 1,
+        "status": "possible"
+      }
+    ]
+  },
+  "health_score": 81,
+  "input": {
+    "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\heist_5scene_errors.fountain",
+    "filename": "heist_5scene_errors.fountain",
+    "format": "text"
+  }
+}

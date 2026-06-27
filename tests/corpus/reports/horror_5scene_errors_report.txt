@@ -1,0 +1,45 @@
+ScriptLens analysis
+Input: horror_5scene_errors.fountain
+Format: text
+========================================================================
+
+========================================================================
+SCRIPTLENS STORY REPORT
+========================================================================
+
+YOUR SCRIPT AT A GLANCE
+------------------------------------------------------------------------
+  Scenes:     5
+  Characters: LEAH, THE END
+  Props:      AM, CHRISTMAS, FATHER, LEAH PARK, ON TAPE, VHS CAMCORDER
+
+HOW YOUR SCENES CONNECT
+------------------------------------------------------------------------
+  Your story has 5 scenes linked by 7 story connections.
+  The scene other scenes rely on most: scene_003.
+  On average, each scene builds on about 1.8 earlier scenes.
+  Every scene after the opening is referenced by a later scene.
+
+SCENES YOU SHOULD NOT CUT LIGHTLY
+------------------------------------------------------------------------
+  1. scene_001 - INT. SUBURBAN HOUSE - BASEMENT - NIGHT
+     Removing this would weaken 4 later scene(s): scene_005, scene_003, scene_004, scene_002.
+  2. scene_002 - INT. BASEMENT - LATER
+     Removing this would weaken 3 later scene(s): scene_004, scene_005, scene_003.
+  3. scene_003 - INT. BASEMENT - NIGHT
+     Removing this would weaken 2 later scene(s): scene_004, scene_005.
+
+STORY CONSISTENCY ISSUES
+------------------------------------------------------------------------
+  Found 1 possible inconsistency(ies): 1 clear conflict(s), 0 subtler mismatch(es).
+
+  Possible issue 1: Date Year
+    Between scene 2 and scene 3
+    The year is 1994 in scene_002 but 1993 in scene_003.
+    Confidence: about 55%
+
+OVERALL SCRIPT HEALTH
+------------------------------------------------------------------------
+  Score: 92 / 100
+  Your draft is in strong shape - few structural or logic concerns.
+

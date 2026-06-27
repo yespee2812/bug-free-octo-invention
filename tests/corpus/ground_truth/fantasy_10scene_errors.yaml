@@ -1,0 +1,25 @@
+script_id: fantasy_10scene_errors
+filename: fantasy_10scene_errors.fountain
+
+planted_contradictions:
+  - type: object_identity
+    scene_number_a: 1
+    scene_number_b: 5
+    characters: ["MIRA"]
+    objects: ["COMPASS"]
+    engine_detectable: false
+    note: "Brass compass (sc1) vs 'iron compass' (sc5)."
+  - type: character_age
+    scene_number_a: 2
+    scene_number_b: 6
+    characters: ["ELI"]
+    objects: []
+    engine_detectable: false
+    note: "Eli, 10 (sc2) vs 'barely seven' (sc6)."
+  - type: object_identity
+    scene_number_a: 3
+    scene_number_b: 5
+    characters: ["STRANGER"]
+    objects: ["payment"]
+    engine_detectable: false
+    note: "Stranger offers a silver thimble (sc3) vs 'paid with a brass coin' (sc5)."

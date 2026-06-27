@@ -1,0 +1,15 @@
+GROUND TRUTH EVALUATION: adventure_10scene_errors
+========================================================================
+
+CONTRADICTIONS
+  Expected (manual + planted): 3
+  Detected by engine:          3
+  Matched:                     2
+  Missed (false negatives):    1
+  Extra (false positives):     1
+
+  Missed:
+    - name_consistency: scene 2 vs scene 9
+
+  Extra (engine-only):
+    - numeric_count: scene 4 vs scene 8

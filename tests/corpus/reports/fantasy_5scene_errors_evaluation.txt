@@ -1,0 +1,9 @@
+GROUND TRUTH EVALUATION: fantasy_5scene_errors
+========================================================================
+
+CONTRADICTIONS
+  Expected (manual + planted): 2
+  Detected by engine:          2
+  Matched:                     2
+  Missed (false negatives):    0
+  Extra (false positives):     0

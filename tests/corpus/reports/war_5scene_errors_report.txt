@@ -1,0 +1,52 @@
+ScriptLens analysis
+Input: war_5scene_errors.fountain
+Format: text
+========================================================================
+
+========================================================================
+SCRIPTLENS STORY REPORT
+========================================================================
+
+YOUR SCRIPT AT A GLANCE
+------------------------------------------------------------------------
+  Scenes:     5
+  Characters: HALE, SERGEANT TOM HALE, THE END
+  Props:      RIVERS, SATCHEL
+
+HOW YOUR SCENES CONNECT
+------------------------------------------------------------------------
+  Your story has 5 scenes linked by 10 story connections.
+  The scene other scenes rely on most: scene_005.
+  On average, each scene builds on about 2.0 earlier scenes.
+  Every scene after the opening is referenced by a later scene.
+
+SCENES YOU SHOULD NOT CUT LIGHTLY
+------------------------------------------------------------------------
+  1. scene_001 - EXT. FRONT LINE TRENCH - DAWN
+     Removing this would weaken 4 later scene(s): scene_002, scene_003, scene_005, scene_004.
+  2. scene_002 - INT. DUGOUT - DAY
+     Removing this would weaken 3 later scene(s): scene_004, scene_003, scene_005.
+  3. scene_003 - EXT. NO-MAN'S-LAND - NIGHT
+     Removing this would weaken 2 later scene(s): scene_004, scene_005.
+  4. scene_004 - INT. ENEMY LISTENING POST - NIGHT
+     Removing this would weaken 1 later scene(s): scene_005.
+
+STORY CONSISTENCY ISSUES
+------------------------------------------------------------------------
+  Found 2 possible inconsistency(ies): 2 clear conflict(s), 0 subtler mismatch(es).
+
+  Possible issue 1: Character Age
+    Between scene 1 and scene 3
+    SERGEANT TOM HALE is described as age 28 in scene_001 but age 31 in scene_003.
+    Confidence: about 70%
+
+  Possible issue 2: Numeric Count
+    Between scene 2 and scene 5
+    'meters' count is 200 in scene_002 but 300 in scene_005.
+    Confidence: about 50%
+
+OVERALL SCRIPT HEALTH
+------------------------------------------------------------------------
+  Score: 84 / 100
+  Solid draft with room to tighten loose scenes or fix a few story beats.
+

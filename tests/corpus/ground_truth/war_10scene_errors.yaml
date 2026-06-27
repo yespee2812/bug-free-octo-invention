@@ -1,0 +1,25 @@
+script_id: war_10scene_errors
+filename: war_10scene_errors.fountain
+
+planted_contradictions:
+  - type: character_age
+    scene_number_a: 1
+    scene_number_b: 8
+    characters: ["TOM HALE"]
+    objects: []
+    engine_detectable: false
+    note: "Sergeant Tom Hale, 28 (sc1) vs 'thirty-one' (sc8)."
+  - type: medical_state
+    scene_number_a: 8
+    scene_number_b: 9
+    characters: ["KOWALSKI"]
+    objects: []
+    engine_detectable: true
+    note: "Kowalski hit in the shoulder (sc8) vs medics 'bind Kowalski's leg' (sc9)."
+  - type: numeric_count
+    scene_number_a: 2
+    scene_number_b: 10
+    characters: ["HALE"]
+    objects: ["listening post"]
+    engine_detectable: false
+    note: "Listening post '200 meters out' (sc2) vs 'Three hundred meters out' (sc10)."

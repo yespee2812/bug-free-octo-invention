@@ -1,0 +1,55 @@
+ScriptLens analysis
+Input: mystery_10scene_errors.fountain
+Format: text
+========================================================================
+
+========================================================================
+SCRIPTLENS STORY REPORT
+========================================================================
+
+YOUR SCRIPT AT A GLANCE
+------------------------------------------------------------------------
+  Scenes:     10
+  Characters: CALEB, DETECTIVE MAYA QUINN, MAYA, THE END, TOMAS
+  Props:      DECOY, GLASS KEY, MR, MRS
+
+HOW YOUR SCENES CONNECT
+------------------------------------------------------------------------
+  Your story has 10 scenes linked by 32 story connections.
+  The scene other scenes rely on most: scene_010.
+  On average, each scene builds on about 3.5 earlier scenes.
+  1 scene(s) sit loosely in the story - nothing later depends on them, so they may be easy to cut or need stronger ties.
+
+SCENES YOU SHOULD NOT CUT LIGHTLY
+------------------------------------------------------------------------
+  1. scene_002 - INT. MANOR - LIBRARY - DAY
+     Removing this would weaken 8 later scene(s): scene_010, scene_005, scene_008, scene_007, scene_009, scene_003, scene_004, scene_006.
+  2. scene_003 - INT. MANOR - DINING ROOM - DAY
+     Removing this would weaken 7 later scene(s): scene_009, scene_007, scene_005, scene_008, scene_004, scene_006, scene_010.
+  3. scene_004 - INT. MANOR - GREENHOUSE - DAY
+     Removing this would weaken 6 later scene(s): scene_007, scene_005, scene_008, scene_006, scene_010, scene_009.
+  4. scene_005 - INT. MANOR - SERVANTS' STAIR - DAY
+     Removing this would weaken 5 later scene(s): scene_008, scene_010, scene_007, scene_006, scene_009.
+  5. scene_006 - INT. MANOR - NORTH WING HALL - DAY
+     Removing this would weaken 3 later scene(s): scene_008, scene_010, scene_009.
+  ... and 3 more scene(s) with downstream ties.
+
+STORY CONSISTENCY ISSUES
+------------------------------------------------------------------------
+  Found 2 possible inconsistency(ies): 2 clear conflict(s), 0 subtler mismatch(es).
+
+  Issue 1: Relationship Fact
+    Between scene 3 and scene 9
+    CALEB is described as having a niece_nephew relation in scene_003 but a parent_child relation in scene_009.
+    Confidence: about 85%
+
+  Possible issue 2: Character Age
+    Between scene 4 and scene 10
+    TOMAS is described as age 22 in scene_004 but age 19 in scene_010.
+    Confidence: about 70%
+
+OVERALL SCRIPT HEALTH
+------------------------------------------------------------------------
+  Score: 81 / 100
+  Solid draft with room to tighten loose scenes or fix a few story beats.
+

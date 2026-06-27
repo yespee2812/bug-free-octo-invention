@@ -1,0 +1,12 @@
+GROUND TRUTH EVALUATION: western_5scene_errors
+========================================================================
+
+CONTRADICTIONS
+  Expected (manual + planted): 2
+  Detected by engine:          1
+  Matched:                     1
+  Missed (false negatives):    1
+  Extra (false positives):     0
+
+  Missed:
+    - location_continuity: scene 2 vs scene 3

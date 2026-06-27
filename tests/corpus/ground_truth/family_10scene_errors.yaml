@@ -1,0 +1,25 @@
+script_id: family_10scene_errors
+filename: family_10scene_errors.fountain
+
+planted_contradictions:
+  - type: numeric_count
+    scene_number_a: 1
+    scene_number_b: 9
+    characters: ["RAUL"]
+    objects: []
+    engine_detectable: false
+    note: "'reunion twenty years in the making' (sc1) vs 'Twenty-five years of silence' (sc9)."
+  - type: numeric_count
+    scene_number_a: 5
+    scene_number_b: 10
+    characters: ["MARIA"]
+    objects: []
+    engine_detectable: false
+    note: "'Twenty chairs' (sc5) vs 'a table set for eighteen' (sc10)."
+  - type: relationship_fact
+    scene_number_a: 3
+    scene_number_b: 8
+    characters: ["DIANA", "ANTONIO"]
+    objects: []
+    engine_detectable: false
+    note: "Antonio's sister Diana (sc3) vs 'Antonio's cousin Diana' (sc8)."

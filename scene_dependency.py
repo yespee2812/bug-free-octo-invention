@@ -140,6 +140,12 @@ POSSESSION_VERBS: tuple[str, ...] = (
     "hides",
     "steals",
     "drops",
+    "pulls",
+    "clips",
+    "keeps",
+    "reveals",
+    "fires",
+    "pops",
 )
 PHRASAL_POSSESSION_VERBS: tuple[tuple[str, str], ...] = (
     ("picks", "up"),
@@ -160,6 +166,12 @@ POSSESSION_VERB_LABELS: tuple[str, ...] = (
     "hides",
     "steals",
     "drops",
+    "pulls",
+    "clips",
+    "keeps",
+    "reveals",
+    "fires",
+    "pops",
 )
 # Lowercase noun phrases that handling verbs commonly take in a figurative or
 # non-prop sense (e.g. "holds her breath", "takes the stairs", "has a plan").
@@ -265,8 +277,11 @@ AGENTIVE_PERSON_VERB_LEMMAS: frozenset[str] = frozenset(
     }
 )
 
-_OWNER_GROUP = r"(?P<owner>[A-Z][A-Z0-9 .'\-]+?)"
-_OBJECT_GROUP = r"(?P<object>[a-z][a-z0-9\s\-]+?)"
+# Screenplay name token: ALL-CAPS or Title-case; never swallows lowercase glue
+# words when patterns are compiled without re.IGNORECASE.
+_SCREENPLAY_NAME = r"(?:[A-Z][A-Z0-9'\-.]*|[A-Z][a-z]+)"
+_OWNER_GROUP = rf"(?P<owner>{_SCREENPLAY_NAME}(?:\s+{_SCREENPLAY_NAME}){{0,3}})"
+_OBJECT_GROUP = r"(?P<object>[A-Za-z][A-Za-z0-9\s\-]+?)"
 # Words that mark the end of an object noun phrase (a following
 # preposition/conjunction). Kept broad so trailing prepositional phrases
 # ("the revolver under the floorboard") do not bloat the captured object.
@@ -284,18 +299,17 @@ _OBJECT_TERMINATOR = (
 def _compile_possession_pattern(verb_phrase: str) -> re.Pattern[str]:
     """Compile an "OWNER verb (the) object" possession regex for a verb."""
     return re.compile(
-        rf"{_OWNER_GROUP}\s+{verb_phrase}\s+(?:the\s+)?"
+        rf"(?<![A-Za-z]){_OWNER_GROUP}\s+(?i:{verb_phrase})\s+"
+        rf"(?:(?:his|her|their|its)\s+(?:own\s+)?)?(?:the\s+)?"
         rf"{_OBJECT_GROUP}{_OBJECT_TERMINATOR}",
-        re.IGNORECASE,
     )
 
 
 def _compile_handoff_pattern(verb: str) -> re.Pattern[str]:
     """Compile an "OWNER verb (the) object to RECIPIENT" handoff regex."""
     return re.compile(
-        rf"{_OWNER_GROUP}\s+{verb}\s+(?:the\s+)?{_OBJECT_GROUP}\s+to\s+"
-        rf"(?P<recipient>[A-Z][A-Z0-9 .'\-]+)",
-        re.IGNORECASE,
+        rf"(?<![A-Za-z]){_OWNER_GROUP}\s+(?i:{verb})\s+(?:the\s+)?{_OBJECT_GROUP}\s+to\s+"
+        rf"(?P<recipient>{_SCREENPLAY_NAME}(?:\s+{_SCREENPLAY_NAME}){{0,3}})",
     )
 
 

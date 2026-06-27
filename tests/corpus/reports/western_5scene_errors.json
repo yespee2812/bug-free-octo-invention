@@ -1,0 +1,88 @@
+{
+  "script_summary": {
+    "total_scenes": 5,
+    "total_characters": [
+      "DAWSON",
+      "HOLT",
+      "JESSE",
+      "THE END"
+    ],
+    "total_objects": [
+      "RANCHER HOLT MCCREADY"
+    ]
+  },
+  "dependencies": {
+    "graph_summary": {
+      "total_scenes": 5,
+      "total_edges": 9,
+      "most_depended_on_scene": "scene_005",
+      "orphan_count": 0,
+      "avg_dependencies_per_scene": 1.8
+    },
+    "high_risk_scenes": [
+      {
+        "scene_id": "scene_001",
+        "heading": "EXT. DRY RIVER CROSSING - DAY",
+        "would_break": 4,
+        "impacted_scenes": [
+          "scene_005",
+          "scene_002",
+          "scene_003",
+          "scene_004"
+        ]
+      },
+      {
+        "scene_id": "scene_002",
+        "heading": "EXT. RIDGE TRAIL - DAY",
+        "would_break": 3,
+        "impacted_scenes": [
+          "scene_003",
+          "scene_004",
+          "scene_005"
+        ]
+      },
+      {
+        "scene_id": "scene_003",
+        "heading": "INT. DAWSON RANCH HOUSE - DAY",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_005"
+        ]
+      },
+      {
+        "scene_id": "scene_004",
+        "heading": "EXT. DRY RIVER CROSSING - DUSK",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_005"
+        ]
+      }
+    ]
+  },
+  "contradictions": {
+    "total_found": 1,
+    "by_tier": {
+      "tier1": 1,
+      "tier2": 0
+    },
+    "items": [
+      {
+        "scenes_involved": [
+          2,
+          4
+        ],
+        "contradiction_type": "character_age",
+        "explanation": "JESSE is described as age 30 in scene_002 but age 25 in scene_004.",
+        "confidence": 0.7,
+        "tier": 1,
+        "status": "possible"
+      }
+    ]
+  },
+  "health_score": 92,
+  "input": {
+    "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\western_5scene_errors.fountain",
+    "filename": "western_5scene_errors.fountain",
+    "format": "text"
+  }
+}

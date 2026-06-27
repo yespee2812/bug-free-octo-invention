@@ -1,0 +1,18 @@
+script_id: romance_5scene_errors
+filename: romance_5scene_errors.fountain
+
+planted_contradictions:
+  - type: object_identity
+    scene_number_a: 1
+    scene_number_b: 5
+    characters: ["JAMES"]
+    objects: ["SATCHEL"]
+    engine_detectable: false
+    note: "Leather satchel (sc1) vs canvas satchel (sc5)."
+  - type: character_trait_conflict
+    scene_number_a: 1
+    scene_number_b: 4
+    characters: ["CLAIRE HART"]
+    objects: []
+    engine_detectable: true
+    note: "Claire is a novelist (sc1) vs 'the poet' (sc4)."

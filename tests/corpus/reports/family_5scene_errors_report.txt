@@ -1,0 +1,62 @@
+ScriptLens analysis
+Input: family_5scene_errors.fountain
+Format: text
+========================================================================
+
+========================================================================
+SCRIPTLENS STORY REPORT
+========================================================================
+
+YOUR SCRIPT AT A GLANCE
+------------------------------------------------------------------------
+  Scenes:     5
+  Characters: ANTONIO, DIANA, MARIA, RAUL, THE END
+  Props:      CHAIR, ENVELOPE, FACE-DOWN
+
+HOW YOUR SCENES CONNECT
+------------------------------------------------------------------------
+  Your story has 5 scenes linked by 10 story connections.
+  The scene other scenes rely on most: scene_005.
+  On average, each scene builds on about 2.0 earlier scenes.
+  Every scene after the opening is referenced by a later scene.
+
+SCENES YOU SHOULD NOT CUT LIGHTLY
+------------------------------------------------------------------------
+  1. scene_001 - INT. MORALES HOME - KITCHEN - DAY
+     Removing this would weaken 4 later scene(s): scene_005, scene_002, scene_003, scene_004.
+  2. scene_002 - INT. MORALES HOME - LIVING ROOM - DAY
+     Removing this would weaken 3 later scene(s): scene_005, scene_004, scene_003.
+  3. scene_003 - INT. MORALES HOME - DINING ROOM - NIGHT
+     Removing this would weaken 2 later scene(s): scene_005, scene_004.
+  4. scene_004 - INT. MORALES HOME - DINING ROOM - NIGHT
+     Removing this would weaken 1 later scene(s): scene_005.
+
+STORY CONSISTENCY ISSUES
+------------------------------------------------------------------------
+  Found 4 possible inconsistency(ies): 4 clear conflict(s), 0 subtler mismatch(es).
+
+  Issue 1: Relationship Fact
+    Between scene 1 and scene 2
+    ANTONIO is described with incompatible relations (parent_child, sibling) across scene_001 and scene_002.
+    Confidence: about 85%
+
+  Possible issue 2: Character Age
+    Between scene 3 and scene 3
+    RAUL MORALES is described as age 65 in scene_003 but age 18 in scene_003.
+    Confidence: about 70%
+
+  Possible issue 3: Numeric Count
+    Between scene 1 and scene 3
+    'seating' count is 20 in scene_001 but 18 in scene_003.
+    Confidence: about 50%
+
+  Possible issue 4: Numeric Count
+    Between scene 2 and scene 4
+    'year' count is 20 in scene_002 but 15 in scene_004.
+    Confidence: about 50%
+
+OVERALL SCRIPT HEALTH
+------------------------------------------------------------------------
+  Score: 68 / 100
+  Worth a revision pass: address contradictions and scenes that feel disconnected.
+

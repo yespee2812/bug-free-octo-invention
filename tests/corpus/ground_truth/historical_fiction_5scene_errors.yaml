@@ -1,0 +1,18 @@
+script_id: historical_fiction_5scene_errors
+filename: historical_fiction_5scene_errors.fountain
+
+planted_contradictions:
+  - type: relationship_fact
+    scene_number_a: 1
+    scene_number_b: 4
+    characters: ["LUC", "MARIE"]
+    objects: []
+    engine_detectable: false
+    note: "'Her brother Luc' (sc1) vs 'Luc, her cousin' (sc4)."
+  - type: date_year
+    scene_number_a: 1
+    scene_number_b: 4
+    characters: []
+    objects: []
+    engine_detectable: false
+    note: "Slug dated 1943 (sc1) vs 'the autumn of 1942' (sc4)."

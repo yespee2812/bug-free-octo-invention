@@ -1,0 +1,13 @@
+GROUND TRUTH EVALUATION: family_5scene_errors
+========================================================================
+
+CONTRADICTIONS
+  Expected (manual + planted): 2
+  Detected by engine:          4
+  Matched:                     2
+  Missed (false negatives):    0
+  Extra (false positives):     2
+
+  Extra (engine-only):
+    - character_age: scene 3 vs scene 3
+    - relationship_fact: scene 1 vs scene 2

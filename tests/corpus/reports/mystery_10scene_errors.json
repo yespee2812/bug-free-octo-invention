@@ -1,0 +1,157 @@
+{
+  "script_summary": {
+    "total_scenes": 10,
+    "total_characters": [
+      "CALEB",
+      "DETECTIVE MAYA QUINN",
+      "MAYA",
+      "THE END",
+      "TOMAS"
+    ],
+    "total_objects": [
+      "DECOY",
+      "GLASS KEY",
+      "MR",
+      "MRS"
+    ]
+  },
+  "dependencies": {
+    "graph_summary": {
+      "total_scenes": 10,
+      "total_edges": 32,
+      "most_depended_on_scene": "scene_010",
+      "orphan_count": 1,
+      "avg_dependencies_per_scene": 3.5
+    },
+    "high_risk_scenes": [
+      {
+        "scene_id": "scene_002",
+        "heading": "INT. MANOR - LIBRARY - DAY",
+        "would_break": 8,
+        "impacted_scenes": [
+          "scene_010",
+          "scene_005",
+          "scene_008",
+          "scene_007",
+          "scene_009",
+          "scene_003",
+          "scene_004",
+          "scene_006"
+        ]
+      },
+      {
+        "scene_id": "scene_003",
+        "heading": "INT. MANOR - DINING ROOM - DAY",
+        "would_break": 7,
+        "impacted_scenes": [
+          "scene_009",
+          "scene_007",
+          "scene_005",
+          "scene_008",
+          "scene_004",
+          "scene_006",
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_004",
+        "heading": "INT. MANOR - GREENHOUSE - DAY",
+        "would_break": 6,
+        "impacted_scenes": [
+          "scene_007",
+          "scene_005",
+          "scene_008",
+          "scene_006",
+          "scene_010",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_005",
+        "heading": "INT. MANOR - SERVANTS' STAIR - DAY",
+        "would_break": 5,
+        "impacted_scenes": [
+          "scene_008",
+          "scene_010",
+          "scene_007",
+          "scene_006",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_006",
+        "heading": "INT. MANOR - NORTH WING HALL - DAY",
+        "would_break": 3,
+        "impacted_scenes": [
+          "scene_008",
+          "scene_010",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_007",
+        "heading": "INT. HIDDEN STUDY - DAY",
+        "would_break": 3,
+        "impacted_scenes": [
+          "scene_009",
+          "scene_008",
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_008",
+        "heading": "INT. MANOR - MRS. ASHWORTH'S BEDROOM - DAY",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_010",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_009",
+        "heading": "INT. MANOR - LIBRARY - DAY",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_010"
+        ]
+      }
+    ]
+  },
+  "contradictions": {
+    "total_found": 2,
+    "by_tier": {
+      "tier1": 2,
+      "tier2": 0
+    },
+    "items": [
+      {
+        "scenes_involved": [
+          3,
+          9
+        ],
+        "contradiction_type": "relationship_fact",
+        "explanation": "CALEB is described as having a niece_nephew relation in scene_003 but a parent_child relation in scene_009.",
+        "confidence": 0.85,
+        "tier": 1,
+        "status": "confirmed"
+      },
+      {
+        "scenes_involved": [
+          4,
+          10
+        ],
+        "contradiction_type": "character_age",
+        "explanation": "TOMAS is described as age 22 in scene_004 but age 19 in scene_010.",
+        "confidence": 0.7,
+        "tier": 1,
+        "status": "possible"
+      }
+    ]
+  },
+  "health_score": 81,
+  "input": {
+    "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\mystery_10scene_errors.fountain",
+    "filename": "mystery_10scene_errors.fountain",
+    "format": "text"
+  }
+}

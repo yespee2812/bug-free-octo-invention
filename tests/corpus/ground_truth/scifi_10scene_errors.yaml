@@ -1,0 +1,25 @@
+script_id: scifi_10scene_errors
+filename: scifi_10scene_errors.fountain
+
+planted_contradictions:
+  - type: object_identity
+    scene_number_a: 1
+    scene_number_b: 3
+    characters: ["KARA"]
+    objects: ["DATA CHIP"]
+    engine_detectable: false
+    note: "Gold data chip (sc1) vs silver data chip (sc3)."
+  - type: date_year
+    scene_number_a: 2
+    scene_number_b: 6
+    characters: ["HALE"]
+    objects: ["Meridian"]
+    engine_detectable: false
+    note: "Meridian missing in 2014 (sc2) vs lost in 2009 (sc6)."
+  - type: numeric_count
+    scene_number_a: 4
+    scene_number_b: 7
+    characters: []
+    objects: []
+    engine_detectable: false
+    note: "'four-person team' (sc4) vs 'All six of us' (sc7)."

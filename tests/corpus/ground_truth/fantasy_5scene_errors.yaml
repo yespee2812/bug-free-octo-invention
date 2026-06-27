@@ -1,0 +1,18 @@
+script_id: fantasy_5scene_errors
+filename: fantasy_5scene_errors.fountain
+
+planted_contradictions:
+  - type: object_identity
+    scene_number_a: 1
+    scene_number_b: 5
+    characters: ["MIRA"]
+    objects: ["COMPASS"]
+    engine_detectable: false
+    note: "Brass compass (sc1) vs 'iron compass' (sc5)."
+  - type: object_identity
+    scene_number_a: 2
+    scene_number_b: 4
+    characters: ["STRANGER"]
+    objects: ["payment"]
+    engine_detectable: false
+    note: "Stranger pays with a silver thimble (sc2) vs 'paid with a brass coin' (sc4)."

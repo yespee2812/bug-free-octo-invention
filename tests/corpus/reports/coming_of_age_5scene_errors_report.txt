@@ -1,0 +1,47 @@
+ScriptLens analysis
+Input: coming_of_age_5scene_errors.fountain
+Format: text
+========================================================================
+
+========================================================================
+SCRIPTLENS STORY REPORT
+========================================================================
+
+YOUR SCRIPT AT A GLANCE
+------------------------------------------------------------------------
+  Scenes:     5
+  Characters: JORDAN, MAYA, THE END
+  Props:      (none detected)
+
+HOW YOUR SCENES CONNECT
+------------------------------------------------------------------------
+  Your story has 5 scenes linked by 10 story connections.
+  The scene other scenes rely on most: scene_005.
+  On average, each scene builds on about 2.0 earlier scenes.
+  Every scene after the opening is referenced by a later scene.
+
+SCENES YOU SHOULD NOT CUT LIGHTLY
+------------------------------------------------------------------------
+  1. scene_001 - INT. HIGH SCHOOL HALLWAY - DAY
+     Removing this would weaken 4 later scene(s): scene_002, scene_005, scene_004, scene_003.
+  2. scene_002 - EXT. SCHOOL ROOFTOP - AFTERNOON
+     Removing this would weaken 3 later scene(s): scene_004, scene_005, scene_003.
+  3. scene_003 - INT. AUDITORIUM - NIGHT
+     Removing this would weaken 2 later scene(s): scene_004, scene_005.
+  4. scene_004 - INT. BACKSTAGE - NIGHT
+     Removing this would weaken 1 later scene(s): scene_005.
+
+STORY CONSISTENCY ISSUES
+------------------------------------------------------------------------
+  Found 1 possible inconsistency(ies): 1 clear conflict(s), 0 subtler mismatch(es).
+
+  Possible issue 1: Numeric Count
+    Between scene 3 and scene 5
+    'seating' count is 12 in scene_003 but 15 in scene_005.
+    Confidence: about 50%
+
+OVERALL SCRIPT HEALTH
+------------------------------------------------------------------------
+  Score: 92 / 100
+  Your draft is in strong shape - few structural or logic concerns.
+

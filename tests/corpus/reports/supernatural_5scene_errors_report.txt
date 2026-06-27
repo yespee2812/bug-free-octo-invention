@@ -1,0 +1,45 @@
+ScriptLens analysis
+Input: supernatural_5scene_errors.fountain
+Format: text
+========================================================================
+
+========================================================================
+SCRIPTLENS STORY REPORT
+========================================================================
+
+YOUR SCRIPT AT A GLANCE
+------------------------------------------------------------------------
+  Scenes:     5
+  Characters: DAN, ELISE, THE END
+  Props:      DRAWING, EMF, EMF METERS, OTHER SIDE OF AWAKE, PARANORMAL RESEARCHER ELISE VOSS, THRESHOLD, VISIBLE
+
+HOW YOUR SCENES CONNECT
+------------------------------------------------------------------------
+  Your story has 5 scenes linked by 7 story connections.
+  The scene other scenes rely on most: scene_005.
+  On average, each scene builds on about 1.6 earlier scenes.
+  Every scene after the opening is referenced by a later scene.
+
+SCENES YOU SHOULD NOT CUT LIGHTLY
+------------------------------------------------------------------------
+  1. scene_001 - EXT. ABANDONED FARMHOUSE - DUSK
+     Removing this would weaken 4 later scene(s): scene_003, scene_002, scene_004, scene_005.
+  2. scene_002 - INT. FARMHOUSE - UPSTAIRS HALL - NIGHT
+     Removing this would weaken 3 later scene(s): scene_005, scene_004, scene_003.
+  3. scene_003 - INT. EAST BEDROOM - NIGHT
+     Removing this would weaken 1 later scene(s): scene_005.
+
+STORY CONSISTENCY ISSUES
+------------------------------------------------------------------------
+  Found 1 possible inconsistency(ies): 1 clear conflict(s), 0 subtler mismatch(es).
+
+  Possible issue 1: Numeric Count
+    Between scene 1 and scene 5
+    'family' count is 3 in scene_001 but 4 in scene_005.
+    Confidence: about 50%
+
+OVERALL SCRIPT HEALTH
+------------------------------------------------------------------------
+  Score: 92 / 100
+  Your draft is in strong shape - few structural or logic concerns.
+

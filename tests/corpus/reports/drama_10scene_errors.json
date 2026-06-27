@@ -1,0 +1,154 @@
+{
+  "script_summary": {
+    "total_scenes": 10,
+    "total_characters": [
+      "ALMA",
+      "ELENA",
+      "GINA",
+      "JUDGE",
+      "RICHARD",
+      "SOFIA",
+      "THE END"
+    ],
+    "total_objects": [
+      "PARENTS",
+      "SECOND BEDROOM",
+      "SILVER BAND",
+      "SILVER WEDDING BAND",
+      "TEMPORARY CUSTODY"
+    ]
+  },
+  "dependencies": {
+    "graph_summary": {
+      "total_scenes": 10,
+      "total_edges": 16,
+      "most_depended_on_scene": "scene_010",
+      "orphan_count": 3,
+      "avg_dependencies_per_scene": 1.8
+    },
+    "high_risk_scenes": [
+      {
+        "scene_id": "scene_002",
+        "heading": "INT. ELENA'S KITCHEN - NIGHT",
+        "would_break": 4,
+        "impacted_scenes": [
+          "scene_010",
+          "scene_005",
+          "scene_007",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_001",
+        "heading": "INT. COUNTY FAMILY COURT - DAY",
+        "would_break": 3,
+        "impacted_scenes": [
+          "scene_008",
+          "scene_004",
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_005",
+        "heading": "INT. SCHOOL HALLWAY - DAY",
+        "would_break": 3,
+        "impacted_scenes": [
+          "scene_009",
+          "scene_010",
+          "scene_007"
+        ]
+      },
+      {
+        "scene_id": "scene_003",
+        "heading": "EXT. COMMUNITY POOL - DAY",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_008",
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_004",
+        "heading": "INT. RICHARD'S APARTMENT - NIGHT",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_010",
+          "scene_008"
+        ]
+      },
+      {
+        "scene_id": "scene_007",
+        "heading": "INT. ELENA'S CAR - NIGHT",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_010",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_008",
+        "heading": "EXT. COMMUNITY POOL - MORNING",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_009",
+        "heading": "INT. ELENA'S KITCHEN - NIGHT",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_010"
+        ]
+      }
+    ]
+  },
+  "contradictions": {
+    "total_found": 3,
+    "by_tier": {
+      "tier1": 3,
+      "tier2": 0
+    },
+    "items": [
+      {
+        "scenes_involved": [
+          3,
+          8
+        ],
+        "contradiction_type": "relationship_fact",
+        "explanation": "ALMA is described with incompatible relations (professional, sibling) across scene_003 and scene_008.",
+        "confidence": 0.85,
+        "tier": 1,
+        "status": "confirmed"
+      },
+      {
+        "scenes_involved": [
+          1,
+          10
+        ],
+        "contradiction_type": "object_ownership",
+        "explanation": "SILVER BAND was last held by RICHARD in scene_001, but ELENA has it in scene_010 with no handoff between scenes.",
+        "confidence": 0.8,
+        "tier": 1,
+        "status": "confirmed"
+      },
+      {
+        "scenes_involved": [
+          2,
+          3
+        ],
+        "contradiction_type": "character_age",
+        "explanation": "SOFIA is described as age 12 in scene_002 but age 11 in scene_003.",
+        "confidence": 0.7,
+        "tier": 1,
+        "status": "possible"
+      }
+    ]
+  },
+  "health_score": 67,
+  "input": {
+    "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\drama_10scene_errors.fountain",
+    "filename": "drama_10scene_errors.fountain",
+    "format": "text"
+  }
+}

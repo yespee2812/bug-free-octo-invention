@@ -1,0 +1,18 @@
+script_id: adventure_5scene_errors
+filename: adventure_5scene_errors.fountain
+
+planted_contradictions:
+  - type: date_year
+    scene_number_a: 2
+    scene_number_b: 5
+    characters: ["M. OKAFOR"]
+    objects: ["expedition"]
+    engine_detectable: false
+    note: "Tin box 'M. OKAFOR, 1987' (sc2) vs 'British expedition, 1985' (sc5)."
+  - type: object_identity
+    scene_number_a: 1
+    scene_number_b: 3
+    characters: ["JUNE"]
+    objects: ["ENVELOPE"]
+    engine_detectable: false
+    note: "Wax-sealed envelope (sc1) vs 'leather pouch' (sc3)."

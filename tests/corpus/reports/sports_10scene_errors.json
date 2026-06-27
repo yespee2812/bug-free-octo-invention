@@ -1,0 +1,118 @@
+{
+  "script_summary": {
+    "total_scenes": 10,
+    "total_characters": [
+      "ALMA",
+      "COACH ALMA REYES",
+      "NINA",
+      "THE END"
+    ],
+    "total_objects": [
+      "INVITATIONAL INVITE"
+    ]
+  },
+  "dependencies": {
+    "graph_summary": {
+      "total_scenes": 10,
+      "total_edges": 13,
+      "most_depended_on_scene": "scene_010",
+      "orphan_count": 4,
+      "avg_dependencies_per_scene": 1.4
+    },
+    "high_risk_scenes": [
+      {
+        "scene_id": "scene_002",
+        "heading": "INT. UNIVERSITY POOL - MORNING",
+        "would_break": 5,
+        "impacted_scenes": [
+          "scene_010",
+          "scene_005",
+          "scene_008",
+          "scene_007",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_003",
+        "heading": "INT. TRAINING ROOM - DAY",
+        "would_break": 3,
+        "impacted_scenes": [
+          "scene_010",
+          "scene_007",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_005",
+        "heading": "INT. COACH'S OFFICE - DAY",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_008",
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_007",
+        "heading": "INT. UNIVERSITY POOL - NIGHT",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_009",
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_008",
+        "heading": "EXT. POOL DECK - MORNING",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_009",
+        "heading": "INT. UNIVERSITY POOL - DAY",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_010"
+        ]
+      }
+    ]
+  },
+  "contradictions": {
+    "total_found": 2,
+    "by_tier": {
+      "tier1": 2,
+      "tier2": 0
+    },
+    "items": [
+      {
+        "scenes_involved": [
+          3,
+          8
+        ],
+        "contradiction_type": "numeric_count",
+        "explanation": "'rank' count is 4 in scene_003 but 3 in scene_008.",
+        "confidence": 0.5,
+        "tier": 1,
+        "status": "possible"
+      },
+      {
+        "scenes_involved": [
+          7,
+          10
+        ],
+        "contradiction_type": "numeric_count",
+        "explanation": "'split' count is 150 in scene_007 but 175 in scene_010.",
+        "confidence": 0.5,
+        "tier": 1,
+        "status": "possible"
+      }
+    ]
+  },
+  "health_score": 72,
+  "input": {
+    "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\sports_10scene_errors.fountain",
+    "filename": "sports_10scene_errors.fountain",
+    "format": "text"
+  }
+}

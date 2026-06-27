@@ -1,0 +1,106 @@
+{
+  "script_summary": {
+    "total_scenes": 5,
+    "total_characters": [
+      "CLAIRE",
+      "JAMES",
+      "THE END"
+    ],
+    "total_objects": [
+      "BATTERED LEATHER SATCHEL",
+      "CRACK",
+      "FOLDED PHOTO",
+      "KEY",
+      "PEN",
+      "PHOTO",
+      "TWO PAPER CUPS",
+      "TWO PAPER CUPS OF TEA"
+    ]
+  },
+  "dependencies": {
+    "graph_summary": {
+      "total_scenes": 5,
+      "total_edges": 10,
+      "most_depended_on_scene": "scene_005",
+      "orphan_count": 0,
+      "avg_dependencies_per_scene": 2.0
+    },
+    "high_risk_scenes": [
+      {
+        "scene_id": "scene_001",
+        "heading": "EXT. CAPE COD INN - PORCH - DAWN",
+        "would_break": 4,
+        "impacted_scenes": [
+          "scene_003",
+          "scene_005",
+          "scene_004",
+          "scene_002"
+        ]
+      },
+      {
+        "scene_id": "scene_002",
+        "heading": "INT. INN LOBBY - MORNING",
+        "would_break": 3,
+        "impacted_scenes": [
+          "scene_004",
+          "scene_003",
+          "scene_005"
+        ]
+      },
+      {
+        "scene_id": "scene_003",
+        "heading": "EXT. BEACH - AFTERNOON",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_005",
+          "scene_004"
+        ]
+      },
+      {
+        "scene_id": "scene_004",
+        "heading": "INT. CLAIRE'S ROOM - NIGHT",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_005"
+        ]
+      }
+    ]
+  },
+  "contradictions": {
+    "total_found": 2,
+    "by_tier": {
+      "tier1": 2,
+      "tier2": 0
+    },
+    "items": [
+      {
+        "scenes_involved": [
+          1,
+          4
+        ],
+        "contradiction_type": "character_trait_conflict",
+        "explanation": "CLAIRE HART is described as 'novelist' in scene_001 and 'poet' in scene_004 with no overlapping trait terms.",
+        "confidence": 0.85,
+        "tier": 1,
+        "status": "confirmed"
+      },
+      {
+        "scenes_involved": [
+          1,
+          5
+        ],
+        "contradiction_type": "object_identity",
+        "explanation": "The container is 'leather' in scene_001 but 'canvas' in scene_005 (material mismatch).",
+        "confidence": 0.6,
+        "tier": 1,
+        "status": "possible"
+      }
+    ]
+  },
+  "health_score": 84,
+  "input": {
+    "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\romance_5scene_errors.fountain",
+    "filename": "romance_5scene_errors.fountain",
+    "format": "text"
+  }
+}

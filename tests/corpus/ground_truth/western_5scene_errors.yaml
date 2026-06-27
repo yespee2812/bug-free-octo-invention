@@ -1,0 +1,18 @@
+script_id: western_5scene_errors
+filename: western_5scene_errors.fountain
+
+planted_contradictions:
+  - type: location_continuity
+    scene_number_a: 2
+    scene_number_b: 3
+    characters: ["DAWSON"]
+    objects: ["pasture"]
+    engine_detectable: false
+    note: "Diverts flow to 'his south pasture' (sc2) vs 'My north pasture finally drinks' (sc3)."
+  - type: character_age
+    scene_number_a: 2
+    scene_number_b: 4
+    characters: ["JESSE"]
+    objects: []
+    engine_detectable: false
+    note: "Foreman Jesse, 30s (sc2) vs 'barely twenty-five' (sc4)."

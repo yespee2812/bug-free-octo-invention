@@ -69,6 +69,15 @@ INT. CAR - NIGHT
 MARCUS is wounded in the right shoulder.
 """
 
+BODY_PART_CONFLICT = """INT. TRENCH - NIGHT
+
+KOWALSKI hit, shoulder. Hale hauls him up.
+
+INT. AID STATION - NIGHT
+
+Medics bind Kowalski's leg.
+"""
+
 RECOVERY_CONFLICT = """INT. WAREHOUSE - NIGHT
 
 ELENA is unconscious on the floor.
@@ -108,6 +117,13 @@ NOAH is deaf to reason.
 def test_laterality_conflict_is_flagged_possible() -> None:
     """The same injury switching body sides is a possible continuity issue."""
     found = _of_type(_analyze(LATERALITY_CONFLICT_DIRECT), "medical_laterality")
+    assert len(found) == 1
+    assert found[0].status == STATUS_POSSIBLE
+
+
+def test_body_part_conflict_is_flagged_possible() -> None:
+    """An adjacent-scene injury that jumps body parts is a possible issue."""
+    found = _of_type(_analyze(BODY_PART_CONFLICT), "medical_state")
     assert len(found) == 1
     assert found[0].status == STATUS_POSSIBLE
 

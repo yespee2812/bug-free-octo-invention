@@ -1,0 +1,25 @@
+script_id: mystery_10scene_errors
+filename: mystery_10scene_errors.fountain
+
+planted_contradictions:
+  - type: character_age
+    scene_number_a: 4
+    scene_number_b: 10
+    characters: ["TOMAS"]
+    objects: []
+    engine_detectable: false
+    note: "Tomas, 22 (sc4) vs 'a nineteen-year-old gardener' (sc10)."
+  - type: relationship_fact
+    scene_number_a: 3
+    scene_number_b: 9
+    characters: ["CALEB"]
+    objects: []
+    engine_detectable: false
+    note: "Caleb introduced as the nephew (sc3) vs 'I'm the only son' (sc9)."
+  - type: fact_consistency
+    scene_number_a: 5
+    scene_number_b: 10
+    characters: ["TOMAS"]
+    objects: ["footprint"]
+    engine_detectable: false
+    note: "Print 'smaller than Tomas's boot' (sc5) vs 'matched Tomas exactly' (sc10)."

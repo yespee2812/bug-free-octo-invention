@@ -1,0 +1,18 @@
+script_id: comedy_5scene_errors
+filename: comedy_5scene_errors.fountain
+
+planted_contradictions:
+  - type: object_ownership
+    scene_number_a: 2
+    scene_number_b: 4
+    characters: ["DAVE", "TOM"]
+    objects: ["MAGNETIC GUEST BOOK"]
+    engine_detectable: true
+    note: "Guest book in Dave's backpack (sc2) vs 'Tom's MAGNETIC GUEST BOOK' (sc4)."
+  - type: relationship_fact
+    scene_number_a: 3
+    scene_number_b: 4
+    characters: ["DIANE", "DAVE"]
+    objects: []
+    engine_detectable: false
+    note: "Dave's future mother-in-law Diane (sc3) vs 'Dave's aunt Diane' (sc4)."

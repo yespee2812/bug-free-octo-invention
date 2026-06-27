@@ -1,0 +1,25 @@
+script_id: comedy_10scene_errors
+filename: comedy_10scene_errors.fountain
+
+planted_contradictions:
+  - type: object_ownership
+    scene_number_a: 3
+    scene_number_b: 6
+    characters: ["DAVE", "TOM"]
+    objects: ["MAGNETIC GUEST BOOK"]
+    engine_detectable: true
+    note: "Dave reveals the guest book (sc3) vs 'Tom's guest book' (sc6)."
+  - type: relationship_fact
+    scene_number_a: 4
+    scene_number_b: 9
+    characters: ["DIANE", "MAYA"]
+    objects: []
+    engine_detectable: false
+    note: "Diane is the mother-in-law (sc4) vs 'Maya's sister Diane' (sc9)."
+  - type: relationship_fact
+    scene_number_a: 1
+    scene_number_b: 6
+    characters: ["PETE", "TOM"]
+    objects: []
+    engine_detectable: false
+    note: "Cousin Pete / best man Tom (sc1) vs 'best man Pete' (sc6)."

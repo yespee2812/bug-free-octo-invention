@@ -1,0 +1,60 @@
+ScriptLens analysis
+Input: horror_10scene_errors.fountain
+Format: text
+========================================================================
+
+========================================================================
+SCRIPTLENS STORY REPORT
+========================================================================
+
+YOUR SCRIPT AT A GLANCE
+------------------------------------------------------------------------
+  Scenes:     10
+  Characters: LEAH, THE END
+  Props:      AM, CHRISTMAS, DOOR, FATHER, FLOOR TRAPDOOR, LEAH PARK, ON TAPE, TV, VHS CAMCORDER
+
+HOW YOUR SCENES CONNECT
+------------------------------------------------------------------------
+  Your story has 10 scenes linked by 36 story connections.
+  The scene other scenes rely on most: scene_010.
+  On average, each scene builds on about 4.1 earlier scenes.
+  Every scene after the opening is referenced by a later scene.
+
+SCENES YOU SHOULD NOT CUT LIGHTLY
+------------------------------------------------------------------------
+  1. scene_001 - INT. SUBURBAN HOUSE - FOYER - DAY
+     Removing this would weaken 9 later scene(s): scene_005, scene_003, scene_008, scene_007, scene_002, scene_004, scene_006, scene_010, scene_009.
+  2. scene_002 - INT. BASEMENT - NIGHT
+     Removing this would weaken 8 later scene(s): scene_007, scene_010, scene_009, scene_005, scene_004, scene_006, scene_003, scene_008.
+  3. scene_003 - INT. BASEMENT - LATER
+     Removing this would weaken 5 later scene(s): scene_005, scene_008, scene_007, scene_010, scene_009.
+  4. scene_004 - INT. KITCHEN - NIGHT
+     Removing this would weaken 5 later scene(s): scene_008, scene_007, scene_006, scene_010, scene_009.
+  5. scene_005 - INT. BASEMENT - NIGHT
+     Removing this would weaken 4 later scene(s): scene_008, scene_010, scene_007, scene_009.
+  ... and 4 more scene(s) with downstream ties.
+
+STORY CONSISTENCY ISSUES
+------------------------------------------------------------------------
+  Found 3 possible inconsistency(ies): 3 clear conflict(s), 0 subtler mismatch(es).
+
+  Possible issue 1: Character Age
+    Between scene 7 and scene 10
+    LEAH is described as age 12 in scene_007 but age 8 in scene_010.
+    Confidence: about 70%
+
+  Possible issue 2: Date Year
+    Between scene 3 and scene 5
+    The year is 1994 in scene_003 but 1993 in scene_005.
+    Confidence: about 55%
+
+  Possible issue 3: Numeric Count
+    Between scene 1 and scene 9
+    'week' count is 1 in scene_001 but 3 in scene_009.
+    Confidence: about 50%
+
+OVERALL SCRIPT HEALTH
+------------------------------------------------------------------------
+  Score: 76 / 100
+  Solid draft with room to tighten loose scenes or fix a few story beats.
+

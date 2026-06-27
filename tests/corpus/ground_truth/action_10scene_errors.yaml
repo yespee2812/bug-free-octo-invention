@@ -1,0 +1,25 @@
+script_id: action_10scene_errors
+filename: action_10scene_errors.fountain
+
+planted_contradictions:
+  - type: numeric_count
+    scene_number_a: 1
+    scene_number_b: 10
+    characters: []
+    objects: ["HOSTAGES"]
+    engine_detectable: false
+    note: "Three hostages circled (sc1) vs 'All four' (sc10)."
+  - type: object_ownership
+    scene_number_a: 3
+    scene_number_b: 9
+    characters: ["VEGA", "PARK"]
+    objects: ["RED FLARE CANISTER"]
+    engine_detectable: true
+    note: "Flare on Vega's vest (sc3); Park fires the flare (sc9)."
+  - type: name_consistency
+    scene_number_a: 3
+    scene_number_b: 7
+    characters: ["OSEI"]
+    objects: []
+    engine_detectable: false
+    note: "Operative named Osei (sc3, sc4) vs 'Oshea' (sc7)."

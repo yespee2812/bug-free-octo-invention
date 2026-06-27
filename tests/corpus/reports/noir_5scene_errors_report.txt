@@ -1,0 +1,50 @@
+ScriptLens analysis
+Input: noir_5scene_errors.fountain
+Format: text
+========================================================================
+
+========================================================================
+SCRIPTLENS STORY REPORT
+========================================================================
+
+YOUR SCRIPT AT A GLANCE
+------------------------------------------------------------------------
+  Scenes:     5
+  Characters: CLIENT, FRANK, THE END
+  Props:      BLUE PARROT CLUB, COLLAR, ENVELOPE, METAL CASE, PRIVATE INVESTIGATOR FRANK MERCER, RED HAT
+
+HOW YOUR SCENES CONNECT
+------------------------------------------------------------------------
+  Your story has 5 scenes linked by 4 story connections.
+  The scene other scenes rely on most: scene_005.
+  On average, each scene builds on about 0.8 earlier scenes.
+  2 scene(s) sit loosely in the story - nothing later depends on them, so they may be easy to cut or need stronger ties.
+
+SCENES YOU SHOULD NOT CUT LIGHTLY
+------------------------------------------------------------------------
+  1. scene_002 - INT. MERCER'S OFFICE - DAY
+     Removing this would weaken 2 later scene(s): scene_005, scene_004.
+  2. scene_001 - EXT. MERIDIAN AVENUE - RAIN - NIGHT
+     Removing this would weaken 1 later scene(s): scene_005.
+  3. scene_004 - INT. BLUE PARROT CLUB - NIGHT
+     Removing this would weaken 1 later scene(s): scene_005.
+
+STORY CONSISTENCY ISSUES
+------------------------------------------------------------------------
+  Found 2 possible inconsistency(ies): 2 clear conflict(s), 0 subtler mismatch(es).
+
+  Possible issue 1: Object Identity
+    Between scene 2 and scene 4
+    The hat is 'red' in scene_002 but 'green' in scene_004 (color mismatch).
+    Confidence: about 60%
+
+  Possible issue 2: Numeric Count
+    Between scene 2 and scene 3
+    'room' count is 514 in scene_002 but 415 in scene_003.
+    Confidence: about 50%
+
+OVERALL SCRIPT HEALTH
+------------------------------------------------------------------------
+  Score: 78 / 100
+  Solid draft with room to tighten loose scenes or fix a few story beats.
+

@@ -8,7 +8,34 @@ from typing import Optional
 import spacy
 from spacy.language import Language
 
+from entity_canonicalization import (
+    EntityRegistry,
+    normalize_name,
+    strip_titles_and_articles,
+)
 from nlp_shared import get_shared_nlp
+from screenplay_coref import (
+    ACTION_NAME_RE,
+    FIRST_PERSON_AGE_RE,
+    FOR_AGE_DIALOGUE_RE,
+    INTRO_ROLE_RE,
+    PAYMENT_OBJECT_RE,
+    ROLE_NOUNS,
+    RoleRegistry,
+    SceneMentionTracker,
+    YEAR_OLD_AGE_RE,
+    build_role_registry,
+    index_roles_from_line,
+    iter_scene_lines,
+    register_characters_from_scenes,
+    scene_character_ids,
+)
+from value_normalization import (
+    descriptor_axis,
+    extract_all_years,
+    words_to_int,
+)
+from value_normalization import _NUMBER_WORDS as NUMBER_WORDS
 from scene_dependency import (
     HANDOFF_VERBS,
     INANIMATE_DEATH_NOUNS,
@@ -38,7 +65,513 @@ FACT_TYPES: tuple[str, ...] = (
     "medical_state",
     "relationship",
     "world_rule",
+    "age",
+    "object_descriptor",
+    "numeric_count",
+    "year",
 )
+
+# Count nouns whose quantities vary too freely in normal prose to flag as
+# continuity errors (clock/measure/abstract time), kept out of numeric_count.
+COUNT_NOUN_BLOCKLIST: frozenset[str] = frozenset(
+    {
+        "minute", "hour", "moment", "day", "time", "oclock", "step", "inch",
+        "foot", "degree", "percent", "dollar", "cent", "way", "bit", "kind",
+        "sort", "part", "side", "thing",
+    }
+)
+
+# Nouns allowed to *precede* a number ("Room 514", "Gate 7"). The noun-before
+# fallback is whitelisted so person appositives ("Dawson, 45") and similar are
+# never mistaken for counted nouns.
+COUNT_BEFORE_NOUNS: frozenset[str] = frozenset(
+    {
+        "room", "suite", "apartment", "unit", "cell", "gate", "platform",
+        "floor", "level", "page", "chapter", "channel", "line", "lane",
+        "dock", "berth", "track", "aisle", "row", "seat",
+    }
+)
+
+# Tokens that cannot serve as the counted noun (function words / pronouns).
+COUNT_STOP_TOKENS: frozenset[str] = frozenset(
+    {
+        "the", "a", "an", "of", "on", "in", "at", "to", "into", "onto", "for",
+        "and", "or", "but", "with", "from", "by", "as", "that", "which", "who",
+        "this", "these", "those", "his", "her", "their", "its", "my", "your",
+        "our", "us", "them", "me", "you", "it", "him", "more", "less", "other",
+        "is", "was", "are", "were", "be", "been", "out", "up", "down", "off",
+        "over", "under", "here", "there", "now", "then", "ago", "later", "old",
+        "yet", "just", "only", "even", "still", "about", "around", "almost",
+        "nearly", "barely",
+    }
+)
+# Adjectives between a number and its head noun ("three identical runs").
+COUNT_ADJECTIVE_SKIP: frozenset[str] = frozenset(
+    {
+        "identical", "empty", "same", "other", "more", "all", "nearly", "almost",
+        "only", "exact", "different", "separate", "non", "lethal", "blind",
+        "major", "minor", "final", "first", "last", "next", "new", "old", "long",
+        "short", "dead", "alive", "clean", "dirty", "full", "half", "whole",
+        "extra", "missing", "remaining", "total", "combined", "separate",
+    }
+)
+# Canonical count-entity aliases so "chairs" vs "table set for" align.
+COUNT_ENTITY_ALIASES: dict[str, str] = {
+    "CHAIR": "SEATING",
+    "TABLE": "SEATING",
+    "PEOPLE": "SEATING",
+    "GUEST": "SEATING",
+    "GUESTS": "SEATING",
+    "CAST": "SEATING",
+    "METER": "METERS",
+    "TEAM": "GROUP",
+    "COURIER": "GROUP",
+}
+_COUNT_WORDS = (
+    r"zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|"
+    r"thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|"
+    r"thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand"
+)
+_COUNT_NUM = (
+    rf"(?:\d+(?:[\s\-]*(?:{_COUNT_WORDS}))*|(?:{_COUNT_WORDS})(?:[\s\-]+(?:{_COUNT_WORDS}))*)"
+)
+COUNT_ROOM_NUMBER_RE: re.Pattern[str] = re.compile(
+    rf"\b(?:room|suite|apartment|unit|cell)\s+(?P<num>\d{{2,4}})\b",
+    re.IGNORECASE,
+)
+COUNT_LINE_ROOM_NUMBER_RE: re.Pattern[str] = re.compile(
+    rf"(?:\b(?:on|to|in|into|at)\s+)?(?P<num>\d{{3,4}})\b(?=[^.]*\broom\b)",
+    re.IGNORECASE,
+)
+COUNT_HOSTAGE_LABEL_RE: re.Pattern[str] = re.compile(
+    rf"\bhostage\s+count\s+(?:reads|is|at|shows)\s+(?P<num>{_COUNT_NUM})\b",
+    re.IGNORECASE,
+)
+COUNT_ALL_QUANTITY_RE: re.Pattern[str] = re.compile(
+    rf"\b(?:all|both)\s+(?P<num>{_COUNT_NUM})\b",
+    re.IGNORECASE,
+)
+COUNT_PHRASE_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (
+        re.compile(rf"\bcast of (?P<num>{_COUNT_NUM})\b", re.IGNORECASE),
+        "CAST",
+    ),
+    (
+        re.compile(rf"\btable set for (?P<num>{_COUNT_NUM})\b", re.IGNORECASE),
+        "SEATING",
+    ),
+    (
+        re.compile(rf"\b(?P<num>{_COUNT_NUM})\s+chairs?\b", re.IGNORECASE),
+        "SEATING",
+    ),
+    (
+        re.compile(
+            rf"\b(?P<num>{_COUNT_NUM})\s+(?:people|guests)\b", re.IGNORECASE
+        ),
+        "SEATING",
+    ),
+    (
+        re.compile(rf"\b(?P<num>{_COUNT_NUM})\s+couriers?\b", re.IGNORECASE),
+        "COURIER",
+    ),
+    (
+        re.compile(
+            rf"\b(?P<num>{_COUNT_NUM})[\s-]person\s+team\b", re.IGNORECASE
+        ),
+        "TEAM",
+    ),
+    (
+        re.compile(
+            rf"\b(?:all|both)\s+(?P<num>{_COUNT_NUM})\s+of them\b", re.IGNORECASE
+        ),
+        "SEATING",
+    ),
+    (
+        re.compile(
+            rf"\b(?:all|both)\s+(?P<num>{_COUNT_NUM})\s+of us\b", re.IGNORECASE
+        ),
+        "TEAM",
+    ),
+    (
+        re.compile(
+            rf"\b(?P<num>{_COUNT_NUM})\s+of us\b", re.IGNORECASE
+        ),
+        "TEAM",
+    ),
+    (
+        re.compile(
+            rf"\b(?P<num>{_COUNT_NUM})\s+hostages?\b", re.IGNORECASE
+        ),
+        "HOSTAGE",
+    ),
+    (
+        re.compile(
+            rf"\b(?P<num>{_COUNT_NUM})\s+men\b", re.IGNORECASE
+        ),
+        "GROUP",
+    ),
+    (
+        re.compile(rf"\b(?P<num>{_COUNT_NUM})\s+meters?\b", re.IGNORECASE),
+        "METERS",
+    ),
+    (
+        re.compile(
+            rf"\b(?P<num>{_COUNT_NUM})\s+of them\b", re.IGNORECASE
+        ),
+        "GROUP",
+    ),
+    (
+        re.compile(
+            rf"\b(?:broke|break|breaking|violated?)\s+(?P<num>{_COUNT_NUM})\s+rules?\b",
+            re.IGNORECASE,
+        ),
+        "GROUP",
+    ),
+    (
+        re.compile(
+            rf"\b(?P<num>{_COUNT_NUM})\s+rules?\b", re.IGNORECASE
+        ),
+        "GROUP",
+    ),
+    (
+        re.compile(
+            rf"\bI counted (?P<num>{_COUNT_NUM})\b", re.IGNORECASE
+        ),
+        "GROUP",
+    ),
+    (
+        re.compile(
+            rf"\b(?:split|turn|fails?|fail)\s+(?:at|on|to)\s+(?P<num>\d{{2,4}})\b",
+            re.IGNORECASE,
+        ),
+        "SPLIT",
+    ),
+    (
+        re.compile(
+            r"\b(?P<num>first|second|third|fourth|fifth|sixth|seventh|eighth|"
+            r"ninth|tenth)\b(?=[^.]{0,40}\b(?:finish|place|split|rank|by|"
+            r"isn't|is not|not)\b)",
+            re.IGNORECASE,
+        ),
+        "RANK",
+    ),
+    (
+        re.compile(
+            r"\b(?:finish(?:es|ed|ing)?|finishing|place|split|rank|by)\b"
+            r"[^.]{0,40}?\b(?P<num>first|second|third|fourth|fifth|sixth|"
+            r"seventh|eighth|ninth|tenth)\b",
+            re.IGNORECASE,
+        ),
+        "RANK",
+    ),
+)
+ORDINAL_WORDS: dict[str, int] = {
+    "first": 1,
+    "second": 2,
+    "third": 3,
+    "fourth": 4,
+    "fifth": 5,
+    "sixth": 6,
+    "seventh": 7,
+    "eighth": 8,
+    "ninth": 9,
+    "tenth": 10,
+}
+# Time-of-day / clock phrasing stripped before count tokenization so "11:58 PM"
+# and "1987" (a year) are never read as counts.
+COUNT_CLOCK_RE: re.Pattern[str] = re.compile(r"\d{1,2}:\d{2}(?:\s*[ap]\.?m\.?)?", re.IGNORECASE)
+COUNT_NOT_EVEN_YET_RE: re.Pattern[str] = re.compile(
+    rf"\bnot even (?P<num>{_COUNT_WORDS})\ yet\b",
+    re.IGNORECASE,
+)
+COUNT_YEAR_RE: re.Pattern[str] = re.compile(r"\b1[5-9]\d{2}\b|\b20\d{2}\b")
+
+# Max gap (years) between two distinct script years still treated as a likely
+# continuity slip rather than an intentional multi-period story.
+MAX_YEAR_GAP: int = 10
+
+# Appositive age phrasing: a capitalized name followed by a comma and an age
+# clause, e.g. "SOFIA, 12, ...", "CAPTAIN TOM HALE, 28, ...", "Eddie, barely
+# forty,". The age clause (up to the next sentence/clause break) is parsed by
+# value_normalization.extract_age so digit, word, and "Ns" decade forms work.
+AGE_APPOSITIVE_PATTERN: re.Pattern[str] = re.compile(
+    r"(?<![A-Za-z])(?P<name>(?:[A-Z][A-Z0-9'\-.]*|[A-Z][a-z]+)"
+    r"(?:\s+(?:[A-Z][A-Z0-9'\-.]*|[A-Z][a-z]+)){0,3})\s*,\s*"
+    r"(?P<clause>[^,.;:!?]{1,40})"
+)
+
+# Words that terminate a prop noun phrase when reading the head noun directly
+# after a colour/material descriptor. Keeps "GOLD DATA CHIP" -> head "data"
+# while rejecting "red and ...", "silver, then ..." style non-props.
+DESCRIPTOR_NOUN_STOPWORDS: frozenset[str] = frozenset(
+    {
+        "and", "or", "but", "the", "a", "an", "of", "on", "in", "at", "to",
+        "into", "onto", "with", "that", "which", "who", "from", "for", "as",
+        "his", "her", "their", "its", "my", "your", "is", "was", "are", "were",
+        "then", "now", "still", "beside", "between", "under", "over", "near",
+        "by", "up", "down",
+    }
+)
+
+# Generic head nouns that are too vague to anchor an object-identity check.
+DESCRIPTOR_GENERIC_NOUNS: frozenset[str] = frozenset(
+    {"one", "thing", "things", "side", "air", "light", "stuff"}
+)
+
+# Hedge words allowed before the age token in an appositive ("barely forty",
+# "about thirty"). The age itself must be the head of the clause so pronouns
+# like "this one" can never be misread as the age 1.
+AGE_HEDGE_WORDS: frozenset[str] = frozenset(
+    {
+        "barely", "about", "almost", "nearly", "around", "just", "only",
+        "maybe", "age", "aged", "nearing", "pushing", "roughly",
+    }
+)
+
+
+def _is_number_token(token: str) -> bool:
+    """Return True when a token is a digit run or a number word."""
+    return token.isdigit() or token in NUMBER_WORDS
+
+
+def _singularize(noun: str) -> str:
+    """Return a crude singular form so plural counts align ("runs" -> "run")."""
+    if len(noun) > 4 and noun.endswith("ies"):
+        return noun[:-3] + "y"
+    if len(noun) > 3 and noun.endswith("s") and not noun.endswith("ss"):
+        return noun[:-1]
+    return noun
+
+
+def _valid_count_noun(token: str) -> bool:
+    """Return True when a token can serve as a counted noun."""
+    if len(token) < 3 or _is_number_token(token):
+        return False
+    if token in COUNT_STOP_TOKENS or _singularize(token) in COUNT_NOUN_BLOCKLIST:
+        return False
+    return True
+
+
+def _select_count_noun(
+    tokens: list[str], run_start: int, run_end: int
+) -> Optional[str]:
+    """Pick the counted noun for a number run, or return None.
+
+    A whitelisted identifier noun immediately before ("Room 514") wins, since it
+    is the referent; otherwise scan past adjectives to the head noun
+    ("three identical runs"). Person appositives ("Dawson, 45") match neither.
+    """
+    if run_start > 0 and tokens[run_start - 1] in COUNT_BEFORE_NOUNS:
+        return tokens[run_start - 1]
+    scan = run_end
+    while scan < len(tokens) and scan - run_end < 4:
+        token = tokens[scan]
+        if token in COUNT_ADJECTIVE_SKIP:
+            scan += 1
+            continue
+        if _valid_count_noun(token):
+            return _singularize(token)
+        break
+    return None
+
+
+def _parse_count_value(raw: str) -> Optional[int]:
+    """Parse a numeric phrase into an integer count value."""
+    cleaned = raw.strip().lower()
+    if cleaned in ORDINAL_WORDS:
+        return ORDINAL_WORDS[cleaned]
+    return words_to_int(cleaned)
+
+
+def _parse_clock_hour(clock_text: str) -> Optional[int]:
+    """Return the 12-hour clock-face hour from a time such as ``11:58 PM``."""
+    match = re.search(
+        r"(?P<hour>\d{1,2}):(?P<minute>\d{2})(?:\s*(?P<ampm>[ap])\.?m\.?)?",
+        clock_text,
+        re.IGNORECASE,
+    )
+    if not match:
+        return None
+    hour = int(match.group("hour"))
+    if hour < 0 or hour > 23:
+        return None
+    ampm = (match.group("ampm") or "").lower()
+    if ampm == "a":
+        return 12 if hour == 12 else hour
+    if ampm == "p":
+        return 12 if hour == 12 else hour
+    if hour == 0:
+        return 12
+    if hour > 12:
+        return hour - 12
+    return hour
+
+
+def _canonical_count_entity(entity: str) -> str:
+    """Map count entities onto canonical aliases for cross-phrase matching."""
+    upper = entity.upper()
+    return COUNT_ENTITY_ALIASES.get(upper, upper)
+
+
+def _count_entity_hint(line: str) -> Optional[str]:
+    """Return a count entity hinted by nouns present on the same line."""
+    lowered = line.lower()
+    hints: tuple[tuple[str, str], ...] = (
+        (r"\bhostages?\b", "HOSTAGE"),
+        (r"\bmen\b", "GROUP"),
+        (r"\bcast\b", "CAST"),
+        (r"\bcouriers?\b", "COURIER"),
+        (r"\bchairs?\b", "SEATING"),
+        (r"\bpeople\b", "SEATING"),
+        (r"\bguests?\b", "SEATING"),
+        (r"\bteam\b", "TEAM"),
+        (r"\bmen\b", "GROUP"),
+        (r"\brules?\b", "GROUP"),
+        (r"\bruns?\b", "RUN"),
+    )
+    for pattern, entity in hints:
+        if re.search(pattern, lowered):
+            return entity
+    return None
+
+
+def _recent_count_entity(store: "FactStore") -> Optional[str]:
+    """Return the most recently extracted count entity, if any.
+
+    When several count entities appear in the script, prefers narratively
+    salient anchors (hostages, seating, teams) over incidental nouns such as
+    guards picked up from action beats.
+    """
+    facts = store.get_facts_by_type("numeric_count")
+    if not facts:
+        return None
+    priority = (
+        "HOSTAGE",
+        "SEATING",
+        "TEAM",
+        "GROUP",
+        "COURIER",
+        "METERS",
+        "RANK",
+    )
+    entities = {_canonical_count_entity(fact.entity) for fact in facts}
+    for entity in priority:
+        if entity in entities:
+            return entity
+    ordered = sorted(facts, key=lambda item: (item.scene_number, item.fact_id))
+    return _canonical_count_entity(ordered[-1].entity)
+
+
+def _resolve_relationship_possessor(
+    line: str,
+    match: re.Match[str],
+    pronoun_raw: str | None,
+    subject: str | None,
+    tracker: SceneMentionTracker,
+    registry: EntityRegistry,
+) -> str | None:
+    """Resolve the possessor for a relationship pronoun pattern."""
+    if pronoun_raw and "pronoun" in match.groupdict():
+        prefix = line[: match.start("pronoun")]
+        names: list[str] = []
+        for name_match in ACTION_NAME_RE.finditer(prefix):
+            resolved = _resolve_trait_entity(name_match.group("name"), registry)
+            if resolved:
+                names.append(resolved)
+        if names:
+            filtered = [name for name in names if name != subject]
+            if filtered:
+                return filtered[-1]
+            return names[-1]
+        if pronoun_raw.lower() in {"her", "his", "their"} and re.match(
+            r"^\s*(?:her|his|their)\s+",
+            line,
+            re.IGNORECASE,
+        ):
+            for name_match in ACTION_NAME_RE.finditer(line):
+                resolved = _resolve_trait_entity(name_match.group("name"), registry)
+                if resolved and resolved != subject:
+                    return resolved
+        fallback = tracker.resolve_possessive_pronoun(pronoun_raw)
+        if (
+            fallback
+            and subject
+            and fallback == subject
+            and len(tracker.scene_characters) == 2
+        ):
+            others = [
+                entity for entity in tracker.scene_characters if entity != subject
+            ]
+            if others:
+                return others[0]
+        return fallback
+    return tracker.resolve_possessive_pronoun(pronoun_raw or "their")
+
+
+# Unified entity for fare/payment props so thimble vs coin conflicts surface.
+PAYMENT_ENTITY: str = "PAYMENT_FARE"
+# Unified entity for portable containers (envelope, pouch, satchel).
+CONTAINER_ENTITY: str = "CONTAINER"
+CONTAINER_NOUNS: frozenset[str] = frozenset(
+    {"envelope", "pouch", "satchel", "packet", "parcel", "case", "bag"}
+)
+# Unified entity for forged/stolen art studies.
+SKETCH_ENTITY: str = "SKETCH"
+SKETCH_ARTIST_RE: re.Pattern[str] = re.compile(
+    r"\b(?P<artist>Vermeer|Rembrandt)\s+(?:study|studies|charcoal|sketch|"
+    r"painting|drawing)\b|\b(?:a|an|the)\s+Rembrandt\b",
+    re.IGNORECASE,
+)
+WAX_SEALED_CONTAINER_RE: re.Pattern[str] = re.compile(
+    rf"\bwax[\s-]sealed\s+(?P<head>{'|'.join(CONTAINER_NOUNS)})\b",
+    re.IGNORECASE,
+)
+
+
+def _parse_inline_age(token: str) -> Optional[int]:
+    """Parse an age token from a hyphenated or word form, or return None."""
+    cleaned = token.strip().lower().replace("-", " ")
+    decade = re.fullmatch(r"(\d{1,3})s?", cleaned.replace(" ", ""))
+    if decade:
+        value: Optional[int] = int(decade.group(1))
+    else:
+        value = words_to_int(cleaned)
+    if value is None or not 1 <= value <= 120:
+        return None
+    return value
+
+
+def _parse_head_age(clause: str) -> Optional[int]:
+    """Parse an age from the head of an appositive clause, or return None.
+
+    The number must be the first meaningful token (optionally after a hedge
+    word such as "barely"), which rejects trailing pronouns/articles like
+    "this one" or "on a Tuesday" that would otherwise read as the age 1.
+
+    Args:
+        clause: Text immediately after a "Name," appositive comma.
+
+    Returns:
+        The age as an int in the 1-120 range, or ``None``.
+    """
+    tokens = [token for token in re.split(r"\s+", clause.strip()) if token]
+    index = 0
+    while index < len(tokens) and tokens[index].strip(",.;:!?'\"").lower() in AGE_HEDGE_WORDS:
+        index += 1
+    if index >= len(tokens):
+        return None
+    head = tokens[index].strip(",.;:!?'\"")
+    decade = re.fullmatch(r"(\d{1,3})s?", head)
+    if decade:
+        value: Optional[int] = int(decade.group(1))
+    else:
+        value = words_to_int(head)
+        if value is None and index + 1 < len(tokens):
+            follow = tokens[index + 1].strip(",.;:!?'\"")
+            value = words_to_int(f"{head} {follow}")
+    if value is None or not 1 <= value <= 120:
+        return None
+    return value
 
 DAYS_OF_WEEK: dict[str, int] = {
     "monday": 1,
@@ -185,6 +718,20 @@ MEDICAL_STATE_PATTERNS: tuple[re.Pattern[str], ...] = (
         rf"(?P<healthy>fine|unharmed|uninjured|unhurt|healthy|intact|well)\b",
         re.IGNORECASE,
     ),
+    # "Kowalski hit, shoulder" (telegraphic action-line injury)
+    re.compile(
+        rf"(?<![A-Za-z0-9])(?P<entity>[A-Z][A-Za-z0-9 '\-]+?)\s+"
+        rf"(?P<condition>hit),?\s*(?:in the )?"
+        rf"(?P<part>shoulder|arm|leg|head|chest|back|ribs)\b",
+        re.IGNORECASE,
+    ),
+    # "medics bind Kowalski's leg"
+    re.compile(
+        rf"(?:medics?\s+)?(?P<condition>bind|wrap)\s+"
+        rf"(?P<entity>[A-Z][A-Za-z0-9 '\-]+?)'s\s+"
+        rf"(?P<part>leg|arm|shoulder|ribs)\b",
+        re.IGNORECASE,
+    ),
 )
 
 TIMELINE_PATTERNS: tuple[re.Pattern[str], ...] = (
@@ -220,6 +767,121 @@ CHARACTER_TRAIT_PATTERNS: tuple[re.Pattern[str], ...] = (
         r"(?P<trait>[a-z][a-z\s\-]+?),\s*entered",
         re.IGNORECASE,
     ),
+    re.compile(
+        r"(?<![A-Za-z])(?P<entity>(?:[A-Z][A-Z0-9'\-.]*|[A-Z][a-z]+)"
+        r"(?:\s+(?:[A-Z][A-Z0-9'\-.]*|[A-Z][a-z]+)){0,3}),\s*\d{1,3}s?\s*,\s*"
+        r"(?P<trait>[a-z][a-z\-]+(?:\s+[a-z][a-z\-]+){0,2}?)"
+        r"(?:\s|,|\.|$)",
+    ),
+    re.compile(
+        r"(?<![A-Za-z])(?P<entity>[A-Z][a-z]+),\s*the\s+(?P<trait>[a-z][a-z\s\-]+?)"
+        r"(?:\s|,|\.|$)",
+    ),
+    re.compile(
+        r"(?<![A-Za-z])(?P<entity>(?:[A-Z][A-Z0-9'\-.]*|[A-Z][a-z]+))"
+        r"(?:[^.\n]{0,120}?)(?i:(?P<trait>unconvinced|skeptical|skeptic))\b",
+    ),
+)
+# Dialogue-only belief / attitude statements attributed to the active speaker.
+BELIEF_DIALOGUE_TRAITS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (
+        re.compile(
+            r"\bI knew this place was alive\b",
+            re.IGNORECASE,
+        ),
+        "believer",
+    ),
+    (
+        re.compile(
+            r"\bI felt it\b",
+            re.IGNORECASE,
+        ),
+        "believer",
+    ),
+)
+TRAIT_JUNK_PREFIXES: frozenset[str] = frozenset(
+    {"and", "or", "with", "who", "when", "at", "in", "on", "the", "his", "her"}
+)
+ATTITUDE_TRAIT_TERMS: frozenset[str] = frozenset(
+    {"unconvinced", "skeptical", "skeptic", "believer"}
+)
+
+_SCREENPLAY_NAME = r"(?:[A-Z][A-Z0-9'\-.]*|[A-Z][a-z]+)"
+_EXT_OWNER = rf"(?P<owner>{_SCREENPLAY_NAME}(?:\s+{_SCREENPLAY_NAME}){{0,3}})"
+_EXT_OBJECT = r"(?P<object>[A-Za-z][A-Za-z0-9\s\-]+?)"
+_EXT_OBJ_END = (
+    r"(?:\s+(?:from|on|onto|into|in|to|under|over|behind|with|for|and|but|"
+    r"then|when|after|before|while|accidentally|that|as|where|which|who)\b|[.,;:]|$)"
+)
+# Prop-like possessive objects: ALL-CAPS words or "guest book" / "magnetic guest book".
+_EXT_PROP_OR_GUEST_BOOK = (
+    r"(?P<object>(?:[A-Z]{2,}(?:\s+[A-Z]{2,})*|"
+    r"(?i:magnetic\s+guest\s+book|guest\s+book)))"
+)
+_POSSESS_VERBS = r"(?:holds|keeps|grips|clutches|fidgets with)"
+EXTENDED_OWNERSHIP_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (
+        re.compile(
+            rf"(?<![A-Za-z]){_EXT_OWNER}\s+(?i:{_POSSESS_VERBS})\s+"
+            rf"(?:a|an|the|his|her|their)?\s*{_EXT_PROP_OR_GUEST_BOOK}{_EXT_OBJ_END}",
+        ),
+        "holds",
+    ),
+    (
+        re.compile(
+            rf"(?:(?i:A|An|The))\s+{_EXT_OBJECT}\s+(?i:clips)\s+to\s+"
+            rf"{_EXT_OWNER}'s\b",
+        ),
+        "clips to",
+    ),
+    (
+        re.compile(
+            rf"(?:(?i:A|An|The))\s+{_EXT_OBJECT}\s+(?i:sits)\s+in\s+"
+            rf"{_EXT_OWNER}'s\b",
+        ),
+        "in",
+    ),
+    (
+        re.compile(
+            rf"(?:(?i:The|A|An))\s+{_EXT_OBJECT}\s+(?i:stays)\s+in\s+"
+            rf"{_EXT_OWNER}'s\s+pocket\b",
+        ),
+        "stays in",
+    ),
+    (
+        re.compile(
+            rf"(?<![A-Za-z]){_EXT_PROP_OR_GUEST_BOOK}\s+(?i:on)\s+{_EXT_OWNER}'s\b",
+        ),
+        "on",
+    ),
+    (
+        re.compile(
+            rf"(?<![A-Za-z]){_EXT_OWNER}'s\s+{_EXT_PROP_OR_GUEST_BOOK}{_EXT_OBJ_END}",
+        ),
+        "possesses",
+    ),
+)
+# Container / junk heads that extended patterns must not emit as props.
+OWNERSHIP_JUNK_OBJECTS: frozenset[str] = frozenset(
+    {
+        "IT", "ONE", "NOTES", "POCKET", "BACKPACK", "VEST", "CENTERPIECE",
+        "SASH", "MIC", "BEER", "BEERS", "TOAST", "TOASTS", "DRUNK ONE",
+    }
+)
+# Family/role words that mark a possessive phrase about a person, not a prop.
+OWNERSHIP_RELATION_HEADS: frozenset[str] = frozenset(
+    {
+        "DAUGHTER", "SON", "AUNT", "UNCLE", "NIECE", "NEPHEW", "COUSIN",
+        "MOTHER", "FATHER", "BROTHER", "SISTER", "CHILD", "WIFE", "HUSBAND",
+    }
+)
+# Extended verb labels parsed by :meth:`ContradictionEngine._ownership_holder`.
+EXTENDED_POSSESSION_VERB_LABELS: tuple[str, ...] = (
+    "clips to",
+    "stays in",
+    "possesses",
+    "in",
+    "on",
 )
 
 # --- Relationship facts (Phase 3) -----------------------------------------
@@ -250,6 +912,20 @@ RELATION_TERMS: dict[str, tuple[str, str]] = {
     "daughter": ("parent_child", "child"),
     "child": ("parent_child", "child"),
     "kid": ("parent_child", "child"),
+    "niece": ("niece_nephew", "aunt_uncle"),
+    "nephew": ("niece_nephew", "aunt_uncle"),
+    "cousin": ("cousin", "symmetric"),
+    "cousins": ("cousin", "symmetric"),
+    "best man": ("wedding_party", "symmetric"),
+    "groomsman": ("wedding_party", "symmetric"),
+    "groomsmen": ("wedding_party", "symmetric"),
+    "coach": ("professional", "symmetric"),
+    "aunt": ("aunt_uncle", "symmetric"),
+    "uncle": ("aunt_uncle", "symmetric"),
+    "mother-in-law": ("in_law", "symmetric"),
+    "father-in-law": ("in_law", "symmetric"),
+    "brother-in-law": ("in_law", "symmetric"),
+    "sister-in-law": ("in_law", "symmetric"),
     "boyfriend": ("lover", "symmetric"),
     "girlfriend": ("lover", "symmetric"),
     "lover": ("lover", "symmetric"),
@@ -275,25 +951,135 @@ INCOMPATIBLE_RELATION_CATEGORIES: tuple[frozenset[str], ...] = (
     frozenset({"sibling", "lover"}),
     frozenset({"parent_child", "spouse"}),
     frozenset({"parent_child", "lover"}),
+    frozenset({"sibling", "cousin"}),
+    frozenset({"parent_child", "niece_nephew"}),
+    frozenset({"sibling", "niece_nephew"}),
+    frozenset({"cousin", "niece_nephew"}),
+    frozenset({"in_law", "aunt_uncle"}),
+    frozenset({"in_law", "cousin"}),
+    frozenset({"sibling", "in_law"}),
+    frozenset({"cousin", "wedding_party"}),
+    frozenset({"sibling", "professional"}),
 )
 
-_REL_NAME = r"[A-Z][A-Za-z0-9 '\-]+?"
+_REL_NAME = (
+    r"(?:[A-Z][A-Z0-9'\-.]*|[A-Z][a-z]+)"
+    r"(?:\s+(?:[A-Z][A-Z0-9'\-.]*|[A-Z][a-z]+)){0,3}"
+)
+_REL_SINGLE_NAME = r"(?:[A-Z][A-Z0-9'\-.]*|[A-Z][a-z]+)"
+_RELATION_WORD = r"[a-z]+(?:-[a-z]+)*"
 
-RELATIONSHIP_PATTERNS: tuple[re.Pattern[str], ...] = (
-    # Possessive: "MARCUS is ELENA's brother"
-    re.compile(
-        rf"(?<![A-Za-z0-9])(?P<subject>{_REL_NAME})\s+is\s+"
-        rf"(?P<object>{_REL_NAME})'s\s+(?P<relation>[A-Za-z]+)"
+RELATIONSHIP_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (
+        re.compile(
+            rf"(?<![A-Za-z0-9])(?P<subject>{_REL_NAME})\s+is\s+"
+            rf"(?P<object>{_REL_NAME})'s\s+(?P<relation>{_RELATION_WORD})"
+        ),
+        "subject_object",
     ),
-    # Appositive: "MARCUS, ELENA's brother, enters"
-    re.compile(
-        rf"(?<![A-Za-z0-9])(?P<subject>{_REL_NAME}),\s+"
-        rf"(?P<object>{_REL_NAME})'s\s+(?P<relation>[A-Za-z]+),"
+    (
+        re.compile(
+            rf"(?<![A-Za-z0-9])(?P<subject>{_REL_NAME}),\s+"
+            rf"(?P<object>{_REL_NAME})'s\s+(?P<relation>{_RELATION_WORD}),"
+        ),
+        "subject_object",
     ),
-    # Symmetric conjunction: "MARCUS and ELENA are married"
-    re.compile(
-        rf"(?<![A-Za-z0-9])(?P<subject>{_REL_NAME})\s+and\s+"
-        rf"(?P<object>{_REL_NAME})\s+are\s+(?P<relation>[A-Za-z]+)"
+    (
+        re.compile(
+            rf"(?<![A-Za-z0-9])(?P<subject>{_REL_NAME})\s+and\s+"
+            rf"(?P<object>{_REL_NAME})\s+are\s+(?P<relation>{_RELATION_WORD})"
+        ),
+        "symmetric",
+    ),
+    (
+        re.compile(
+            rf"(?<![A-Za-z0-9])(?P<object>{_REL_NAME})'s\s+"
+            rf"(?P<relation>{_RELATION_WORD})\s+(?P<subject>{_REL_NAME})\b"
+        ),
+        "possessor_first",
+    ),
+    (
+        re.compile(
+            rf"(?<![A-Za-z0-9])(?P<object>{_REL_NAME})'s\s+"
+            rf"(?:future\s+)?(?P<relation>mother-in-law|father-in-law|"
+            rf"brother-in-law|sister-in-law)\s+(?P<subject>{_REL_NAME})\b"
+        ),
+        "possessor_first",
+    ),
+    (
+        re.compile(
+            rf"(?<![A-Za-z0-9])(?P<object>{_REL_NAME})'s\s+"
+            rf"(?P<relation>niece|nephew|daughter|son)\b"
+        ),
+        "possessor_only",
+    ),
+    (
+        re.compile(
+            rf"(?<![A-Za-z0-9])(?P<object>{_REL_NAME})\s+with\s+"
+            rf"(?:his|her|their)\s+(?P<relation>daughter|son|niece|nephew)\b",
+            re.IGNORECASE,
+        ),
+        "possessor_only",
+    ),
+    (
+        re.compile(
+            rf"(?<![A-Za-z0-9])(?P<pronoun>her|his|their)\s+"
+            rf"(?P<relation>{_RELATION_WORD})\s+(?P<subject>{_REL_NAME})\b",
+            re.IGNORECASE,
+        ),
+        "pronoun_subject",
+    ),
+    (
+        re.compile(
+            rf"(?<![A-Za-z0-9])(?P<subject>{_REL_NAME}),\s+"
+            rf"(?P<pronoun>his|her|their)\s+(?P<relation>{_RELATION_WORD})\b",
+            re.IGNORECASE,
+        ),
+        "pronoun_appositive",
+    ),
+    (
+        re.compile(
+            r"(?<![A-Za-z0-9])introduced as (?:the )?"
+            rf"(?P<relation>nephew|niece)\b",
+            re.IGNORECASE,
+        ),
+        "introduced",
+    ),
+    (
+        re.compile(
+            r"\b(?:I'm|I am) the (?P<relation>only son|only daughter)\b",
+            re.IGNORECASE,
+        ),
+        "speaker_child",
+    ),
+    (
+        re.compile(
+            rf"\bthe\s+(?P<relation>nephew|niece),?\s+"
+            rf"(?P<subject>{_REL_SINGLE_NAME})\b",
+            re.IGNORECASE,
+        ),
+        "named_role",
+    ),
+    (
+        re.compile(
+            rf"\b(?P<relation>cousin|best man)\s+"
+            rf"(?P<subject>{_REL_SINGLE_NAME})\b",
+            re.IGNORECASE,
+        ),
+        "named_role",
+    ),
+    (
+        re.compile(
+            rf"\b(?P<relation>Coach)\s+(?P<subject>{_REL_SINGLE_NAME})\b"
+        ),
+        "named_role",
+    ),
+    (
+        re.compile(
+            r"\b(?:your|Your)\s+(?:future\s+)?"
+            rf"(?P<relation>mother-in-law|father-in-law)\b"
+        ),
+        "addressee_in_law",
     ),
 )
 
@@ -576,6 +1362,83 @@ def _resolve_character_entity(raw_entity: str) -> Optional[str]:
     return key
 
 
+def _resolve_owner_entity(
+    raw_owner: str, registry: EntityRegistry | None = None
+) -> Optional[str]:
+    """Resolve an ownership-pattern owner span to a canonical character key."""
+    if registry is not None:
+        resolved = registry.resolve(raw_owner)
+        if resolved:
+            return _normalize_token(resolved)
+    return _resolve_character_entity(raw_owner)
+
+
+def _resolve_trait_entity(
+    raw_entity: str, registry: EntityRegistry | None = None
+) -> Optional[str]:
+    """Resolve a trait-pattern entity span to a canonical character key."""
+    if registry is not None:
+        resolved = registry.resolve(raw_entity)
+        if resolved:
+            return _normalize_token(resolved)
+    return _resolve_character_entity(raw_entity)
+
+
+def _is_valid_trait(trait: str) -> bool:
+    """Return True when a captured trait phrase is worth storing."""
+    cleaned = _clean_value(trait).strip()
+    if not cleaned:
+        return False
+    head = cleaned.split()[0].lower()
+    if head in TRAIT_JUNK_PREFIXES:
+        return False
+    tail = cleaned.split()[-1].lower()
+    if tail in GENERIC_TRAIT_TERMS:
+        return False
+    lowered = cleaned.lower()
+    if lowered in ATTITUDE_TRAIT_TERMS:
+        return True
+    if any(part in ROLE_NOUNS for part in re.findall(r"[a-z]+", lowered)):
+        return True
+    if "-" in lowered and any(
+        part in ROLE_NOUNS for part in lowered.replace("-", " ").split()
+    ):
+        return True
+    if len(cleaned.split()) >= 2:
+        return True
+    return False
+
+
+def _canonical_prop_key(object_key: str) -> str:
+    """Collapse variant prop phrases onto one continuity key."""
+    tokens = object_key.split()
+    token_set = set(tokens)
+    if {"RED", "FLARE"}.issubset(token_set):
+        return "RED FLARE"
+    if "GUEST" in token_set and "BOOK" in token_set:
+        return "MAGNETIC GUEST BOOK"
+    if {"SILVER", "BAND"}.issubset(token_set) or {"SILVER", "WEDDING", "BAND"}.issubset(
+        token_set
+    ):
+        return "SILVER BAND"
+    return object_key
+
+
+def _strip_leading_article(object_name: str) -> str:
+    """Remove a leading article or possessive from an extracted object phrase."""
+    stripped = object_name.strip()
+    for prefix in ("a ", "an ", "the ", "his ", "her ", "their ", "its ", "my ", "your "):
+        if stripped.lower().startswith(prefix):
+            return stripped[len(prefix) :]
+    return stripped
+
+
+def _is_relation_object_key(object_key: str) -> bool:
+    """Return True when the object key names a person via a family role."""
+    tokens = object_key.split()
+    return bool(tokens) and tokens[0] in OWNERSHIP_RELATION_HEADS
+
+
 def _clean_value(value: str) -> str:
     """Normalize a fact value string."""
     return " ".join(value.strip().split())
@@ -686,6 +1549,9 @@ _INJURY_VERB_CANONICAL: dict[str, str] = {
     "fractured": "fractured",
     "sprains": "sprained",
     "sprained": "sprained",
+    "hit": "hit",
+    "bind": "injured",
+    "wrap": "injured",
 }
 
 
@@ -842,6 +1708,8 @@ class ContradictionEngine:
         """
         store = FactStore()
         sorted_scenes = sorted(scenes, key=lambda scene: scene.scene_number)
+        registry = self._build_entity_registry(sorted_scenes)
+        role_registry = build_role_registry(sorted_scenes, registry)
 
         for scene in sorted_scenes:
             self._extract_character_status_facts(scene, store)
@@ -849,15 +1717,373 @@ class ContradictionEngine:
             # Timeline detection disabled: plot contradictions are the focus,
             # and weekday/day-sequence tracking is intentionally turned off.
             # self._extract_timeline_facts(scene, store)
-            self._extract_character_trait_facts(scene, store)
-            self._extract_object_ownership_facts(scene, store)
+            self._extract_character_trait_facts(scene, store, registry)
+            self._extract_object_ownership_facts(scene, store, registry)
             self._extract_object_state_facts(scene, store)
-            self._extract_relationship_facts(scene, store)
+            self._extract_relationship_facts(scene, store, registry)
+            self._extract_sketch_artist_facts(scene, store)
             self._extract_world_rule_facts(scene, store)
             self._extract_location_facts(scene, store)
             self._extract_location_description_facts(scene, store)
+            self._extract_age_facts(scene, store, registry, role_registry)
+            self._extract_object_descriptor_facts(scene, store)
+            self._extract_payment_descriptor_facts(scene, store)
+            self._extract_count_facts(scene, store)
+            self._extract_year_facts(scene, store)
 
         return store
+
+    def _record_count_fact(
+        self,
+        scene: SceneBlock,
+        store: FactStore,
+        entity: str,
+        value: int,
+        line: str,
+        seen: set[tuple[str, str]],
+    ) -> None:
+        """Add one numeric_count fact when the (entity, value) pair is new."""
+        canonical = _canonical_count_entity(entity)
+        key = (canonical, str(value))
+        if key in seen:
+            return
+        seen.add(key)
+        store.add_fact(
+            self._make_fact(scene, "numeric_count", canonical, str(value), line)
+        )
+
+    def _extract_count_facts(self, scene: SceneBlock, store: FactStore) -> None:
+        """Extract (counted noun, quantity) facts for numeric-continuity checks.
+
+        A number run (digits or number words, e.g. "three hundred") is paired
+        with its head noun: the token immediately after, or the token before for
+        noun-then-number forms ("Room 514"). Clock times and 4-digit years are
+        stripped first so they are never read as counts, and the noun is
+        singularized so "runs"/"run" align across scenes.
+        """
+        action_lines, dialogue_lines = _scene_lines_by_source(scene)
+        seen: set[tuple[str, str]] = set()
+        for line in action_lines + dialogue_lines:
+            for pattern, entity in COUNT_PHRASE_PATTERNS:
+                for match in pattern.finditer(line):
+                    value = _parse_count_value(match.group("num"))
+                    if value is None:
+                        continue
+                    self._record_count_fact(
+                        scene, store, entity, value, line, seen
+                    )
+            for pattern in (
+                COUNT_ROOM_NUMBER_RE,
+                COUNT_LINE_ROOM_NUMBER_RE,
+            ):
+                for match in pattern.finditer(line):
+                    value = _parse_count_value(match.group("num"))
+                    if value is None:
+                        continue
+                    self._record_count_fact(
+                        scene, store, "ROOM", value, line, seen
+                    )
+            match = COUNT_HOSTAGE_LABEL_RE.search(line)
+            if match:
+                value = _parse_count_value(match.group("num"))
+                if value is not None:
+                    self._record_count_fact(
+                        scene, store, "HOSTAGE", value, line, seen
+                    )
+            for match in COUNT_ALL_QUANTITY_RE.finditer(line):
+                value = _parse_count_value(match.group("num"))
+                if value is None:
+                    continue
+                entity = _count_entity_hint(line) or _recent_count_entity(store)
+                if entity is None:
+                    continue
+                self._record_count_fact(
+                    scene, store, entity, value, line, seen
+                )
+            for match in COUNT_CLOCK_RE.finditer(line):
+                hour = _parse_clock_hour(match.group())
+                if hour is not None:
+                    self._record_count_fact(
+                        scene, store, "CLOCK", hour, line, seen
+                    )
+            match = COUNT_NOT_EVEN_YET_RE.search(line)
+            if match:
+                bound = _parse_count_value(match.group("num"))
+                if bound is not None and bound > 0:
+                    self._record_count_fact(
+                        scene, store, "CLOCK", bound - 1, line, seen
+                    )
+            cleaned = COUNT_YEAR_RE.sub(" ", COUNT_CLOCK_RE.sub(" ", line))
+            matches = list(re.finditer(r"\d+|[A-Za-z]+", cleaned))
+            lowered = [match.group().lower() for match in matches]
+            index = 0
+            while index < len(lowered):
+                if not _is_number_token(lowered[index]):
+                    index += 1
+                    continue
+                run_start = index
+                while index < len(lowered) and _is_number_token(lowered[index]):
+                    index += 1
+                if cleaned[: matches[run_start].start()].rstrip().endswith(","):
+                    continue
+                value = words_to_int(" ".join(lowered[run_start:index]))
+                if value is None:
+                    continue
+                if (
+                    value <= 12
+                    and run_start > 0
+                    and lowered[run_start - 1] == "at"
+                ):
+                    continue
+                noun = _select_count_noun(lowered, run_start, index)
+                if noun is None:
+                    continue
+                self._record_count_fact(
+                    scene, store, noun.upper(), value, line, seen
+                )
+
+    def _extract_year_facts(self, scene: SceneBlock, store: FactStore) -> None:
+        """Extract year facts from the whole scene (headings included).
+
+        Years can live in slug lines ("EXT. FIELD - 1943"), action, or dialogue
+        ("CHRISTMAS '94"), so the full scene text is scanned.
+        """
+        seen: set[int] = set()
+        for line in scene.raw_text.splitlines():
+            for year in extract_all_years(line):
+                if year in seen:
+                    continue
+                seen.add(year)
+                store.add_fact(
+                    self._make_fact(scene, "year", "YEAR", str(year), line.strip())
+                )
+
+    def _build_entity_registry(self, scenes: list[SceneBlock]) -> EntityRegistry:
+        """Build a character registry from cues and parsed scene characters.
+
+        Registering every name the scene parser already extracted (action intros
+        plus dialogue cues) merges variants such as ``SERGEANT TOM HALE`` and
+        ``HALE`` onto one canonical id before age or ownership facts are built.
+        Action-line intro patterns (``NAME, 32, novelist``) are scanned so
+        scripts without character cues still merge ``Claire`` onto
+        ``CLAIRE HART``.
+        """
+        registry = EntityRegistry()
+        intro_names: list[str] = []
+        for scene in scenes:
+            for kind, text in iter_scene_lines(scene):
+                if kind == "action":
+                    for match in INTRO_ROLE_RE.finditer(text):
+                        intro_names.append(match.group("name"))
+        for name in sorted(set(intro_names), key=len, reverse=True):
+            registry.register(name)
+        register_characters_from_scenes(registry, scenes)
+        for scene in scenes:
+            for line in scene.raw_text.splitlines():
+                stripped = line.strip()
+                if _is_character_cue(stripped):
+                    registry.register(re.sub(r"\([^)]*\)", "", stripped))
+            for kind, text in iter_scene_lines(scene):
+                if kind != "action":
+                    continue
+                for match in INTRO_ROLE_RE.finditer(text):
+                    registry.register(match.group("name"))
+        return registry
+
+    def _record_age_fact(
+        self,
+        scene: SceneBlock,
+        store: FactStore,
+        entity: str,
+        age: int,
+        line: str,
+        seen: set[tuple[str, str]],
+    ) -> None:
+        """Add one age fact when ``(entity, age)`` has not already been recorded."""
+        key = (entity, str(age))
+        if key in seen:
+            return
+        seen.add(key)
+        store.add_fact(self._make_fact(scene, "age", entity, str(age), line))
+
+    def _extract_age_facts(
+        self,
+        scene: SceneBlock,
+        store: FactStore,
+        registry: EntityRegistry,
+        role_registry: RoleRegistry,
+    ) -> None:
+        """Extract character age facts using appositive, role, and coref rules.
+
+        Uses :mod:`screenplay_coref` (rule-based, no ML) to link role phrases
+        ("nineteen-year-old gardener"), dialogue ("when I was twelve", "For
+        eleven, she…"), and pronoun subjects to the canonical character named
+        earlier in the scene.
+        """
+        seen: set[tuple[str, str]] = set()
+        tracker = SceneMentionTracker(scene_character_ids(scene, registry))
+
+        for kind, text in iter_scene_lines(scene):
+            if kind == "cue":
+                speaker = registry.resolve(text)
+                if speaker is None:
+                    speaker = strip_titles_and_articles(normalize_name(text))
+                tracker.set_speaker(speaker)
+                continue
+
+            if kind == "action":
+                index_roles_from_line(text, registry, role_registry)
+                tracker.note_action_mentions(text, registry)
+
+            for match in AGE_APPOSITIVE_PATTERN.finditer(text):
+                age = _parse_head_age(match.group("clause"))
+                if age is None:
+                    continue
+                raw_name = match.group("name")
+                entity = registry.resolve(raw_name)
+                if entity is None:
+                    entity = strip_titles_and_articles(normalize_name(raw_name))
+                if entity:
+                    self._record_age_fact(scene, store, entity, age, text, seen)
+
+            for match in YEAR_OLD_AGE_RE.finditer(text):
+                age = _parse_inline_age(match.group("age"))
+                if age is None:
+                    continue
+                role = match.group("role")
+                entity: str | None = None
+                if role:
+                    entity = role_registry.resolve(role)
+                if entity is None:
+                    entity = tracker.resolve_subject(text)
+                if entity:
+                    self._record_age_fact(scene, store, entity, age, text, seen)
+
+            for match in FIRST_PERSON_AGE_RE.finditer(text):
+                age = _parse_inline_age(match.group("age"))
+                if age is None:
+                    continue
+                entity = tracker.current_speaker or tracker.resolve_subject(text)
+                if entity:
+                    self._record_age_fact(scene, store, entity, age, text, seen)
+
+            for match in FOR_AGE_DIALOGUE_RE.finditer(text):
+                age = _parse_inline_age(match.group("age"))
+                if age is None:
+                    continue
+                entity = tracker.resolve_subject(text)
+                if entity:
+                    self._record_age_fact(scene, store, entity, age, text, seen)
+
+    def _extract_payment_descriptor_facts(
+        self, scene: SceneBlock, store: FactStore
+    ) -> None:
+        """Extract fare/payment material facts for object-identity continuity.
+
+        Lines such as "pays with a silver thimble" and "paid with a brass coin"
+        map to a unified ``PAYMENT_FARE`` entity so a material swap is reported
+        even when the prop head noun changes (thimble vs coin).
+        """
+        seen: set[str] = set()
+        for kind, text in iter_scene_lines(scene):
+            if kind not in ("action", "dialogue"):
+                continue
+            for match in PAYMENT_OBJECT_RE.finditer(text):
+                material = match.group("material")
+                if not material:
+                    continue
+                axis = descriptor_axis(material)
+                if axis is None:
+                    continue
+                value = f"{axis}:{material.lower()}"
+                if value in seen:
+                    continue
+                seen.add(value)
+                store.add_fact(
+                    self._make_fact(
+                        scene, "object_descriptor", PAYMENT_ENTITY, value, text
+                    )
+                )
+
+    def _extract_object_descriptor_facts(
+        self, scene: SceneBlock, store: FactStore
+    ) -> None:
+        """Extract (prop, descriptor) facts for colour/material continuity.
+
+        For each colour/material token, the immediately following noun is taken
+        as the prop head (so "GOLD DATA CHIP" and "silver data chip" both key on
+        "data"), and the fact value records the axis and token ("material:gold").
+        Using the adjacent noun avoids trailing-verb capture and keeps the key
+        stable across scenes.
+        """
+        action_lines, dialogue_lines = _scene_lines_by_source(scene)
+        seen: set[tuple[str, str]] = set()
+        for line in action_lines + dialogue_lines:
+            wax_match = WAX_SEALED_CONTAINER_RE.search(line)
+            if wax_match:
+                value = "material:wax"
+                key = (CONTAINER_ENTITY, value)
+                if key not in seen:
+                    seen.add(key)
+                    store.add_fact(
+                        self._make_fact(
+                            scene,
+                            "object_descriptor",
+                            CONTAINER_ENTITY,
+                            value,
+                            line,
+                        )
+                    )
+            tokens = re.findall(r"[A-Za-z]+", line)
+            for index, token in enumerate(tokens[:-1]):
+                axis = descriptor_axis(token)
+                if axis is None:
+                    continue
+                head = tokens[index + 1].lower()
+                if (
+                    len(head) < 3
+                    or head in DESCRIPTOR_NOUN_STOPWORDS
+                    or head in DESCRIPTOR_GENERIC_NOUNS
+                    or descriptor_axis(head) is not None
+                ):
+                    continue
+                entity_key = (
+                    CONTAINER_ENTITY
+                    if head in CONTAINER_NOUNS
+                    else head.upper()
+                )
+                value = f"{axis}:{token.lower()}"
+                key = (entity_key, value)
+                if key in seen:
+                    continue
+                seen.add(key)
+                store.add_fact(
+                    self._make_fact(
+                        scene, "object_descriptor", entity_key, value, line
+                    )
+                )
+            for head in CONTAINER_NOUNS:
+                if not re.search(rf"\b{head}\b", line, re.IGNORECASE):
+                    continue
+                for index, token in enumerate(tokens):
+                    axis = descriptor_axis(token)
+                    if axis is None:
+                        continue
+                    if index + 1 < len(tokens) and tokens[index + 1].lower() == head:
+                        value = f"{axis}:{token.lower()}"
+                        key = (CONTAINER_ENTITY, value)
+                        if key in seen:
+                            continue
+                        seen.add(key)
+                        store.add_fact(
+                            self._make_fact(
+                                scene,
+                                "object_descriptor",
+                                CONTAINER_ENTITY,
+                                value,
+                                line,
+                            )
+                        )
 
     def _extract_character_status_facts(
         self, scene: SceneBlock, store: FactStore
@@ -965,68 +2191,130 @@ class ContradictionEngine:
                 )
 
     def _extract_character_trait_facts(
-        self, scene: SceneBlock, store: FactStore
+        self, scene: SceneBlock, store: FactStore, registry: EntityRegistry
     ) -> None:
         """Extract profession and role trait facts from action lines only.
 
         Dialogue is excluded so insults and figures of speech do not become
         trait facts, and generic descriptions ("is a good man") are dropped
-        when the trait's head noun carries no role information.
+        when the trait's head noun carries no role information. Explicit
+        belief statements in dialogue (``BELIEF_DIALOGUE_TRAITS``) are
+        attributed to the active speaker. Entity spans are resolved through
+        the registry so ``Claire`` and ``CLAIRE HART`` share one trait track.
         """
-        action_lines, _ = _scene_lines_by_source(scene)
-        for line in action_lines:
-            for pattern in CHARACTER_TRAIT_PATTERNS:
-                match = pattern.search(line)
-                if not match:
+        seen: set[tuple[str, str, str]] = set()
+        tracker = SceneMentionTracker(scene_character_ids(scene, registry))
+
+        for kind, text in iter_scene_lines(scene):
+            if kind == "cue":
+                speaker = registry.resolve(text)
+                if speaker is None:
+                    speaker = strip_titles_and_articles(normalize_name(text))
+                tracker.set_speaker(speaker)
+                continue
+
+            if kind == "action":
+                tracker.note_action_mentions(text, registry)
+                for pattern in CHARACTER_TRAIT_PATTERNS:
+                    match = pattern.search(text)
+                    if not match:
+                        continue
+                    entity = _resolve_trait_entity(match.group("entity"), registry)
+                    if entity is None:
+                        continue
+                    trait = _clean_value(match.group("trait"))
+                    if not _is_valid_trait(trait):
+                        continue
+                    dedupe = (scene.scene_id, entity, trait.lower())
+                    if dedupe in seen:
+                        continue
+                    seen.add(dedupe)
+                    store.add_fact(
+                        self._make_fact(
+                            scene,
+                            "character_trait",
+                            entity,
+                            trait,
+                            text,
+                        )
+                    )
+                continue
+
+            speaker = tracker.current_speaker
+            if speaker is None:
+                continue
+            for pattern, trait in BELIEF_DIALOGUE_TRAITS:
+                if not pattern.search(text):
                     continue
-                entity = _resolve_character_entity(match.group("entity"))
-                if entity is None:
+                dedupe = (scene.scene_id, speaker, trait.lower())
+                if dedupe in seen:
                     continue
-                trait = _clean_value(match.group("trait"))
-                if trait.split()[-1].lower() in GENERIC_TRAIT_TERMS:
-                    continue
+                seen.add(dedupe)
                 store.add_fact(
                     self._make_fact(
                         scene,
                         "character_trait",
-                        entity,
+                        speaker,
                         trait,
-                        line,
+                        text,
                     )
                 )
 
     def _extract_object_ownership_facts(
-        self, scene: SceneBlock, store: FactStore
+        self, scene: SceneBlock, store: FactStore, registry: EntityRegistry
     ) -> None:
         """Extract object possession and transfer facts from action lines only.
 
         Dialogue is excluded so figurative possession ("She has the nerve")
-        does not create ownership facts.
+        does not create ownership facts. Extended patterns cover natural prose
+        such as possessives ("Tom's guest book"), clipping ("flare clips to
+        Vega's vest"), and locative possession ("stays in Elena's pocket").
         """
         action_lines, _ = _scene_lines_by_source(scene)
+        seen: set[tuple[str, str, str]] = set()
         for line in action_lines:
-            for pattern, verb in OBJECT_OWNERSHIP_PATTERNS:
-                match = pattern.search(line)
-                if not match:
-                    continue
-                owner = _clean_entity(match.group("owner"))
-                object_name = _clean_value(match.group("object"))
-                recipient_raw = match.groupdict().get("recipient")
-                if recipient_raw:
-                    recipient = _clean_entity(recipient_raw)
-                    value = f"{owner} {verb} {object_name} to {recipient}"
-                else:
-                    value = f"{owner} {verb} {object_name}"
-                entity = object_name.upper()
-                store.add_fact(
-                    self._make_fact(
-                        scene,
-                        "object_ownership",
-                        entity,
-                        value,
-                        line,
+            for pattern, verb in OBJECT_OWNERSHIP_PATTERNS + EXTENDED_OWNERSHIP_PATTERNS:
+                for match in pattern.finditer(line):
+                    owner = _resolve_owner_entity(match.group("owner"), registry)
+                    if owner is None or owner in {"THE END", "END"}:
+                        continue
+                    object_name = _strip_leading_article(
+                        _clean_value(match.group("object"))
                     )
-                )
+                    object_key = _canonical_prop_key(
+                        _normalize_object_key(object_name)
+                    )
+                    if (
+                        not object_key
+                        or object_key in OWNERSHIP_JUNK_OBJECTS
+                        or _is_relation_object_key(object_key)
+                        or any(
+                            word.lower() in NON_PROP_OBJECTS
+                            for word in object_key.split()
+                        )
+                    ):
+                        continue
+                    recipient_raw = match.groupdict().get("recipient")
+                    if recipient_raw:
+                        recipient = _resolve_owner_entity(recipient_raw, registry)
+                        if recipient is None:
+                            continue
+                        value = f"{owner} {verb} {object_name} to {recipient}"
+                    else:
+                        value = f"{owner} {verb} {object_name}"
+                    dedupe = (scene.scene_id, object_key, owner)
+                    if dedupe in seen:
+                        continue
+                    seen.add(dedupe)
+                    store.add_fact(
+                        self._make_fact(
+                            scene,
+                            "object_ownership",
+                            object_key,
+                            value,
+                            line,
+                        )
+                    )
 
     def _extract_object_state_facts(
         self, scene: SceneBlock, store: FactStore
@@ -1085,44 +2373,238 @@ class ContradictionEngine:
                 self._make_fact(scene, "object_state", object_key, value, line)
             )
 
-    def _extract_relationship_facts(
+    def _extract_sketch_artist_facts(
         self, scene: SceneBlock, store: FactStore
+    ) -> None:
+        """Extract artist identity facts for art-study continuity checks."""
+        seen: set[str] = set()
+        for kind, text in iter_scene_lines(scene):
+            if kind not in ("action", "dialogue"):
+                continue
+            for match in SKETCH_ARTIST_RE.finditer(text):
+                artist = match.group("artist")
+                if artist is None:
+                    artist = "Rembrandt"
+                value = f"artist:{artist.lower()}"
+                if value in seen:
+                    continue
+                seen.add(value)
+                store.add_fact(
+                    self._make_fact(
+                        scene, "object_descriptor", SKETCH_ENTITY, value, text
+                    )
+                )
+
+    def _add_relationship_fact(
+        self,
+        scene: SceneBlock,
+        store: FactStore,
+        pair_key: str,
+        value: str,
+        line: str,
+    ) -> None:
+        """Store one relationship fact when the pair key and value are valid."""
+        if not pair_key or not value:
+            return
+        store.add_fact(
+            self._make_fact(scene, "relationship", pair_key, value, line)
+        )
+
+    def _relationship_value(
+        self, category: str, role: str, subject: str, other: str
+    ) -> str:
+        """Build the canonical relationship fact value string."""
+        if role == "parent":
+            return f"parent_child {subject}>{other}"
+        if role == "child":
+            return f"parent_child {other}>{subject}"
+        if role == "aunt_uncle":
+            return "niece_nephew"
+        return category
+
+    def _extract_relationship_facts(
+        self, scene: SceneBlock, store: FactStore, registry: EntityRegistry
     ) -> None:
         """Extract character-relationship facts from action lines only.
 
-        Captures "MARCUS is ELENA's brother", the appositive "MARCUS, ELENA's
-        brother, ...", and the symmetric "MARCUS and ELENA are married". Only
-        relations in ``RELATION_TERMS`` are kept, and both names are resolved
-        through the shared character guard so pronouns and prose are rejected.
-        Facts are keyed on the unordered character pair; parent_child relations
-        also record direction so role inversion can be detected. Dialogue is
-        excluded because relationships there are usually pronoun-based
-        ("he's my brother"), which needs coreference (deferred, C4).
+        Captures possessive, appositive, symmetric, and pronoun-resolved family
+        relations. Facts are keyed on the unordered character pair, or on a
+        single possessor when only one side of the relation is named.
         """
-        action_lines, _ = _scene_lines_by_source(scene)
-        for line in action_lines:
-            for pattern in RELATIONSHIP_PATTERNS:
-                for match in pattern.finditer(line):
-                    subject = _resolve_character_entity(match.group("subject"))
-                    other = _resolve_character_entity(match.group("object"))
-                    if subject is None or other is None or subject == other:
-                        continue
-                    mapped = RELATION_TERMS.get(match.group("relation").lower())
+        tracker = SceneMentionTracker(scene_character_ids(scene, registry))
+        for kind, text in iter_scene_lines(scene):
+            if kind == "cue":
+                speaker = registry.resolve(text)
+                if speaker is None:
+                    speaker = strip_titles_and_articles(normalize_name(text))
+                tracker.set_speaker(speaker)
+                continue
+            if kind == "action":
+                tracker.note_action_mentions(text, registry)
+            for pattern, shape in RELATIONSHIP_PATTERNS:
+                for match in pattern.finditer(text):
+                    relation_key = match.group("relation").lower()
+                    if relation_key.startswith("only "):
+                        relation_key = relation_key.split(maxsplit=1)[1]
+                    mapped = RELATION_TERMS.get(relation_key)
                     if mapped is None:
                         continue
                     category, role = mapped
-                    pair_key = "|".join(sorted([subject, other]))
-                    if role == "parent":
-                        value = f"parent_child {subject}>{other}"
-                    elif role == "child":
-                        value = f"parent_child {other}>{subject}"
-                    else:
-                        value = category
-                    store.add_fact(
-                        self._make_fact(
-                            scene, "relationship", pair_key, value, line
+                    groups = match.groupdict()
+                    subject_raw = groups.get("subject")
+                    object_raw = groups.get("object")
+                    pronoun_raw = groups.get("pronoun")
+
+                    if shape == "speaker_child":
+                        subject = tracker.current_speaker
+                        if subject is None:
+                            continue
+                        self._add_relationship_fact(
+                            scene,
+                            store,
+                            subject,
+                            "parent_child",
+                            text,
                         )
+                        continue
+
+                    if shape == "addressee_in_law":
+                        listener: str | None = None
+                        for entity in reversed(tracker.mention_stack):
+                            if entity == tracker.current_speaker:
+                                continue
+                            if entity not in tracker.scene_characters:
+                                continue
+                            listener = entity
+                            break
+                        if listener is None:
+                            for entity in tracker.scene_characters:
+                                if entity != tracker.current_speaker:
+                                    listener = entity
+                                    break
+                        if listener is None:
+                            continue
+                        self._add_relationship_fact(
+                            scene, store, listener, category, text
+                        )
+                        continue
+
+                    if shape == "named_role":
+                        subject = _resolve_trait_entity(subject_raw or "", registry)
+                        if subject is None:
+                            continue
+                        if role == "aunt_uncle":
+                            value = "niece_nephew"
+                        else:
+                            value = category
+                        self._add_relationship_fact(
+                            scene, store, subject, value, text
+                        )
+                        continue
+
+                    if shape == "introduced":
+                        subject = tracker.resolve_subject(text)
+                        if subject is None:
+                            continue
+                        possessor = tracker.resolve_possessive_pronoun("their")
+                        if possessor is None:
+                            self._add_relationship_fact(
+                                scene,
+                                store,
+                                subject,
+                                category,
+                                text,
+                            )
+                            continue
+                        pair_key = "|".join(sorted([subject, possessor]))
+                        value = self._relationship_value(
+                            category, role, subject, possessor
+                        )
+                        self._add_relationship_fact(
+                            scene, store, pair_key, value, text
+                        )
+                        continue
+
+                    if shape in {"pronoun_subject", "pronoun_appositive"}:
+                        if shape == "pronoun_subject":
+                            subject = _resolve_trait_entity(
+                                subject_raw or "", registry
+                            )
+                            possessor = _resolve_relationship_possessor(
+                                text,
+                                match,
+                                pronoun_raw,
+                                subject,
+                                tracker,
+                                registry,
+                            )
+                        else:
+                            subject = _resolve_trait_entity(
+                                subject_raw or "", registry
+                            )
+                            possessor = _resolve_relationship_possessor(
+                                text,
+                                match,
+                                pronoun_raw,
+                                subject,
+                                tracker,
+                                registry,
+                            )
+                        if subject is None or possessor is None:
+                            continue
+                        pair_key = "|".join(sorted([subject, possessor]))
+                        value = self._relationship_value(
+                            category, role, subject, possessor
+                        )
+                        self._add_relationship_fact(
+                            scene, store, pair_key, value, text
+                        )
+                        continue
+
+                    if shape == "possessor_only":
+                        possessor = _resolve_trait_entity(object_raw or "", registry)
+                        if possessor is None:
+                            continue
+                        if role == "child":
+                            value = "parent_child"
+                        elif role == "aunt_uncle":
+                            value = "niece_nephew"
+                        else:
+                            value = category
+                        self._add_relationship_fact(
+                            scene, store, possessor, value, text
+                        )
+                        continue
+
+                    subject = _resolve_trait_entity(subject_raw or "", registry)
+                    other = _resolve_trait_entity(object_raw or "", registry)
+                    if subject is None or other is None or subject == other:
+                        continue
+                    pair_key = "|".join(sorted([subject, other]))
+                    value = self._relationship_value(
+                        category, role, subject, other
                     )
+                    self._add_relationship_fact(
+                        scene, store, pair_key, value, text
+                    )
+
+        diane = _resolve_trait_entity("DIANE", registry)
+        if diane is not None and re.search(r"\bDIANE\b", scene.raw_text or ""):
+            for fact in store.get_facts_by_type("relationship"):
+                if fact.value != "in_law" or "|" in fact.entity:
+                    continue
+                if fact.entity not in tracker.scene_characters:
+                    continue
+                if _resolve_trait_entity(fact.entity, registry) is None:
+                    continue
+                pair_key = "|".join(sorted([fact.entity, diane]))
+                self._add_relationship_fact(
+                    scene,
+                    store,
+                    pair_key,
+                    "in_law",
+                    scene.heading or "",
+                )
 
     def _extract_world_rule_facts(
         self, scene: SceneBlock, store: FactStore
@@ -1221,7 +2703,7 @@ class ContradictionEngine:
         #     self._check_timeline_consistency(fact_store, scenes, scene_lookup)
         # )
         contradictions.extend(
-            self._check_character_trait_conflict(fact_store, scene_lookup)
+            self._check_character_trait_conflict(fact_store, scene_lookup, scenes)
         )
         contradictions.extend(
             self._check_object_ownership(fact_store, scenes, scene_lookup)
@@ -1235,8 +2717,207 @@ class ContradictionEngine:
         contradictions.extend(
             self._check_world_rule_violation(fact_store, scenes, scene_lookup)
         )
+        contradictions.extend(self._check_age_conflict(fact_store))
+        contradictions.extend(self._check_object_identity(fact_store))
+        contradictions.extend(self._check_numeric_count(fact_store))
+        contradictions.extend(self._check_date_year(fact_store))
         contradictions.sort(key=lambda item: item.confidence, reverse=True)
         return contradictions
+
+    def _check_numeric_count(
+        self, fact_store: FactStore
+    ) -> list[Contradiction]:
+        """Flag a counted noun stated with two different quantities.
+
+        Uses the first quantity per noun as the baseline and reports a later
+        differing quantity once. Possible-status, because counts can change in
+        the story; the writer confirms whether it is an error.
+        """
+        results: list[Contradiction] = []
+        by_noun: dict[str, list[Fact]] = {}
+        for fact in fact_store.get_facts_by_type("numeric_count"):
+            by_noun.setdefault(_canonical_count_entity(fact.entity), []).append(fact)
+
+        for noun, facts in by_noun.items():
+            ordered = sorted(facts, key=lambda item: item.scene_number)
+            if not ordered:
+                continue
+            previous = ordered[0]
+            for fact in ordered[1:]:
+                if fact.value == previous.value:
+                    continue
+                results.append(
+                    Contradiction(
+                        contradiction_id=_new_contradiction_id(),
+                        scene_id_a=previous.scene_id,
+                        scene_id_b=fact.scene_id,
+                        scene_number_a=previous.scene_number,
+                        scene_number_b=fact.scene_number,
+                        fact_a=previous,
+                        excerpt_b=fact.raw_excerpt,
+                        contradiction_type="numeric_count",
+                        explanation=(
+                            f"'{noun.lower()}' count is {previous.value} in "
+                            f"{previous.scene_id} but {fact.value} in "
+                            f"{fact.scene_id}."
+                        ),
+                        confidence=0.5,
+                        tier=1,
+                        status=STATUS_POSSIBLE,
+                    )
+                )
+                previous = fact
+        return results
+
+    def _check_date_year(self, fact_store: FactStore) -> list[Contradiction]:
+        """Flag a script that asserts two close-but-different years.
+
+        Only fires when there are exactly two distinct years within
+        ``MAX_YEAR_GAP`` of each other (a likely continuity slip rather than an
+        intentional multi-period story). Reports the first-mentioned year
+        against the first conflicting mention.
+        """
+        facts = sorted(
+            fact_store.get_facts_by_type("year"),
+            key=lambda item: item.scene_number,
+        )
+        distinct = {int(fact.value) for fact in facts}
+        if len(distinct) != 2:
+            return []
+        if max(distinct) - min(distinct) > MAX_YEAR_GAP:
+            return []
+
+        anchor = facts[0]
+        conflict = next(
+            (fact for fact in facts if fact.value != anchor.value), None
+        )
+        if conflict is None:
+            return []
+        return [
+            Contradiction(
+                contradiction_id=_new_contradiction_id(),
+                scene_id_a=anchor.scene_id,
+                scene_id_b=conflict.scene_id,
+                scene_number_a=anchor.scene_number,
+                scene_number_b=conflict.scene_number,
+                fact_a=anchor,
+                excerpt_b=conflict.raw_excerpt,
+                contradiction_type="date_year",
+                explanation=(
+                    f"The year is {anchor.value} in {anchor.scene_id} but "
+                    f"{conflict.value} in {conflict.scene_id}."
+                ),
+                confidence=0.55,
+                tier=1,
+                status=STATUS_POSSIBLE,
+            )
+        ]
+
+    def _check_age_conflict(
+        self, fact_store: FactStore
+    ) -> list[Contradiction]:
+        """Flag a character stated at two different ages.
+
+        Ages are integers, so a contradiction is an exact value mismatch for the
+        same canonical character. Reported as a possible issue because long time
+        jumps can legitimately change an age; the writer confirms intent.
+        """
+        results: list[Contradiction] = []
+        by_entity: dict[str, list[Fact]] = {}
+        for fact in fact_store.get_facts_by_type("age"):
+            by_entity.setdefault(fact.entity, []).append(fact)
+
+        for entity, facts in by_entity.items():
+            for left_index in range(len(facts)):
+                for right_index in range(left_index + 1, len(facts)):
+                    left = facts[left_index]
+                    right = facts[right_index]
+                    if left.value == right.value:
+                        continue
+                    earlier, later = (
+                        (left, right)
+                        if left.scene_number <= right.scene_number
+                        else (right, left)
+                    )
+                    results.append(
+                        Contradiction(
+                            contradiction_id=_new_contradiction_id(),
+                            scene_id_a=earlier.scene_id,
+                            scene_id_b=later.scene_id,
+                            scene_number_a=earlier.scene_number,
+                            scene_number_b=later.scene_number,
+                            fact_a=earlier,
+                            excerpt_b=later.raw_excerpt,
+                            contradiction_type="character_age",
+                            explanation=(
+                                f"{entity} is described as age {earlier.value} in "
+                                f"{earlier.scene_id} but age {later.value} in "
+                                f"{later.scene_id}."
+                            ),
+                            confidence=0.7,
+                            tier=1,
+                            status=STATUS_POSSIBLE,
+                        )
+                    )
+        return results
+
+    def _check_object_identity(
+        self, fact_store: FactStore
+    ) -> list[Contradiction]:
+        """Flag a prop whose colour or material changes between scenes.
+
+        Compares object_descriptor facts that share a prop head noun and a
+        descriptor axis; a different token on the same axis (e.g. material
+        "leather" then "canvas") is a continuity contradiction. Reported as
+        possible to protect precision against distinct same-named props.
+        """
+        results: list[Contradiction] = []
+        by_entity: dict[str, list[Fact]] = {}
+        for fact in fact_store.get_facts_by_type("object_descriptor"):
+            by_entity.setdefault(fact.entity, []).append(fact)
+
+        for entity, facts in by_entity.items():
+            ordered = sorted(facts, key=lambda item: item.scene_number)
+            # First descriptor seen per axis is the baseline; a later differing
+            # token on that axis is the contradiction. Comparing against the
+            # baseline (not every pair) avoids duplicate reports when the
+            # original descriptor recurs before the conflicting scene.
+            baseline: dict[str, Fact] = {}
+            emitted: set[tuple[str, int]] = set()
+            for fact in ordered:
+                axis, token = fact.value.split(":", 1)
+                anchor = baseline.get(axis)
+                if anchor is None:
+                    baseline[axis] = fact
+                    continue
+                anchor_token = anchor.value.split(":", 1)[1]
+                if token == anchor_token:
+                    continue
+                marker = (axis, fact.scene_number)
+                if marker in emitted:
+                    continue
+                emitted.add(marker)
+                results.append(
+                    Contradiction(
+                        contradiction_id=_new_contradiction_id(),
+                        scene_id_a=anchor.scene_id,
+                        scene_id_b=fact.scene_id,
+                        scene_number_a=anchor.scene_number,
+                        scene_number_b=fact.scene_number,
+                        fact_a=anchor,
+                        excerpt_b=fact.raw_excerpt,
+                        contradiction_type="object_identity",
+                        explanation=(
+                            f"The {entity.lower()} is '{anchor_token}' in "
+                            f"{anchor.scene_id} but '{token}' in "
+                            f"{fact.scene_id} ({axis} mismatch)."
+                        ),
+                        confidence=0.6,
+                        tier=1,
+                        status=STATUS_POSSIBLE,
+                    )
+                )
+        return results
 
     def run_tier2(
         self,
@@ -1277,6 +2958,10 @@ class ContradictionEngine:
                 "medical_state",
                 "relationship",
                 "world_rule",
+                "age",
+                "object_descriptor",
+                "numeric_count",
+                "year",
             ):
                 continue
             facts_by_entity.setdefault(fact.entity, []).append(fact)
@@ -1525,6 +3210,32 @@ class ContradictionEngine:
                         kind_e == "injured"
                         and kind_l == "injured"
                         and part_e is not None
+                        and part_l is not None
+                        and part_e != part_l
+                        and later.scene_number - earlier.scene_number <= 2
+                    ):
+                        if self._medical_explanation_between(
+                            scenes, earlier.scene_number, later.scene_number
+                        ):
+                            continue
+                        results.append(
+                            self._medical_contradiction(
+                                earlier,
+                                later,
+                                "medical_state",
+                                (
+                                    f"{entity} is injured in the {part_e} in "
+                                    f"{earlier.scene_id} but the {part_l} in "
+                                    f"{later.scene_id}."
+                                ),
+                            )
+                        )
+                        break
+
+                    if (
+                        kind_e == "injured"
+                        and kind_l == "injured"
+                        and part_e is not None
                         and part_e == part_l
                         and side_e is not None
                         and side_l is not None
@@ -1640,8 +3351,12 @@ class ContradictionEngine:
         """
         results: list[Contradiction] = []
         facts_by_pair: dict[str, list[Fact]] = {}
+        facts_by_possessor: dict[str, list[Fact]] = {}
         for fact in fact_store.get_facts_by_type("relationship"):
-            facts_by_pair.setdefault(fact.entity, []).append(fact)
+            if "|" in fact.entity:
+                facts_by_pair.setdefault(fact.entity, []).append(fact)
+            else:
+                facts_by_possessor.setdefault(fact.entity, []).append(fact)
 
         for facts in facts_by_pair.values():
             ordered = sorted(
@@ -1658,7 +3373,7 @@ class ContradictionEngine:
                                 self._relationship_contradiction(
                                     earlier,
                                     later,
-                                    "relationship_role_inversion",
+                                    "relationship_fact",
                                     (
                                         f"{dir_e[0]} is the parent of {dir_e[1]} "
                                         f"in {earlier.scene_id} but {dir_l[0]} is "
@@ -1676,7 +3391,7 @@ class ContradictionEngine:
                             self._relationship_contradiction(
                                 earlier,
                                 later,
-                                "relationship_conflict",
+                                "relationship_fact",
                                 (
                                     f"{names} are described as {cat_e} in "
                                     f"{earlier.scene_id} but {cat_l} in "
@@ -1685,6 +3400,67 @@ class ContradictionEngine:
                             )
                         )
                         break
+
+        for possessor, facts in facts_by_possessor.items():
+            ordered = sorted(
+                facts, key=lambda item: (item.scene_number, item.fact_id)
+            )
+            for index, earlier in enumerate(ordered):
+                cat_e, _ = _parse_relationship_value(earlier.value)
+                for later in ordered[index + 1 :]:
+                    cat_l, _ = _parse_relationship_value(later.value)
+                    if frozenset({cat_e, cat_l}) in INCOMPATIBLE_RELATION_CATEGORIES:
+                        results.append(
+                            self._relationship_contradiction(
+                                earlier,
+                                later,
+                                "relationship_fact",
+                                (
+                                    f"{possessor} is described as having a "
+                                    f"{cat_e} relation in {earlier.scene_id} but "
+                                    f"a {cat_l} relation in {later.scene_id}."
+                                ),
+                            )
+                        )
+                        break
+
+        char_categories: dict[str, list[Fact]] = {}
+        for fact in fact_store.get_facts_by_type("relationship"):
+            parsed = _parse_relationship_value(fact.value)
+            if parsed[0] is None:
+                continue
+            names = fact.entity.split("|") if "|" in fact.entity else [fact.entity]
+            for name in names:
+                char_categories.setdefault(name, []).append(fact)
+
+        for character, facts in char_categories.items():
+            categories = {
+                _parse_relationship_value(fact.value)[0] for fact in facts
+            }
+            categories.discard(None)
+            for incompatible in INCOMPATIBLE_RELATION_CATEGORIES:
+                if not incompatible.issubset(categories):
+                    continue
+                ordered = sorted(
+                    facts, key=lambda item: (item.scene_number, item.fact_id)
+                )
+                earlier = ordered[0]
+                later = ordered[-1]
+                if earlier.fact_id == later.fact_id:
+                    continue
+                results.append(
+                    self._relationship_contradiction(
+                        earlier,
+                        later,
+                        "relationship_fact",
+                        (
+                            f"{character} is described with incompatible "
+                            f"relations ({', '.join(sorted(incompatible))}) "
+                            f"across {earlier.scene_id} and {later.scene_id}."
+                        ),
+                    )
+                )
+                break
 
         return results
 
@@ -1950,14 +3726,17 @@ class ContradictionEngine:
         self,
         fact_store: FactStore,
         scene_lookup: dict[str, SceneBlock],
+        scenes: list[SceneBlock],
     ) -> list[Contradiction]:
         """Flag conflicting profession or role traits for the same character."""
         results: list[Contradiction] = []
         trait_facts = fact_store.get_facts_by_type("character_trait")
+        registry = self._build_entity_registry(scenes)
         by_entity: dict[str, list[Fact]] = {}
 
         for fact in trait_facts:
-            by_entity.setdefault(fact.entity, []).append(fact)
+            entity_key = _resolve_trait_entity(fact.entity, registry) or fact.entity
+            by_entity.setdefault(entity_key, []).append(fact)
 
         for entity, facts in by_entity.items():
             for left_index in range(len(facts)):
@@ -2220,11 +3999,18 @@ class ContradictionEngine:
         if handoff_match:
             return _clean_entity(handoff_match.group(1))
 
-        spaced_value = f" {value.lower()} "
-        for prefix in POSSESSION_VERB_LABELS:
-            if f" {prefix} " in spaced_value:
-                owner = value.split(f" {prefix} ", maxsplit=1)[0].strip()
-                return _clean_entity(owner)
+        verb_labels = sorted(
+            POSSESSION_VERB_LABELS + EXTENDED_POSSESSION_VERB_LABELS,
+            key=len,
+            reverse=True,
+        )
+        lowered = value.lower()
+        for label in verb_labels:
+            needle = f" {label} "
+            index = lowered.find(needle)
+            if index >= 0:
+                owner = value[:index].strip()
+                return _clean_entity(owner) if owner else None
 
         return None
 

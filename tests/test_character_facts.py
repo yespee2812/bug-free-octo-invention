@@ -77,6 +77,25 @@ INT. WAREHOUSE - NIGHT
 AGENT COLE is dead after the ambush.
 """
 
+TRAIT_CONFLICT_SCRIPT = """INT. CAFE - DAY
+
+CLAIRE HART, 32, novelist, sips coffee.
+
+INT. HOTEL - NIGHT
+
+Claire, the poet, sets down her pen.
+"""
+
+SKEPTIC_BELIEF_CONFLICT = """INT. PORCH - DUSK
+
+DAN films B-roll, unconvinced.
+
+INT. HALL - NIGHT
+
+DAN
+I knew this place was alive the second we parked. I felt it.
+"""
+
 
 def test_pronoun_lines_create_no_trait_facts() -> None:
     """The 'THERE is a...' false-positive class must not produce facts."""
@@ -101,3 +120,23 @@ def test_real_names_still_extracted() -> None:
     status_facts = _facts_of_type(REAL_NAME_SCRIPT, "character_status")
     assert any(fact.entity == "MARCUS" for fact in trait_facts)
     assert any(fact.entity == "AGENT COLE" for fact in status_facts)
+
+
+def test_trait_conflict_resolves_name_variants() -> None:
+    """Claire and CLAIRE HART must share one trait track."""
+    from plot_contradiction import ContradictionEngine
+
+    scenes = _dependency_engine.parse_fountain_text(TRAIT_CONFLICT_SCRIPT)
+    contradictions = ContradictionEngine().run_analysis(scenes)
+    found = [c for c in contradictions if c.contradiction_type == "character_trait_conflict"]
+    assert len(found) == 1
+
+
+def test_skeptic_belief_conflict_is_flagged() -> None:
+    """Unconvinced action prose vs explicit belief dialogue must conflict."""
+    from plot_contradiction import ContradictionEngine
+
+    scenes = _dependency_engine.parse_fountain_text(SKEPTIC_BELIEF_CONFLICT)
+    contradictions = ContradictionEngine().run_analysis(scenes)
+    found = [c for c in contradictions if c.contradiction_type == "character_trait_conflict"]
+    assert len(found) == 1

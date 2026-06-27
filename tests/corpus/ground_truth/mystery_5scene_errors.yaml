@@ -1,0 +1,18 @@
+script_id: mystery_5scene_errors
+filename: mystery_5scene_errors.fountain
+
+planted_contradictions:
+  - type: character_age
+    scene_number_a: 2
+    scene_number_b: 5
+    characters: ["TOMAS"]
+    objects: []
+    engine_detectable: false
+    note: "Tomas, 22 (sc2) vs 'A nineteen-year-old gardener' (sc5)."
+  - type: character_knowledge
+    scene_number_a: 1
+    scene_number_b: 3
+    characters: ["MAYA"]
+    objects: ["GLASS KEY"]
+    engine_detectable: false
+    note: "Key 'here at midnight' (sc1) vs 'gone since last week, not midnight' (sc3)."

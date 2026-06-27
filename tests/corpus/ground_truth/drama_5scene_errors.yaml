@@ -1,0 +1,18 @@
+script_id: drama_5scene_errors
+filename: drama_5scene_errors.fountain
+
+planted_contradictions:
+  - type: object_ownership
+    scene_number_a: 1
+    scene_number_b: 5
+    characters: ["RICHARD", "ELENA"]
+    objects: ["SILVER WEDDING BAND"]
+    engine_detectable: true
+    note: "Richard holds the band (sc1) vs 'stays in Elena's pocket' (sc5)."
+  - type: character_age
+    scene_number_a: 2
+    scene_number_b: 3
+    characters: ["SOFIA"]
+    objects: []
+    engine_detectable: false
+    note: "Sofia, 12 (sc2) vs 'fastest ten-year-old' (sc3)."

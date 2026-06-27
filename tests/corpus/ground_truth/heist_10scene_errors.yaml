@@ -1,0 +1,25 @@
+script_id: heist_10scene_errors
+filename: heist_10scene_errors.fountain
+
+planted_contradictions:
+  - type: object_identity
+    scene_number_a: 6
+    scene_number_b: 10
+    characters: ["MARCUS"]
+    objects: ["sketch"]
+    engine_detectable: false
+    note: "Vermeer study (sc6) vs 'a Rembrandt' (sc10)."
+  - type: character_knowledge
+    scene_number_a: 9
+    scene_number_b: 3
+    characters: ["SLOANE"]
+    objects: []
+    engine_detectable: false
+    note: "Sloane 'they know we're coming' (sc3) before the THEY KNOW text (sc9)."
+  - type: numeric_count
+    scene_number_a: 4
+    scene_number_b: 6
+    characters: ["PAK", "MARCUS"]
+    objects: []
+    engine_detectable: false
+    note: "'Twelve-second holes' (sc4) vs 'Twenty-second holes' (sc6)."

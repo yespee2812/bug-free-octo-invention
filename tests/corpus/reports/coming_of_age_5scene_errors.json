@@ -1,0 +1,86 @@
+{
+  "script_summary": {
+    "total_scenes": 5,
+    "total_characters": [
+      "JORDAN",
+      "MAYA",
+      "THE END"
+    ],
+    "total_objects": []
+  },
+  "dependencies": {
+    "graph_summary": {
+      "total_scenes": 5,
+      "total_edges": 10,
+      "most_depended_on_scene": "scene_005",
+      "orphan_count": 0,
+      "avg_dependencies_per_scene": 2.0
+    },
+    "high_risk_scenes": [
+      {
+        "scene_id": "scene_001",
+        "heading": "INT. HIGH SCHOOL HALLWAY - DAY",
+        "would_break": 4,
+        "impacted_scenes": [
+          "scene_002",
+          "scene_005",
+          "scene_004",
+          "scene_003"
+        ]
+      },
+      {
+        "scene_id": "scene_002",
+        "heading": "EXT. SCHOOL ROOFTOP - AFTERNOON",
+        "would_break": 3,
+        "impacted_scenes": [
+          "scene_004",
+          "scene_005",
+          "scene_003"
+        ]
+      },
+      {
+        "scene_id": "scene_003",
+        "heading": "INT. AUDITORIUM - NIGHT",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_004",
+          "scene_005"
+        ]
+      },
+      {
+        "scene_id": "scene_004",
+        "heading": "INT. BACKSTAGE - NIGHT",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_005"
+        ]
+      }
+    ]
+  },
+  "contradictions": {
+    "total_found": 1,
+    "by_tier": {
+      "tier1": 1,
+      "tier2": 0
+    },
+    "items": [
+      {
+        "scenes_involved": [
+          3,
+          5
+        ],
+        "contradiction_type": "numeric_count",
+        "explanation": "'seating' count is 12 in scene_003 but 15 in scene_005.",
+        "confidence": 0.5,
+        "tier": 1,
+        "status": "possible"
+      }
+    ]
+  },
+  "health_score": 92,
+  "input": {
+    "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\coming_of_age_5scene_errors.fountain",
+    "filename": "coming_of_age_5scene_errors.fountain",
+    "format": "text"
+  }
+}

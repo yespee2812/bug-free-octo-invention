@@ -1,0 +1,131 @@
+{
+  "script_summary": {
+    "total_scenes": 10,
+    "total_characters": [
+      "CLIENT",
+      "FRANK",
+      "THE END"
+    ],
+    "total_objects": [
+      "BLUE PARROT CLUB",
+      "METAL CASE",
+      "PHOTOS",
+      "RED HAT",
+      "TRUTH"
+    ]
+  },
+  "dependencies": {
+    "graph_summary": {
+      "total_scenes": 10,
+      "total_edges": 16,
+      "most_depended_on_scene": "scene_010",
+      "orphan_count": 3,
+      "avg_dependencies_per_scene": 1.7
+    },
+    "high_risk_scenes": [
+      {
+        "scene_id": "scene_002",
+        "heading": "INT. MERCER'S OFFICE - DAY",
+        "would_break": 5,
+        "impacted_scenes": [
+          "scene_003",
+          "scene_010",
+          "scene_006",
+          "scene_008",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_003",
+        "heading": "INT. MERCER'S OFFICE - NIGHT",
+        "would_break": 4,
+        "impacted_scenes": [
+          "scene_010",
+          "scene_006",
+          "scene_008",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_001",
+        "heading": "EXT. MERIDIAN AVENUE - RAIN - NIGHT",
+        "would_break": 3,
+        "impacted_scenes": [
+          "scene_010",
+          "scene_008",
+          "scene_009"
+        ]
+      },
+      {
+        "scene_id": "scene_008",
+        "heading": "INT. MERCER'S OFFICE - DAY",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_009",
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_004",
+        "heading": "INT. MERIDIAN HOTEL - LOBBY - NIGHT",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_005"
+        ]
+      },
+      {
+        "scene_id": "scene_006",
+        "heading": "INT. BLUE PARROT CLUB - NIGHT",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_010"
+        ]
+      },
+      {
+        "scene_id": "scene_009",
+        "heading": "INT. MERCER'S OFFICE - NIGHT",
+        "would_break": 1,
+        "impacted_scenes": [
+          "scene_010"
+        ]
+      }
+    ]
+  },
+  "contradictions": {
+    "total_found": 2,
+    "by_tier": {
+      "tier1": 2,
+      "tier2": 0
+    },
+    "items": [
+      {
+        "scenes_involved": [
+          3,
+          6
+        ],
+        "contradiction_type": "object_identity",
+        "explanation": "The hat is 'red' in scene_003 but 'green' in scene_006 (color mismatch).",
+        "confidence": 0.6,
+        "tier": 1,
+        "status": "possible"
+      },
+      {
+        "scenes_involved": [
+          3,
+          5
+        ],
+        "contradiction_type": "numeric_count",
+        "explanation": "'room' count is 514 in scene_003 but 415 in scene_005.",
+        "confidence": 0.5,
+        "tier": 1,
+        "status": "possible"
+      }
+    ]
+  },
+  "health_score": 75,
+  "input": {
+    "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\noir_10scene_errors.fountain",
+    "filename": "noir_10scene_errors.fountain",
+    "format": "text"
+  }
+}

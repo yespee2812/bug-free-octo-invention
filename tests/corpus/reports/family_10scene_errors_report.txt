@@ -1,0 +1,59 @@
+ScriptLens analysis
+Input: family_10scene_errors.fountain
+Format: text
+========================================================================
+
+========================================================================
+SCRIPTLENS STORY REPORT
+========================================================================
+
+YOUR SCRIPT AT A GLANCE
+------------------------------------------------------------------------
+  Scenes:     10
+  Characters: ANTONIO'S WIFE, DIANA, MARIA, RAUL, THE END
+  Props:      GLASS, GO-BAG
+
+HOW YOUR SCENES CONNECT
+------------------------------------------------------------------------
+  Your story has 10 scenes linked by 10 story connections.
+  The scene other scenes rely on most: scene_010.
+  On average, each scene builds on about 1.1 earlier scenes.
+  4 scene(s) sit loosely in the story - nothing later depends on them, so they may be easy to cut or need stronger ties.
+
+SCENES YOU SHOULD NOT CUT LIGHTLY
+------------------------------------------------------------------------
+  1. scene_002 - INT. KITCHEN - DAY
+     Removing this would weaken 3 later scene(s): scene_008, scene_010, scene_006.
+  2. scene_005 - INT. DINING ROOM - NIGHT
+     Removing this would weaken 3 later scene(s): scene_009, scene_010, scene_007.
+  3. scene_006 - EXT. FRONT PORCH - NIGHT
+     Removing this would weaken 2 later scene(s): scene_008, scene_010.
+  4. scene_007 - INT. DINING ROOM - NIGHT
+     Removing this would weaken 2 later scene(s): scene_009, scene_010.
+  5. scene_008 - INT. KITCHEN - NIGHT
+     Removing this would weaken 1 later scene(s): scene_010.
+
+STORY CONSISTENCY ISSUES
+------------------------------------------------------------------------
+  Found 3 possible inconsistency(ies): 3 clear conflict(s), 0 subtler mismatch(es).
+
+  Issue 1: Relationship Fact
+    Between scene 3 and scene 8
+    ANTONIO WIFE and DIANA are described as sibling in scene_003 but cousin in scene_008.
+    Confidence: about 85%
+
+  Possible issue 2: Numeric Count
+    Between scene 1 and scene 9
+    'year' count is 20 in scene_001 but 25 in scene_009.
+    Confidence: about 50%
+
+  Possible issue 3: Numeric Count
+    Between scene 5 and scene 10
+    'seating' count is 20 in scene_005 but 18 in scene_010.
+    Confidence: about 50%
+
+OVERALL SCRIPT HEALTH
+------------------------------------------------------------------------
+  Score: 64 / 100
+  Worth a revision pass: address contradictions and scenes that feel disconnected.
+
