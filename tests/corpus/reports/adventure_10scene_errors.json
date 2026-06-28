@@ -37,9 +37,9 @@
         "heading": "EXT. ICE FALL - DAY",
         "would_break": 3,
         "impacted_scenes": [
-          "scene_005",
           "scene_010",
-          "scene_008"
+          "scene_008",
+          "scene_005"
         ]
       },
       {

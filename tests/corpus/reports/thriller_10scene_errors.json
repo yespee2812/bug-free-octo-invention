@@ -28,13 +28,13 @@
         "impacted_scenes": [
           "scene_004",
           "scene_003",
-          "scene_010",
-          "scene_008",
-          "scene_006",
           "scene_007",
-          "scene_009",
+          "scene_002",
+          "scene_010",
           "scene_005",
-          "scene_002"
+          "scene_006",
+          "scene_008",
+          "scene_009"
         ]
       },
       {
@@ -44,11 +44,11 @@
         "impacted_scenes": [
           "scene_010",
           "scene_004",
-          "scene_008",
-          "scene_006",
           "scene_007",
-          "scene_009",
           "scene_005",
+          "scene_006",
+          "scene_008",
+          "scene_009",
           "scene_003"
         ]
       },
@@ -69,10 +69,10 @@
         "heading": "INT. UNDERPASS - NIGHT",
         "would_break": 5,
         "impacted_scenes": [
-          "scene_010",
-          "scene_008",
-          "scene_006",
           "scene_007",
+          "scene_010",
+          "scene_006",
+          "scene_008",
           "scene_009"
         ]
       },
@@ -92,9 +92,9 @@
         "heading": "EXT. RIVER ROAD OVERPASS - NIGHT",
         "would_break": 4,
         "impacted_scenes": [
-          "scene_008",
           "scene_010",
           "scene_007",
+          "scene_008",
           "scene_009"
         ]
       },

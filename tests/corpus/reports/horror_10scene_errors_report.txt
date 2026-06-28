@@ -23,13 +23,13 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_001 - INT. SUBURBAN HOUSE - FOYER - DAY
-     Removing this would weaken 9 later scene(s): scene_005, scene_008, scene_003, scene_010, scene_006, scene_007, scene_009, scene_004, scene_002.
+     Removing this would weaken 9 later scene(s): scene_005, scene_003, scene_008, scene_007, scene_002, scene_004, scene_010, scene_006, scene_009.
   2. scene_002 - INT. BASEMENT - NIGHT
-     Removing this would weaken 8 later scene(s): scene_010, scene_007, scene_009, scene_005, scene_006, scene_004, scene_008, scene_003.
+     Removing this would weaken 8 later scene(s): scene_007, scene_010, scene_009, scene_005, scene_004, scene_006, scene_003, scene_008.
   3. scene_003 - INT. BASEMENT - LATER
-     Removing this would weaken 5 later scene(s): scene_005, scene_008, scene_010, scene_007, scene_009.
+     Removing this would weaken 5 later scene(s): scene_005, scene_008, scene_007, scene_010, scene_009.
   4. scene_004 - INT. KITCHEN - NIGHT
-     Removing this would weaken 5 later scene(s): scene_008, scene_010, scene_006, scene_007, scene_009.
+     Removing this would weaken 5 later scene(s): scene_008, scene_007, scene_010, scene_006, scene_009.
   5. scene_005 - INT. BASEMENT - NIGHT
      Removing this would weaken 4 later scene(s): scene_008, scene_010, scene_007, scene_009.
   ... and 4 more scene(s) with downstream ties.

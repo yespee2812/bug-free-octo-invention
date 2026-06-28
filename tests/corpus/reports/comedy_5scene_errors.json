@@ -29,8 +29,8 @@
         "would_break": 4,
         "impacted_scenes": [
           "scene_002",
-          "scene_004",
           "scene_003",
+          "scene_004",
           "scene_005"
         ]
       },

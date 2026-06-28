@@ -23,7 +23,7 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_001 - INT. ART MUSEUM - CLOSED GALLERY - NIGHT
-     Removing this would weaken 3 later scene(s): scene_003, scene_005, scene_002.
+     Removing this would weaken 3 later scene(s): scene_003, scene_002, scene_005.
   2. scene_003 - INT. VAULT ANTEROOM - NIGHT
      Removing this would weaken 1 later scene(s): scene_005.
 

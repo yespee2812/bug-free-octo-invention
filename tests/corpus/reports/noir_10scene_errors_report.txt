@@ -25,9 +25,9 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
   1. scene_002 - INT. MERCER'S OFFICE - DAY
      Removing this would weaken 5 later scene(s): scene_010, scene_003, scene_006, scene_008, scene_009.
   2. scene_003 - INT. MERCER'S OFFICE - NIGHT
-     Removing this would weaken 4 later scene(s): scene_010, scene_006, scene_009, scene_008.
+     Removing this would weaken 4 later scene(s): scene_010, scene_006, scene_008, scene_009.
   3. scene_001 - EXT. MERIDIAN AVENUE - RAIN - NIGHT
-     Removing this would weaken 3 later scene(s): scene_010, scene_009, scene_008.
+     Removing this would weaken 3 later scene(s): scene_010, scene_008, scene_009.
   4. scene_008 - INT. MERCER'S OFFICE - DAY
      Removing this would weaken 2 later scene(s): scene_009, scene_010.
   5. scene_004 - INT. MERIDIAN HOTEL - LOBBY - NIGHT

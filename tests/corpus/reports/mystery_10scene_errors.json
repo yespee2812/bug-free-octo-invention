@@ -30,13 +30,13 @@
         "would_break": 8,
         "impacted_scenes": [
           "scene_010",
-          "scene_008",
           "scene_005",
+          "scene_008",
           "scene_007",
           "scene_009",
-          "scene_006",
+          "scene_003",
           "scene_004",
-          "scene_003"
+          "scene_006"
         ]
       },
       {
@@ -46,11 +46,11 @@
         "impacted_scenes": [
           "scene_009",
           "scene_007",
-          "scene_010",
-          "scene_008",
-          "scene_006",
           "scene_004",
-          "scene_005"
+          "scene_010",
+          "scene_005",
+          "scene_006",
+          "scene_008"
         ]
       },
       {
@@ -60,10 +60,10 @@
         "impacted_scenes": [
           "scene_007",
           "scene_010",
-          "scene_008",
+          "scene_005",
           "scene_006",
-          "scene_009",
-          "scene_005"
+          "scene_008",
+          "scene_009"
         ]
       },
       {
@@ -84,8 +84,8 @@
         "would_break": 3,
         "impacted_scenes": [
           "scene_010",
-          "scene_009",
-          "scene_008"
+          "scene_008",
+          "scene_009"
         ]
       },
       {

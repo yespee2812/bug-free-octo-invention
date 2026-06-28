@@ -27,12 +27,12 @@
         "would_break": 8,
         "impacted_scenes": [
           "scene_010",
-          "scene_008",
-          "scene_006",
           "scene_007",
-          "scene_009",
-          "scene_004",
           "scene_003",
+          "scene_004",
+          "scene_006",
+          "scene_008",
+          "scene_009",
           "scene_002"
         ]
       },
@@ -42,12 +42,12 @@
         "would_break": 7,
         "impacted_scenes": [
           "scene_010",
-          "scene_008",
-          "scene_006",
           "scene_007",
-          "scene_009",
+          "scene_003",
           "scene_004",
-          "scene_003"
+          "scene_006",
+          "scene_008",
+          "scene_009"
         ]
       },
       {
@@ -55,12 +55,12 @@
         "heading": "INT. INN LOBBY - MORNING",
         "would_break": 6,
         "impacted_scenes": [
-          "scene_010",
-          "scene_008",
-          "scene_006",
           "scene_007",
-          "scene_009",
-          "scene_004"
+          "scene_004",
+          "scene_010",
+          "scene_006",
+          "scene_008",
+          "scene_009"
         ]
       },
       {
@@ -68,10 +68,10 @@
         "heading": "INT. RETREAT WORKSHOP - DAY",
         "would_break": 5,
         "impacted_scenes": [
-          "scene_010",
-          "scene_008",
-          "scene_006",
           "scene_007",
+          "scene_010",
+          "scene_006",
+          "scene_008",
           "scene_009"
         ]
       },
@@ -82,8 +82,8 @@
         "impacted_scenes": [
           "scene_008",
           "scene_010",
-          "scene_006",
           "scene_007",
+          "scene_006",
           "scene_009"
         ]
       },
@@ -92,8 +92,8 @@
         "heading": "INT. INN DINING ROOM - NIGHT",
         "would_break": 4,
         "impacted_scenes": [
-          "scene_007",
           "scene_010",
+          "scene_007",
           "scene_009",
           "scene_008"
         ]
@@ -128,9 +128,9 @@
     ]
   },
   "contradictions": {
-    "total_found": 2,
+    "total_found": 3,
     "by_tier": {
-      "tier1": 2,
+      "tier1": 3,
       "tier2": 0
     },
     "items": [
@@ -141,6 +141,17 @@
         ],
         "contradiction_type": "object_identity",
         "explanation": "The container is 'leather' in scene_002 but 'canvas' in scene_008 (material mismatch).",
+        "confidence": 0.6,
+        "tier": 1,
+        "status": "possible"
+      },
+      {
+        "scenes_involved": [
+          5,
+          10
+        ],
+        "contradiction_type": "object_identity",
+        "explanation": "The photo is 'two_of_them' in scene_005 but 'parents' in scene_010 (subject mismatch).",
         "confidence": 0.6,
         "tier": 1,
         "status": "possible"
@@ -158,7 +169,7 @@
       }
     ]
   },
-  "health_score": 81,
+  "health_score": 73,
   "input": {
     "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\romance_10scene_errors.fountain",
     "filename": "romance_10scene_errors.fountain",

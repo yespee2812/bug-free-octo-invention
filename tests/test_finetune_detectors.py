@@ -96,3 +96,28 @@ def test_footprint_size_fact_consistency(engines) -> None:
     )
     found = _detect(engines, text)
     _scenes(found, "fact_consistency", (1, 2))
+
+
+def test_photo_subject_object_identity(engines) -> None:
+    """A couple portrait vs a parents portrait on the same photo prop is flagged."""
+    text = (
+        "EXT. BEACH - DAY\n\n"
+        "James produces the old PHOTO of the two of them.\n\n"
+        "EXT. BEACH - SUNSET\n\n"
+        "Claire keeps the manuscript, not the faded photo of her parents.\n"
+    )
+    found = _detect(engines, text)
+    _scenes(found, "object_identity", (1, 2))
+
+
+def test_romance_10scene_photo_subject_planted(engines) -> None:
+    """Planted romance_10 photo-subject slip is caught alongside the satchel swap."""
+    path = _REPO_ROOT / "tests/corpus/input/romance_10scene_errors.fountain"
+    found = _detect(engines, path.read_text(encoding="utf-8"))
+    photo = [
+        c
+        for c in found
+        if c.contradiction_type == "object_identity"
+        and {c.scene_number_a, c.scene_number_b} == {5, 10}
+    ]
+    assert len(photo) >= 1

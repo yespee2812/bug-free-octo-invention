@@ -22,9 +22,9 @@
         "heading": "INT. HIGH SCHOOL HALLWAY - DAY",
         "would_break": 4,
         "impacted_scenes": [
-          "scene_004",
-          "scene_002",
           "scene_005",
+          "scene_002",
+          "scene_004",
           "scene_003"
         ]
       },
@@ -33,8 +33,8 @@
         "heading": "EXT. SCHOOL ROOFTOP - AFTERNOON",
         "would_break": 3,
         "impacted_scenes": [
-          "scene_004",
           "scene_005",
+          "scene_004",
           "scene_003"
         ]
       },

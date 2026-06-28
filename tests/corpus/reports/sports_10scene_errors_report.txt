@@ -23,7 +23,7 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_002 - INT. UNIVERSITY POOL - MORNING
-     Removing this would weaken 5 later scene(s): scene_010, scene_008, scene_005, scene_007, scene_009.
+     Removing this would weaken 5 later scene(s): scene_010, scene_005, scene_008, scene_007, scene_009.
   2. scene_003 - INT. TRAINING ROOM - DAY
      Removing this would weaken 3 later scene(s): scene_010, scene_007, scene_009.
   3. scene_005 - INT. COACH'S OFFICE - DAY

@@ -181,6 +181,19 @@ FOOTPRINT_EXACT_MATCH_RE: re.Pattern[str] = re.compile(
     r"\bprint\b[^.]{0,50}?\bmatched\s+(?P<ref>[A-Za-z]+)\s+exactly\b",
     re.IGNORECASE,
 )
+PHOTO_OF_COUPLE_RE: re.Pattern[str] = re.compile(
+    r"\b(?:(?:old|faded|folded)\s+)?(?:photo|photograph)s?\s+of\s+the\s+two\s+of\s+them\b",
+    re.IGNORECASE,
+)
+PHOTO_OF_PARENTS_RE: re.Pattern[str] = re.compile(
+    r"\b(?:(?:old|faded|folded)\s+)?(?:photo|photograph)s?\s+of\s+"
+    r"(?:her|his|their)\s+parents\b",
+    re.IGNORECASE,
+)
+PHOTO_NEAR_COUPLE_RE: re.Pattern[str] = re.compile(
+    r"\b(?:photo|photograph)s?\b[^.;]{0,60}?\bthe two of them\b",
+    re.IGNORECASE,
+)
 
 # Alternation of handoff verbs (e.g. "gives|hands") for parsing transfer
 # facts back out of a stored ownership value string.
@@ -2146,6 +2159,7 @@ class ContradictionEngine:
             self._extract_school_destination_facts(scene, store, registry)
             self._extract_footprint_facts(scene, store, registry)
             self._extract_object_descriptor_facts(scene, store)
+            self._extract_photo_subject_facts(scene, store)
             self._extract_payment_descriptor_facts(scene, store)
             self._extract_count_facts(scene, store)
             self._extract_year_facts(scene, store)
@@ -2652,6 +2666,39 @@ class ContradictionEngine:
                                 line,
                             )
                         )
+
+    def _extract_photo_subject_facts(
+        self, scene: SceneBlock, store: FactStore
+    ) -> None:
+        """Extract who appears in a photograph for object-identity continuity.
+
+        Couple portraits (``photo of the two of them``) and family portraits
+        (``photo of her parents``) map to a unified ``PHOTO`` entity so a
+        subject swap is reported even when the prop is only named ``photo``.
+        """
+        action_lines, dialogue_lines = _scene_lines_by_source(scene)
+        seen: set[tuple[str, str]] = set()
+        for line in action_lines + dialogue_lines:
+            subjects: list[str] = []
+            if PHOTO_OF_COUPLE_RE.search(line) or PHOTO_NEAR_COUPLE_RE.search(line):
+                subjects.append("two_of_them")
+            if PHOTO_OF_PARENTS_RE.search(line):
+                subjects.append("parents")
+            for subject in subjects:
+                value = f"subject:{subject}"
+                key = ("PHOTO", value)
+                if key in seen:
+                    continue
+                seen.add(key)
+                store.add_fact(
+                    self._make_fact(
+                        scene,
+                        "object_descriptor",
+                        "PHOTO",
+                        value,
+                        line,
+                    )
+                )
 
     def _extract_character_status_facts(
         self, scene: SceneBlock, store: FactStore
