@@ -29,11 +29,11 @@
         "impacted_scenes": [
           "scene_007",
           "scene_003",
-          "scene_006",
-          "scene_002",
-          "scene_005",
+          "scene_010",
           "scene_008",
-          "scene_010"
+          "scene_006",
+          "scene_005",
+          "scene_002"
         ]
       },
       {
@@ -42,10 +42,10 @@
         "would_break": 6,
         "impacted_scenes": [
           "scene_007",
+          "scene_010",
+          "scene_008",
           "scene_006",
           "scene_005",
-          "scene_008",
-          "scene_010",
           "scene_003"
         ]
       },
@@ -64,8 +64,8 @@
         "heading": "INT. ENEMY LISTENING POST - NIGHT",
         "would_break": 2,
         "impacted_scenes": [
-          "scene_008",
-          "scene_010"
+          "scene_010",
+          "scene_008"
         ]
       },
       {

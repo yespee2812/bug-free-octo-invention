@@ -23,11 +23,11 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_004 - INT. HARBOR OFFICE - NIGHT
-     Removing this would weaken 6 later scene(s): scene_009, scene_007, scene_006, scene_005, scene_008, scene_010.
+     Removing this would weaken 6 later scene(s): scene_009, scene_007, scene_010, scene_008, scene_006, scene_005.
   2. scene_005 - INT. PELL'S APARTMENT - NIGHT
-     Removing this would weaken 4 later scene(s): scene_009, scene_008, scene_006, scene_010.
+     Removing this would weaken 4 later scene(s): scene_009, scene_006, scene_010, scene_008.
   3. scene_006 - INT. DOCKSIDE BAR - NIGHT
-     Removing this would weaken 3 later scene(s): scene_008, scene_010, scene_009.
+     Removing this would weaken 3 later scene(s): scene_010, scene_009, scene_008.
   4. scene_001 - EXT. HARBOR - ESTABLISHING - NIGHT
      Removing this would weaken 1 later scene(s): scene_010.
   5. scene_008 - INT. WAREHOUSE - NIGHT

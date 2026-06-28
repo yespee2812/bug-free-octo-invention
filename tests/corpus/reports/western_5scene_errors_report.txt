@@ -25,7 +25,7 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
   1. scene_001 - EXT. DRY RIVER CROSSING - DAY
      Removing this would weaken 4 later scene(s): scene_005, scene_002, scene_003, scene_004.
   2. scene_002 - EXT. RIDGE TRAIL - DAY
-     Removing this would weaken 3 later scene(s): scene_003, scene_005, scene_004.
+     Removing this would weaken 3 later scene(s): scene_003, scene_004, scene_005.
   3. scene_003 - INT. DAWSON RANCH HOUSE - DAY
      Removing this would weaken 1 later scene(s): scene_005.
   4. scene_004 - EXT. DRY RIVER CROSSING - DUSK

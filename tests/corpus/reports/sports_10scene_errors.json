@@ -26,8 +26,8 @@
         "would_break": 5,
         "impacted_scenes": [
           "scene_010",
-          "scene_005",
           "scene_008",
+          "scene_005",
           "scene_007",
           "scene_009"
         ]
@@ -47,8 +47,8 @@
         "heading": "INT. COACH'S OFFICE - DAY",
         "would_break": 2,
         "impacted_scenes": [
-          "scene_008",
-          "scene_010"
+          "scene_010",
+          "scene_008"
         ]
       },
       {
@@ -79,12 +79,23 @@
     ]
   },
   "contradictions": {
-    "total_found": 2,
+    "total_found": 3,
     "by_tier": {
-      "tier1": 2,
+      "tier1": 3,
       "tier2": 0
     },
     "items": [
+      {
+        "scenes_involved": [
+          2,
+          6
+        ],
+        "contradiction_type": "character_age",
+        "explanation": "NINA VASQUEZ is described as age 22 in scene_002 but age 20 in scene_006.",
+        "confidence": 0.7,
+        "tier": 1,
+        "status": "possible"
+      },
       {
         "scenes_involved": [
           3,
@@ -109,7 +120,7 @@
       }
     ]
   },
-  "health_score": 72,
+  "health_score": 64,
   "input": {
     "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\sports_10scene_errors.fountain",
     "filename": "sports_10scene_errors.fountain",

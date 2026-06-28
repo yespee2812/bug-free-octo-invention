@@ -160,6 +160,27 @@ KNOWLEDGE_PREMATURE_RE: re.Pattern[str] = re.compile(
     re.IGNORECASE,
 )
 KNOWLEDGE_REVEAL_THEY_KNOW_RE: re.Pattern[str] = re.compile(r"\bTHEY KNOW\b")
+MIL_DIALOGUE_RE: re.Pattern[str] = re.compile(
+    r"\b(?:your|Your)\s+(?:future\s+)?mother-in-law\b"
+)
+STANDALONE_YEARS_OLD_RE: re.Pattern[str] = re.compile(
+    r"\b(?P<age>twenty|\d{1,3})\s+years?\s+old\b", re.IGNORECASE
+)
+POSSESSIVE_NAME_RE: re.Pattern[str] = re.compile(
+    r"\b(?P<name>[A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})'s\b"
+)
+SCHOOL_DESTINATION_RE: re.Pattern[str] = re.compile(
+    r"\b(?P<dest>state|coast)\s+school\b", re.IGNORECASE
+)
+FOOTPRINT_SMALLER_THAN_RE: re.Pattern[str] = re.compile(
+    r"\bprint\b[^.]{0,50}?\bsmaller than\b[^.]{0,40}?\b"
+    r"(?P<ref>[A-Za-z]+)'s\s+boot\b",
+    re.IGNORECASE,
+)
+FOOTPRINT_EXACT_MATCH_RE: re.Pattern[str] = re.compile(
+    r"\bprint\b[^.]{0,50}?\bmatched\s+(?P<ref>[A-Za-z]+)\s+exactly\b",
+    re.IGNORECASE,
+)
 
 # Alternation of handoff verbs (e.g. "gives|hands") for parsing transfer
 # facts back out of a stored ownership value string.
@@ -2122,11 +2143,14 @@ class ContradictionEngine:
             self._extract_location_facts(scene, store)
             self._extract_location_description_facts(scene, store)
             self._extract_age_facts(scene, store, registry, role_registry)
+            self._extract_school_destination_facts(scene, store, registry)
+            self._extract_footprint_facts(scene, store, registry)
             self._extract_object_descriptor_facts(scene, store)
             self._extract_payment_descriptor_facts(scene, store)
             self._extract_count_facts(scene, store)
             self._extract_year_facts(scene, store)
 
+        self._infer_rehearsal_dinner_in_law_relationships(sorted_scenes, store, registry)
         return store
 
     def _record_count_fact(
@@ -2374,6 +2398,150 @@ class ContradictionEngine:
                         self._record_age_fact(
                             scene, store, entity, age, text, seen
                         )
+
+            for match in STANDALONE_YEARS_OLD_RE.finditer(text):
+                age = _parse_inline_age(match.group("age"))
+                if age is None:
+                    continue
+                entity: str | None = None
+                prefix = text[: match.start()]
+                possessive = POSSESSIVE_NAME_RE.search(prefix)
+                if possessive:
+                    entity = registry.resolve(possessive.group("name"))
+                if entity is None:
+                    entity = tracker.resolve_subject(text)
+                if entity:
+                    self._record_age_fact(scene, store, entity, age, text, seen)
+
+    def _extract_school_destination_facts(
+        self,
+        scene: SceneBlock,
+        store: FactStore,
+        registry: EntityRegistry,
+    ) -> None:
+        """Extract where a character plans to attend school (state vs coast)."""
+        tracker = SceneMentionTracker(scene_character_ids(scene, registry))
+        seen: set[tuple[str, str]] = set()
+        for kind, text in iter_scene_lines(scene):
+            if kind == "cue":
+                speaker = registry.resolve(text)
+                if speaker is None:
+                    speaker = strip_titles_and_articles(normalize_name(text))
+                tracker.set_speaker(speaker)
+                continue
+            if kind == "action":
+                tracker.note_action_mentions(text, registry)
+            for match in SCHOOL_DESTINATION_RE.finditer(text):
+                destination = match.group("dest").lower()
+                entity: str | None = None
+                if kind == "dialogue":
+                    entity = tracker.current_speaker
+                if entity is None:
+                    for name_match in ACTION_NAME_RE.finditer(text):
+                        entity = registry.resolve(name_match.group("name"))
+                        if entity:
+                            break
+                if entity is None:
+                    entity = tracker.resolve_subject(text)
+                if not entity:
+                    continue
+                key = (entity, destination)
+                if key in seen:
+                    continue
+                seen.add(key)
+                store.add_fact(
+                    self._make_fact(
+                        scene,
+                        "character_fact",
+                        entity,
+                        f"school:{destination}",
+                        text.strip(),
+                    )
+                )
+
+    def _extract_footprint_facts(
+        self,
+        scene: SceneBlock,
+        store: FactStore,
+        registry: EntityRegistry,
+    ) -> None:
+        """Extract footprint size claims tied to a suspect's boot."""
+        for kind, text in iter_scene_lines(scene):
+            if kind not in ("action", "dialogue"):
+                continue
+            smaller = FOOTPRINT_SMALLER_THAN_RE.search(text)
+            if smaller:
+                reference = _resolve_trait_entity(smaller.group("ref"), registry)
+                store.add_fact(
+                    self._make_fact(
+                        scene,
+                        "fact_consistency",
+                        "FOOTPRINT",
+                        f"smaller_than:{reference or smaller.group('ref').upper()}",
+                        text.strip(),
+                    )
+                )
+            exact = FOOTPRINT_EXACT_MATCH_RE.search(text)
+            if exact:
+                reference = _resolve_trait_entity(exact.group("ref"), registry)
+                store.add_fact(
+                    self._make_fact(
+                        scene,
+                        "fact_consistency",
+                        "FOOTPRINT",
+                        f"matches:{reference or exact.group('ref').upper()}",
+                        text.strip(),
+                    )
+                )
+
+    def _infer_rehearsal_dinner_in_law_relationships(
+        self,
+        scenes: list[SceneBlock],
+        store: FactStore,
+        registry: EntityRegistry,
+    ) -> None:
+        """Link a rehearsal-dinner speaker to the bride when MIL dialogue appeared."""
+        has_mil_dialogue = any(
+            MIL_DIALOGUE_RE.search(text)
+            for scene in scenes
+            for kind, text in iter_scene_lines(scene)
+            if kind == "dialogue"
+        )
+        if not has_mil_dialogue:
+            return
+
+        bride: str | None = registry.resolve("MAYA")
+        if bride is None:
+            for scene in scenes:
+                for character in scene.characters:
+                    canonical = registry.resolve(character)
+                    if canonical and "MAYA" in canonical:
+                        bride = canonical
+                        break
+                if bride is not None:
+                    break
+        if bride is None:
+            return
+
+        for scene in sorted(scenes, key=lambda item: item.scene_number):
+            if "REHEARSAL DINNER" not in scene.heading.upper():
+                continue
+            for line in scene.raw_text.splitlines():
+                stripped = line.strip()
+                if not _is_character_cue(stripped):
+                    continue
+                if "DIANE" not in stripped.upper():
+                    continue
+                diane = registry.resolve(re.sub(r"\([^)]*\)", "", stripped)) or "DIANE"
+                pair_key = "|".join(sorted([diane, bride]))
+                self._add_relationship_fact(
+                    scene,
+                    store,
+                    pair_key,
+                    "in_law",
+                    "REHEARSAL DINNER (mother-in-law established earlier)",
+                )
+                return
 
     def _extract_payment_descriptor_facts(
         self, scene: SceneBlock, store: FactStore
@@ -3124,8 +3292,105 @@ class ContradictionEngine:
         contradictions.extend(self._check_name_consistency(scenes))
         contradictions.extend(self._check_location_continuity(scenes))
         contradictions.extend(self._check_character_knowledge(scenes))
+        contradictions.extend(self._check_character_fact(fact_store))
+        contradictions.extend(self._check_fact_consistency(fact_store))
         contradictions.sort(key=lambda item: item.confidence, reverse=True)
         return contradictions
+
+    def _check_character_fact(self, fact_store: FactStore) -> list[Contradiction]:
+        """Flag conflicting character plans such as state vs coast school."""
+        results: list[Contradiction] = []
+        by_entity: dict[str, list[Fact]] = {}
+        for fact in fact_store.get_facts_by_type("character_fact"):
+            by_entity.setdefault(fact.entity, []).append(fact)
+
+        for entity, facts in by_entity.items():
+            destinations: dict[str, Fact] = {}
+            for fact in facts:
+                if not fact.value.startswith("school:"):
+                    continue
+                dest = fact.value.split(":", 1)[1]
+                destinations.setdefault(dest, fact)
+            if len(destinations) < 2:
+                continue
+            ordered = sorted(
+                facts, key=lambda item: (item.scene_number, item.fact_id)
+            )
+            earlier = ordered[0]
+            later = ordered[-1]
+            if earlier.scene_id == later.scene_id:
+                continue
+            dest_a = earlier.value.split(":", 1)[1]
+            dest_b = later.value.split(":", 1)[1]
+            results.append(
+                Contradiction(
+                    contradiction_id=_new_contradiction_id(),
+                    scene_id_a=earlier.scene_id,
+                    scene_id_b=later.scene_id,
+                    scene_number_a=earlier.scene_number,
+                    scene_number_b=later.scene_number,
+                    fact_a=earlier,
+                    excerpt_b=later.raw_excerpt,
+                    contradiction_type="character_fact",
+                    explanation=(
+                        f"{entity} plans for {dest_a} school in "
+                        f"{earlier.scene_id} but {dest_b} school in "
+                        f"{later.scene_id}."
+                    ),
+                    confidence=0.7,
+                    tier=1,
+                    status=STATUS_POSSIBLE,
+                )
+            )
+        return results
+
+    def _check_fact_consistency(self, fact_store: FactStore) -> list[Contradiction]:
+        """Flag incompatible factual claims about the same story element."""
+        results: list[Contradiction] = []
+        by_entity: dict[str, list[Fact]] = {}
+        for fact in fact_store.get_facts_by_type("fact_consistency"):
+            by_entity.setdefault(fact.entity, []).append(fact)
+
+        for entity, facts in by_entity.items():
+            ordered = sorted(facts, key=lambda item: item.scene_number)
+            has_smaller = next(
+                (fact for fact in ordered if fact.value.startswith("smaller_than:")),
+                None,
+            )
+            has_match = next(
+                (fact for fact in ordered if fact.value.startswith("matches:")),
+                None,
+            )
+            if has_smaller is None or has_match is None:
+                continue
+            if has_smaller.scene_id == has_match.scene_id:
+                continue
+            earlier, later = (
+                (has_smaller, has_match)
+                if has_smaller.scene_number <= has_match.scene_number
+                else (has_match, has_smaller)
+            )
+            results.append(
+                Contradiction(
+                    contradiction_id=_new_contradiction_id(),
+                    scene_id_a=earlier.scene_id,
+                    scene_id_b=later.scene_id,
+                    scene_number_a=earlier.scene_number,
+                    scene_number_b=later.scene_number,
+                    fact_a=earlier,
+                    excerpt_b=later.raw_excerpt,
+                    contradiction_type="fact_consistency",
+                    explanation=(
+                        f"The {entity.lower()} is described as "
+                        f"{earlier.value.replace('_', ' ')} in {earlier.scene_id} "
+                        f"but {later.value.replace('_', ' ')} in {later.scene_id}."
+                    ),
+                    confidence=0.75,
+                    tier=1,
+                    status=STATUS_POSSIBLE,
+                )
+            )
+        return results
 
     def _check_character_knowledge(
         self, scenes: list[SceneBlock]

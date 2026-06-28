@@ -25,7 +25,7 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
   1. scene_001 - INT. FISHING TRAWLER - WHEELHOUSE - NIGHT
      Removing this would weaken 2 later scene(s): scene_005, scene_004.
   2. scene_003 - INT. HARBOR OFFICE - NIGHT
-     Removing this would weaken 2 later scene(s): scene_005, scene_004.
+     Removing this would weaken 2 later scene(s): scene_004, scene_005.
   3. scene_004 - INT. DOCKSIDE BAR - NIGHT
      Removing this would weaken 1 later scene(s): scene_005.
 

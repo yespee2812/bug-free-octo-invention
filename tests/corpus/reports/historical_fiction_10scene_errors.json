@@ -40,8 +40,8 @@
           "scene_010",
           "scene_004",
           "scene_007",
-          "scene_006",
-          "scene_008"
+          "scene_008",
+          "scene_006"
         ]
       },
       {
@@ -50,8 +50,8 @@
         "would_break": 3,
         "impacted_scenes": [
           "scene_010",
-          "scene_008",
-          "scene_006"
+          "scene_006",
+          "scene_008"
         ]
       },
       {

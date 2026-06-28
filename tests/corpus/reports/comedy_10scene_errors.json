@@ -18,10 +18,10 @@
   "dependencies": {
     "graph_summary": {
       "total_scenes": 10,
-      "total_edges": 19,
-      "most_depended_on_scene": "scene_009",
+      "total_edges": 21,
+      "most_depended_on_scene": "scene_010",
       "orphan_count": 1,
-      "avg_dependencies_per_scene": 2.5
+      "avg_dependencies_per_scene": 2.7
     },
     "high_risk_scenes": [
       {
@@ -29,14 +29,14 @@
         "heading": "INT. TUXEDO SHOP - DAY",
         "would_break": 8,
         "impacted_scenes": [
-          "scene_007",
           "scene_010",
+          "scene_007",
+          "scene_008",
           "scene_006",
           "scene_005",
-          "scene_008",
           "scene_003",
-          "scene_002",
-          "scene_009"
+          "scene_009",
+          "scene_002"
         ]
       },
       {
@@ -44,8 +44,8 @@
         "heading": "INT. STRIP MALL BAR - NIGHT",
         "would_break": 4,
         "impacted_scenes": [
-          "scene_008",
           "scene_010",
+          "scene_008",
           "scene_009",
           "scene_006"
         ]
@@ -76,7 +76,16 @@
         "would_break": 3,
         "impacted_scenes": [
           "scene_009",
-          "scene_008",
+          "scene_010",
+          "scene_008"
+        ]
+      },
+      {
+        "scene_id": "scene_004",
+        "heading": "INT. REHEARSAL DINNER - NIGHT",
+        "would_break": 2,
+        "impacted_scenes": [
+          "scene_007",
           "scene_010"
         ]
       },
@@ -108,12 +117,23 @@
     ]
   },
   "contradictions": {
-    "total_found": 2,
+    "total_found": 3,
     "by_tier": {
-      "tier1": 2,
+      "tier1": 3,
       "tier2": 0
     },
     "items": [
+      {
+        "scenes_involved": [
+          4,
+          9
+        ],
+        "contradiction_type": "relationship_fact",
+        "explanation": "DIANE and MAYA are described as in_law in scene_004 but sibling in scene_009.",
+        "confidence": 0.85,
+        "tier": 1,
+        "status": "confirmed"
+      },
       {
         "scenes_involved": [
           1,
@@ -138,7 +158,7 @@
       }
     ]
   },
-  "health_score": 81,
+  "health_score": 73,
   "input": {
     "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\comedy_10scene_errors.fountain",
     "filename": "comedy_10scene_errors.fountain",

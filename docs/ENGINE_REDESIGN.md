@@ -1,6 +1,6 @@
 # ScriptLens Contradiction Engine — Redesign
 
-Status: **P3 complete · 90% corpus recall · P4 next** · Owner: core engine · Last updated: 2026-06
+Status: **Fine-tune complete · 95% corpus recall · P4 next** · Owner: core engine · Last updated: 2026-06
 
 This document captures (1) the measured baseline, (2) a root-cause analysis of
 why the original engine failed on natural prose, (3) the target architecture, and
@@ -15,15 +15,15 @@ A 40-script corpus (20 genres × 5-scene + 10-scene) with **100 planted errors**
 in natural, screenwriter-style prose is run through the core engine after each
 phase.
 
-| Metric | Original engine | **Current (P3)** |
+| Metric | Original engine | **Current (fine-tune)** |
 |---|---|---|
 | Planted errors | 100 | 100 |
-| Detected (any) | 0 | **92** |
-| True positives | 0 | **90** |
+| Detected (any) | 0 | **97** |
+| True positives | 0 | **95** |
 | False positives | 0 | **2** |
-| **Recall** | **0.0%** | **90.0%** |
-| Precision | n/a (silent) | **97.8%** |
-| F1 | 0.0% | **93.8%** |
+| **Recall** | **0.0%** | **95.0%** |
+| Precision | n/a (silent) | **97.9%** |
+| F1 | 0.0% | **96.4%** |
 | Recall on engine's *own* supported types | 0.0% (0/9) | **100.0% (9/9)** |
 
 **Recall by planted type (current):**
@@ -38,18 +38,18 @@ phase.
 | name_consistency | 2 | 2 | 100% |
 | location_continuity | 4 | 4 | 100% |
 | object_identity | 16 | 15 | 94% |
-| character_age | 13 | 12 | 92% |
-| relationship_fact | 9 | 8 | 89% |
+| character_age | 13 | 13 | 100% |
+| relationship_fact | 9 | 9 | 100% |
 | character_knowledge | 8 | 4 | 50% |
-| character_fact | 2 | 0 | 0% |
-| fact_consistency | 1 | 0 | 0% |
+| character_fact | 2 | 2 | 100% |
+| fact_consistency | 1 | 1 | 100% |
 
 Reproduce with:
 
 ```powershell
 venv\Scripts\python.exe scripts\run_corpus_batch.py --compare-ground-truth
 venv\Scripts\python.exe scripts\score_corpus_baseline.py
-venv\Scripts\python.exe scripts\score_corpus_baseline.py --check --min-recall 0.90 --max-false-positives 4
+venv\Scripts\python.exe scripts\score_corpus_baseline.py --check --min-recall 0.95 --max-false-positives 4
 ```
 
 CI (`.github/workflows/ci.yml`) runs pytest, the corpus batch, and the baseline
@@ -69,7 +69,7 @@ Artifacts: `tests/corpus/BASELINE_SCORE.md`, `tests/corpus/PLANTED_ERROR_LOG.md`
 | **A. Capability gap** — no fact type exists | ~82 | Detection impossible by design |
 | **B. Extraction brittleness** — pattern too narrow | ~18 | Capability exists; phrasing missed |
 
-Most of Bucket A is now addressed (P1–P3). **10 planted errors remain** — see
+Most of Bucket A is now addressed (P1–P3 + fine-tune). **5 planted errors remain** — see
 §1 recall table and §4 P4.
 
 **Still at 0% recall:** `character_fact` (2), `fact_consistency` (1).
@@ -185,8 +185,9 @@ change.
 | **P0 ✅ done** | `entity_canonicalization.py`, `value_normalization.py` + tests | foundation only |
 | **P1 ✅ done** | Deterministic extractors: `age`, `object_identity`, `numeric_count`, `date_year` | 38/100 |
 | **P2 ✅ done** | Widen ownership, trait, relationship, medical; FP triage; count/identity/coref hardening | 80/100 total |
-| **P3 ✅ done** | `name_consistency`, `location_continuity`, deterministic `character_knowledge` | **90/100 total** |
-| **P4** | LLM-assisted judge for remaining `character_knowledge`; `character_fact`, semantic identity | remainder (~10 errors) |
+| **P3 ✅ done** | `name_consistency`, `location_continuity`, deterministic `character_knowledge` | 90/100 total |
+| **Fine-tune ✅ done** | MIL/in-law, possessive age, school destination, footprint consistency | **95/100 total** |
+| **P4** | LLM-assisted judge for remaining `character_knowledge`; semantic object identity | remainder (~5 errors) |
 
 ### 4.1 Evaluation discipline (every phase)
 
@@ -194,7 +195,7 @@ change.
 - Run the engine on the **clean, un-injected starters** in
   `docs/genre_starter_scripts/` to track the **false-positive rate**; recall
   gains must not silently destroy precision.
-- CI enforces `--min-recall 0.90` and `--max-false-positives 4` on every merge.
+- CI enforces `--min-recall 0.95` and `--max-false-positives 4` on every merge.
 - Consider upgrading spaCy to `en_core_web_md`/transformer if similarity checks
   are retained.
 

@@ -33,20 +33,20 @@
         "heading": "INT. FEDERAL ARCHIVES - DAY",
         "would_break": 16,
         "impacted_scenes": [
-          "scene_009",
           "scene_019",
+          "scene_009",
           "scene_012",
           "scene_017",
-          "scene_005",
           "scene_014",
           "scene_020",
           "scene_004",
-          "scene_006",
-          "scene_011",
-          "scene_022",
-          "scene_008",
+          "scene_005",
           "scene_015",
+          "scene_008",
+          "scene_006",
           "scene_016",
+          "scene_022",
+          "scene_011",
           "scene_010",
           "scene_021"
         ]
@@ -57,18 +57,18 @@
         "would_break": 15,
         "impacted_scenes": [
           "scene_012",
-          "scene_006",
-          "scene_017",
-          "scene_022",
           "scene_015",
-          "scene_005",
+          "scene_006",
+          "scene_022",
+          "scene_017",
           "scene_014",
           "scene_020",
-          "scene_011",
-          "scene_019",
+          "scene_005",
           "scene_008",
-          "scene_016",
+          "scene_019",
           "scene_009",
+          "scene_016",
+          "scene_011",
           "scene_010",
           "scene_021"
         ]
@@ -78,17 +78,17 @@
         "heading": "INT. BANK VAULT ANTEROOM - NIGHT",
         "would_break": 14,
         "impacted_scenes": [
-          "scene_017",
           "scene_019",
           "scene_009",
+          "scene_017",
           "scene_014",
           "scene_020",
-          "scene_006",
-          "scene_011",
-          "scene_022",
           "scene_008",
+          "scene_006",
           "scene_015",
+          "scene_022",
           "scene_016",
+          "scene_011",
           "scene_010",
           "scene_021",
           "scene_012"
@@ -99,16 +99,16 @@
         "heading": "INT. ROOFTOP GARDEN - NIGHT",
         "would_break": 10,
         "impacted_scenes": [
-          "scene_017",
-          "scene_022",
-          "scene_015",
           "scene_021",
-          "scene_011",
-          "scene_019",
-          "scene_008",
+          "scene_015",
+          "scene_022",
+          "scene_017",
           "scene_020",
+          "scene_008",
+          "scene_019",
+          "scene_009",
           "scene_016",
-          "scene_009"
+          "scene_011"
         ]
       },
       {
@@ -118,11 +118,11 @@
         "impacted_scenes": [
           "scene_022",
           "scene_021",
-          "scene_007",
-          "scene_014",
           "scene_010",
-          "scene_020",
+          "scene_014",
           "scene_018",
+          "scene_020",
+          "scene_007",
           "scene_003"
         ]
       },
@@ -131,14 +131,14 @@
         "heading": "INT. HARBOR CAFE - DAY",
         "would_break": 8,
         "impacted_scenes": [
-          "scene_019",
           "scene_021",
-          "scene_011",
-          "scene_017",
-          "scene_022",
-          "scene_015",
+          "scene_019",
           "scene_020",
-          "scene_016"
+          "scene_015",
+          "scene_022",
+          "scene_016",
+          "scene_017",
+          "scene_011"
         ]
       },
       {
@@ -149,9 +149,9 @@
           "scene_021",
           "scene_020",
           "scene_016",
-          "scene_022",
+          "scene_015",
           "scene_019",
-          "scene_015"
+          "scene_022"
         ]
       },
       {
@@ -159,11 +159,11 @@
         "heading": "INT. PARKING GARAGE - NIGHT",
         "would_break": 6,
         "impacted_scenes": [
-          "scene_022",
-          "scene_019",
-          "scene_015",
           "scene_021",
           "scene_020",
+          "scene_015",
+          "scene_019",
+          "scene_022",
           "scene_016"
         ]
       },
@@ -174,8 +174,8 @@
         "impacted_scenes": [
           "scene_022",
           "scene_021",
-          "scene_014",
           "scene_010",
+          "scene_014",
           "scene_020"
         ]
       },
@@ -184,10 +184,10 @@
         "heading": "INT. UNDERGROUND VAULT - NIGHT",
         "would_break": 5,
         "impacted_scenes": [
-          "scene_022",
           "scene_021",
-          "scene_019",
+          "scene_022",
           "scene_020",
+          "scene_019",
           "scene_016"
         ]
       },
@@ -218,8 +218,8 @@
         "would_break": 3,
         "impacted_scenes": [
           "scene_021",
-          "scene_020",
-          "scene_022"
+          "scene_022",
+          "scene_020"
         ]
       },
       {

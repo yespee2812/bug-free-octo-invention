@@ -23,11 +23,11 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_002 - INT. UNIVERSITY POOL - MORNING
-     Removing this would weaken 5 later scene(s): scene_010, scene_005, scene_008, scene_007, scene_009.
+     Removing this would weaken 5 later scene(s): scene_010, scene_008, scene_005, scene_007, scene_009.
   2. scene_003 - INT. TRAINING ROOM - DAY
      Removing this would weaken 3 later scene(s): scene_010, scene_007, scene_009.
   3. scene_005 - INT. COACH'S OFFICE - DAY
-     Removing this would weaken 2 later scene(s): scene_008, scene_010.
+     Removing this would weaken 2 later scene(s): scene_010, scene_008.
   4. scene_007 - INT. UNIVERSITY POOL - NIGHT
      Removing this would weaken 2 later scene(s): scene_009, scene_010.
   5. scene_008 - EXT. POOL DECK - MORNING
@@ -36,20 +36,25 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
 
 STORY CONSISTENCY ISSUES
 ------------------------------------------------------------------------
-  Found 2 possible inconsistency(ies): 2 clear conflict(s), 0 subtler mismatch(es).
+  Found 3 possible inconsistency(ies): 3 clear conflict(s), 0 subtler mismatch(es).
 
-  Possible issue 1: Numeric Count
+  Possible issue 1: Character Age
+    Between scene 2 and scene 6
+    NINA VASQUEZ is described as age 22 in scene_002 but age 20 in scene_006.
+    Confidence: about 70%
+
+  Possible issue 2: Numeric Count
     Between scene 3 and scene 8
     'rank' count is 4 in scene_003 but 3 in scene_008.
     Confidence: about 50%
 
-  Possible issue 2: Numeric Count
+  Possible issue 3: Numeric Count
     Between scene 7 and scene 10
     'split' count is 150 in scene_007 but 175 in scene_010.
     Confidence: about 50%
 
 OVERALL SCRIPT HEALTH
 ------------------------------------------------------------------------
-  Score: 72 / 100
-  Solid draft with room to tighten loose scenes or fix a few story beats.
+  Score: 64 / 100
+  Worth a revision pass: address contradictions and scenes that feel disconnected.
 

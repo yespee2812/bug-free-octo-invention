@@ -6,12 +6,12 @@ Matching is order-insensitive on (contradiction_type, {scene_a, scene_b}).
 ## Headline
 
 - Planted errors (ground truth):        **100**
-- Detected by engine (any):             **92**
-- True positives (correct catches):     **90**
+- Detected by engine (any):             **97**
+- True positives (correct catches):     **95**
 - False positives:                      **2**
-- **Recall (overall): 90.0%** (90/100)
-- Precision: 97.8%
-- F1: 93.8%
+- **Recall (overall): 95.0%** (95/100)
+- Precision: 97.9%
+- F1: 96.4%
 
 ## On the engine's own supported categories
 
@@ -25,19 +25,19 @@ Subset = planted errors whose type the engine claims to support (object_ownershi
 
 | Type | Planted | Caught | Recall |
 |------|---------|--------|--------|
-| character_age | 13 | 12 | 92% |
-| character_fact | 2 | 0 | 0% |
+| character_age | 13 | 13 | 100% |
+| character_fact | 2 | 2 | 100% |
 | character_knowledge | 8 | 4 | 50% |
 | character_trait_conflict | 2 | 2 | 100% |
 | date_year | 8 | 8 | 100% |
-| fact_consistency | 1 | 0 | 0% |
+| fact_consistency | 1 | 1 | 100% |
 | location_continuity | 4 | 4 | 100% |
 | medical_state | 1 | 1 | 100% |
 | name_consistency | 2 | 2 | 100% |
 | numeric_count | 28 | 28 | 100% |
 | object_identity | 16 | 15 | 94% |
 | object_ownership | 6 | 6 | 100% |
-| relationship_fact | 9 | 8 | 89% |
+| relationship_fact | 9 | 9 | 100% |
 
 ## Per-script
 
@@ -56,9 +56,9 @@ Subset = planted errors whose type the engine claims to support (object_ownershi
 | adventure_5scene_errors | 2 | 3 | 2 |
 | adventure_10scene_errors | 3 | 4 | 3 |
 | comedy_5scene_errors | 2 | 2 | 2 |
-| comedy_10scene_errors | 3 | 2 | 2 |
-| coming_of_age_5scene_errors | 2 | 1 | 1 |
-| coming_of_age_10scene_errors | 3 | 2 | 2 |
+| comedy_10scene_errors | 3 | 3 | 3 |
+| coming_of_age_5scene_errors | 2 | 2 | 2 |
+| coming_of_age_10scene_errors | 3 | 3 | 3 |
 | drama_5scene_errors | 2 | 2 | 2 |
 | drama_10scene_errors | 3 | 3 | 3 |
 | family_5scene_errors | 2 | 2 | 2 |
@@ -70,11 +70,11 @@ Subset = planted errors whose type the engine claims to support (object_ownershi
 | historical_fiction_5scene_errors | 2 | 2 | 2 |
 | historical_fiction_10scene_errors | 3 | 3 | 3 |
 | mystery_5scene_errors | 2 | 2 | 2 |
-| mystery_10scene_errors | 3 | 2 | 2 |
+| mystery_10scene_errors | 3 | 3 | 3 |
 | noir_5scene_errors | 2 | 2 | 2 |
 | noir_10scene_errors | 3 | 2 | 2 |
 | sports_5scene_errors | 2 | 2 | 2 |
-| sports_10scene_errors | 3 | 2 | 2 |
+| sports_10scene_errors | 3 | 3 | 3 |
 | supernatural_5scene_errors | 2 | 2 | 2 |
 | supernatural_10scene_errors | 3 | 3 | 3 |
 | thriller_5scene_errors | 2 | 2 | 2 |

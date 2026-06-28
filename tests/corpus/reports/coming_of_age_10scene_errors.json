@@ -28,8 +28,8 @@
         "would_break": 4,
         "impacted_scenes": [
           "scene_010",
-          "scene_009",
           "scene_004",
+          "scene_009",
           "scene_005"
         ]
       },
@@ -69,12 +69,23 @@
     ]
   },
   "contradictions": {
-    "total_found": 2,
+    "total_found": 3,
     "by_tier": {
-      "tier1": 2,
+      "tier1": 3,
       "tier2": 0
     },
     "items": [
+      {
+        "scenes_involved": [
+          3,
+          10
+        ],
+        "contradiction_type": "character_fact",
+        "explanation": "MAYA plans for coast school in scene_003 but state school in scene_010.",
+        "confidence": 0.7,
+        "tier": 1,
+        "status": "possible"
+      },
       {
         "scenes_involved": [
           1,
@@ -99,7 +110,7 @@
       }
     ]
   },
-  "health_score": 72,
+  "health_score": 64,
   "input": {
     "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\coming_of_age_10scene_errors.fountain",
     "filename": "coming_of_age_10scene_errors.fountain",

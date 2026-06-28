@@ -27,12 +27,12 @@
         "would_break": 8,
         "impacted_scenes": [
           "scene_010",
+          "scene_008",
           "scene_006",
           "scene_007",
           "scene_009",
-          "scene_008",
-          "scene_003",
           "scene_004",
+          "scene_003",
           "scene_002"
         ]
       },
@@ -42,12 +42,12 @@
         "would_break": 7,
         "impacted_scenes": [
           "scene_010",
+          "scene_008",
           "scene_006",
           "scene_007",
           "scene_009",
-          "scene_008",
-          "scene_003",
-          "scene_004"
+          "scene_004",
+          "scene_003"
         ]
       },
       {
@@ -55,12 +55,12 @@
         "heading": "INT. INN LOBBY - MORNING",
         "would_break": 6,
         "impacted_scenes": [
-          "scene_006",
-          "scene_004",
-          "scene_007",
-          "scene_008",
           "scene_010",
-          "scene_009"
+          "scene_008",
+          "scene_006",
+          "scene_007",
+          "scene_009",
+          "scene_004"
         ]
       },
       {
@@ -68,10 +68,10 @@
         "heading": "INT. RETREAT WORKSHOP - DAY",
         "would_break": 5,
         "impacted_scenes": [
+          "scene_010",
+          "scene_008",
           "scene_006",
           "scene_007",
-          "scene_008",
-          "scene_010",
           "scene_009"
         ]
       },

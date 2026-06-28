@@ -25,9 +25,9 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
   1. scene_002 - EXT. NEPAL BASE CAMP - DAY
      Removing this would weaken 4 later scene(s): scene_006, scene_009, scene_010, scene_003.
   2. scene_004 - EXT. ICE FALL - DAY
-     Removing this would weaken 3 later scene(s): scene_008, scene_010, scene_005.
+     Removing this would weaken 3 later scene(s): scene_005, scene_010, scene_008.
   3. scene_005 - INT. TENT - NIGHT
-     Removing this would weaken 2 later scene(s): scene_008, scene_010.
+     Removing this would weaken 2 later scene(s): scene_010, scene_008.
   4. scene_003 - EXT. KHUMBU GLACIER - DAY
      Removing this would weaken 1 later scene(s): scene_010.
   5. scene_006 - EXT. HIGH CAMP - NIGHT

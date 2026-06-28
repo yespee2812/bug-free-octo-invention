@@ -29,9 +29,9 @@
         "heading": "INT. ASHWORTH MANOR - LIBRARY - DAY",
         "would_break": 4,
         "impacted_scenes": [
-          "scene_005",
           "scene_004",
           "scene_002",
+          "scene_005",
           "scene_003"
         ]
       },
@@ -40,8 +40,8 @@
         "heading": "INT. MANOR - GREENHOUSE - DAY",
         "would_break": 3,
         "impacted_scenes": [
-          "scene_005",
           "scene_003",
+          "scene_005",
           "scene_004"
         ]
       },

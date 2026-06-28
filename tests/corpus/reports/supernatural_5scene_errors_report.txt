@@ -23,7 +23,7 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_001 - EXT. ABANDONED FARMHOUSE - DUSK
-     Removing this would weaken 4 later scene(s): scene_003, scene_002, scene_005, scene_004.
+     Removing this would weaken 4 later scene(s): scene_003, scene_002, scene_004, scene_005.
   2. scene_002 - INT. FARMHOUSE - UPSTAIRS HALL - NIGHT
      Removing this would weaken 3 later scene(s): scene_005, scene_004, scene_003.
   3. scene_003 - INT. EAST BEDROOM - NIGHT

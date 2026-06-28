@@ -30,10 +30,10 @@
         "impacted_scenes": [
           "scene_009",
           "scene_007",
-          "scene_006",
-          "scene_005",
+          "scene_010",
           "scene_008",
-          "scene_010"
+          "scene_006",
+          "scene_005"
         ]
       },
       {
@@ -42,9 +42,9 @@
         "would_break": 4,
         "impacted_scenes": [
           "scene_009",
-          "scene_008",
           "scene_006",
-          "scene_010"
+          "scene_010",
+          "scene_008"
         ]
       },
       {
@@ -52,9 +52,9 @@
         "heading": "INT. DOCKSIDE BAR - NIGHT",
         "would_break": 3,
         "impacted_scenes": [
-          "scene_008",
           "scene_010",
-          "scene_009"
+          "scene_009",
+          "scene_008"
         ]
       },
       {
