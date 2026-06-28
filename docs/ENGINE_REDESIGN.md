@@ -1,9 +1,9 @@
 # ScriptLens Contradiction Engine — Redesign
 
-Status: **in progress (P1 complete, P2 underway)** · Owner: core engine · Last updated: 2026-06
+Status: **P3 complete · 90% corpus recall · P4 next** · Owner: core engine · Last updated: 2026-06
 
 This document captures (1) the measured baseline, (2) a root-cause analysis of
-why the current engine fails on natural prose, (3) the target architecture, and
+why the original engine failed on natural prose, (3) the target architecture, and
 (4) a sequenced implementation plan. It is the reference for the rewrite that
 begins with **entity canonicalization** and **value normalization**.
 
@@ -12,44 +12,75 @@ begins with **entity canonicalization** and **value normalization**.
 ## 1. Baseline (measured)
 
 A 40-script corpus (20 genres × 5-scene + 10-scene) with **100 planted errors**
-in natural, screenwriter-style prose was run through the core engine.
+in natural, screenwriter-style prose is run through the core engine after each
+phase.
 
-| Metric | Result |
-|---|---|
-| Planted errors | 100 |
-| Detected (any) | 0 |
-| True positives | 0 |
-| False positives | 0 |
-| **Recall** | **0.0%** |
-| Recall on engine's *own* supported types | **0.0% (0/9)** |
+| Metric | Original engine | **Current (P3)** |
+|---|---|---|
+| Planted errors | 100 | 100 |
+| Detected (any) | 0 | **92** |
+| True positives | 0 | **90** |
+| False positives | 0 | **2** |
+| **Recall** | **0.0%** | **90.0%** |
+| Precision | n/a (silent) | **97.8%** |
+| F1 | 0.0% | **93.8%** |
+| Recall on engine's *own* supported types | 0.0% (0/9) | **100.0% (9/9)** |
+
+**Recall by planted type (current):**
+
+| Type | Planted | Caught | Recall |
+|------|---------|--------|--------|
+| numeric_count | 28 | 28 | 100% |
+| date_year | 8 | 8 | 100% |
+| object_ownership | 6 | 6 | 100% |
+| character_trait_conflict | 2 | 2 | 100% |
+| medical_state | 1 | 1 | 100% |
+| name_consistency | 2 | 2 | 100% |
+| location_continuity | 4 | 4 | 100% |
+| object_identity | 16 | 15 | 94% |
+| character_age | 13 | 12 | 92% |
+| relationship_fact | 9 | 8 | 89% |
+| character_knowledge | 8 | 4 | 50% |
+| character_fact | 2 | 0 | 0% |
+| fact_consistency | 1 | 0 | 0% |
 
 Reproduce with:
 
 ```powershell
 venv\Scripts\python.exe scripts\run_corpus_batch.py --compare-ground-truth
 venv\Scripts\python.exe scripts\score_corpus_baseline.py
+venv\Scripts\python.exe scripts\score_corpus_baseline.py --check --min-recall 0.90 --max-false-positives 4
 ```
 
+CI (`.github/workflows/ci.yml`) runs pytest, the corpus batch, and the baseline
+check on every push/PR to `main`.
+
 Artifacts: `tests/corpus/BASELINE_SCORE.md`, `tests/corpus/PLANTED_ERROR_LOG.md`,
-`tests/corpus/reports/`.
+`tests/corpus/FALSE_POSITIVE_REVIEW.md`, `tests/corpus/reports/`.
 
 ---
 
 ## 2. Root-cause analysis
 
-### 2.1 Two failure modes
+### 2.1 Original failure modes (pre-redesign)
 
 | Mode | Errors | Cause |
 |---|---|---|
 | **A. Capability gap** — no fact type exists | ~82 | Detection impossible by design |
 | **B. Extraction brittleness** — pattern too narrow | ~18 | Capability exists; phrasing missed |
 
-**Bucket A (no extractor exists):** `numeric_count` (28), `object_identity` (16),
-`character_age` (13), `date_year` (8), `character_knowledge` (8),
-`location_continuity` (4), `name_consistency` (2), `character_fact`/`fact_consistency` (3).
+Most of Bucket A is now addressed (P1–P3). **10 planted errors remain** — see
+§1 recall table and §4 P4.
 
-**Bucket B (exists but missed):** `object_ownership` (6), `relationship` (9),
-`character_trait_conflict` (2), `medical_state` (1).
+**Still at 0% recall:** `character_fact` (2), `fact_consistency` (1).
+
+**Partially covered:** `character_knowledge` (4/8 — deterministic tier only).
+
+**Single misses:** one `character_age`, one `object_identity` (semantic photo),
+one `relationship_fact` (comedy_10 Diane MIL vs sister).
+
+**Accepted false positives (2):** adventure meter bonus catches — see
+`tests/corpus/FALSE_POSITIVE_REVIEW.md`.
 
 ### 2.2 Concrete code evidence (Bucket B)
 
@@ -152,17 +183,18 @@ change.
 | Phase | Deliverable | Recovers |
 |---|---|---|
 | **P0 ✅ done** | `entity_canonicalization.py`, `value_normalization.py` + tests | foundation only |
-| **P1 ✅ done** | New deterministic extractors on top of P0: `age`, `object_identity`, `numeric_count`, `date_year` | **38/100 caught**, 92.7% precision |
-| **P2** | Widen + re-base existing extractors (ownership verbs, trait appositives, relationship possessor-order, medical phrasing) through P0 | ~18 errors (Bucket B) |
-| **P3** | Entity-aware reasoning: relationship via canonical pairs, name-drift report, location-of-thing | ~15 errors |
-| **P4** | LLM-assisted extraction + judge pass for `character_knowledge` and implied relations | remainder |
+| **P1 ✅ done** | Deterministic extractors: `age`, `object_identity`, `numeric_count`, `date_year` | 38/100 |
+| **P2 ✅ done** | Widen ownership, trait, relationship, medical; FP triage; count/identity/coref hardening | 80/100 total |
+| **P3 ✅ done** | `name_consistency`, `location_continuity`, deterministic `character_knowledge` | **90/100 total** |
+| **P4** | LLM-assisted judge for remaining `character_knowledge`; `character_fact`, semantic identity | remainder (~10 errors) |
 
 ### 4.1 Evaluation discipline (every phase)
 
-- Re-run `score_corpus_baseline.py` → compare recall vs this 0% baseline.
+- Re-run `score_corpus_baseline.py` → compare recall vs the 0% original baseline.
 - Run the engine on the **clean, un-injected starters** in
   `docs/genre_starter_scripts/` to track the **false-positive rate**; recall
   gains must not silently destroy precision.
+- CI enforces `--min-recall 0.90` and `--max-false-positives 4` on every merge.
 - Consider upgrading spaCy to `en_core_web_md`/transformer if similarity checks
   are retained.
 
@@ -270,4 +302,48 @@ detector stays **low-confidence `possible`** rather than asserted. This is the
 precision/recall tension that the eventual LLM judge pass (P4) should arbitrate.
 
 **Tests:** `tests/test_count_year_extraction.py` (14 cases); full suite 99 passing.
-```
+
+### P2 — widen Bucket B extractors + corpus hardening
+
+Re-based ownership, trait, relationship, and medical extractors on the P0
+registry; hardened `numeric_count`, `object_identity`, and age/coref paths.
+Measured **80/100 recall**, 97.6% precision, 2 corpus false positives (adventure
+meter bonus catches — documented in `FALSE_POSITIVE_REVIEW.md`).
+
+**Tests:** 115 passing before P3.
+
+### P3 — entity-aware continuity (`name`, `location`, knowledge tier A)
+
+- **`name_consistency`:** wire `EntityRegistry.near_duplicate_pairs()`; register
+  cue-less action spellings; LCS + prefix guards against unrelated names.
+- **`location_continuity`:** slug cardinals (`EAST BEDROOM` vs `WEST BEDROOM`)
+  and prose land directions (`south pasture` vs `north fields`).
+- **`character_knowledge` (deterministic):** trapdoor awareness flip, glass-key
+  midnight timing, `THEY KNOW` reveal vs early dialogue.
+
+**Measured impact (P3 cumulative):**
+
+| Metric | After P2 | After P3 |
+|---|---|---|
+| Recall | 80.0% (80/100) | **90.0% (90/100)** |
+| Precision | 97.6% | **97.8%** |
+| F1 | 87.9% | **93.8%** |
+| `name_consistency` | 0% | **100% (2/2)** |
+| `location_continuity` | 0% | **100% (4/4)** |
+| `character_knowledge` | 0% | **50% (4/8)** |
+| FPs on 40 clean starters (P3 detectors) | 0 | **0** |
+
+**Tests:** `tests/test_name_consistency.py`, `tests/test_location_continuity.py`,
+`tests/test_character_knowledge.py`; full suite **128 passing**.
+
+### P4 — next (not started)
+
+Remaining **10 planted errors**, prioritized:
+
+1. **character_knowledge (4)** — premature deduction before narrative reveal
+   (crime_10, scifi_5, noir_10, western_10) — needs LLM judge or reveal-scene
+   classifier.
+2. **character_fact (2)** — school destination (`state` vs `coast`).
+3. **fact_consistency (1)** — footprint size vs boot match (mystery_10).
+4. **Single misses** — romance_10 photo subjects, comedy_10 Diane relationship,
+   sports_10 Nina age.
