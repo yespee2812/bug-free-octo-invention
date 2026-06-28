@@ -34,8 +34,8 @@
         "impacted_scenes": [
           "scene_007",
           "scene_009",
-          "scene_004",
           "scene_006",
+          "scene_004",
           "scene_010"
         ]
       },
@@ -44,9 +44,9 @@
         "heading": "INT. ELENA'S KITCHEN - NIGHT",
         "would_break": 4,
         "impacted_scenes": [
+          "scene_007",
           "scene_010",
           "scene_005",
-          "scene_007",
           "scene_009"
         ]
       },
@@ -55,8 +55,8 @@
         "heading": "INT. RICHARD'S APARTMENT - NIGHT",
         "would_break": 4,
         "impacted_scenes": [
-          "scene_010",
           "scene_007",
+          "scene_010",
           "scene_009",
           "scene_006"
         ]
@@ -76,8 +76,8 @@
         "heading": "INT. THERAPIST OFFICE - DAY",
         "would_break": 3,
         "impacted_scenes": [
-          "scene_010",
           "scene_007",
+          "scene_010",
           "scene_009"
         ]
       },

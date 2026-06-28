@@ -31,8 +31,8 @@
         "heading": "EXT. CAPE COD INN - PORCH - DAWN",
         "would_break": 4,
         "impacted_scenes": [
-          "scene_003",
           "scene_005",
+          "scene_003",
           "scene_004",
           "scene_002"
         ]
@@ -42,9 +42,9 @@
         "heading": "INT. INN LOBBY - MORNING",
         "would_break": 3,
         "impacted_scenes": [
+          "scene_005",
           "scene_004",
-          "scene_003",
-          "scene_005"
+          "scene_003"
         ]
       },
       {

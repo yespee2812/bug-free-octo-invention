@@ -23,9 +23,9 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_001 - INT. ASHWORTH MANOR - LIBRARY - DAY
-     Removing this would weaken 4 later scene(s): scene_002, scene_003, scene_005, scene_004.
+     Removing this would weaken 4 later scene(s): scene_005, scene_004, scene_002, scene_003.
   2. scene_002 - INT. MANOR - GREENHOUSE - DAY
-     Removing this would weaken 3 later scene(s): scene_003, scene_005, scene_004.
+     Removing this would weaken 3 later scene(s): scene_005, scene_003, scene_004.
   3. scene_003 - INT. MANOR - NORTH WING HALL - DAY
      Removing this would weaken 2 later scene(s): scene_005, scene_004.
   4. scene_004 - INT. HIDDEN STUDY - DAY
@@ -33,15 +33,20 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
 
 STORY CONSISTENCY ISSUES
 ------------------------------------------------------------------------
-  Found 1 possible inconsistency(ies): 1 clear conflict(s), 0 subtler mismatch(es).
+  Found 2 possible inconsistency(ies): 2 clear conflict(s), 0 subtler mismatch(es).
 
   Possible issue 1: Character Age
     Between scene 2 and scene 5
     TOMAS is described as age 22 in scene_002 but age 19 in scene_005.
     Confidence: about 70%
 
+  Possible issue 2: Character Knowledge
+    Between scene 1 and scene 3
+    The glass key is said to be present at midnight in scene_001 but scene_003 says it was already gone, not at midnight.
+    Confidence: about 65%
+
 OVERALL SCRIPT HEALTH
 ------------------------------------------------------------------------
-  Score: 92 / 100
-  Your draft is in strong shape - few structural or logic concerns.
+  Score: 84 / 100
+  Solid draft with room to tighten loose scenes or fix a few story beats.
 

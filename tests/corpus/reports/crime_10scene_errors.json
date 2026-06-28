@@ -30,9 +30,9 @@
         "impacted_scenes": [
           "scene_009",
           "scene_007",
+          "scene_006",
           "scene_005",
           "scene_008",
-          "scene_006",
           "scene_010"
         ]
       },
@@ -43,8 +43,8 @@
         "impacted_scenes": [
           "scene_009",
           "scene_008",
-          "scene_010",
-          "scene_006"
+          "scene_006",
+          "scene_010"
         ]
       },
       {

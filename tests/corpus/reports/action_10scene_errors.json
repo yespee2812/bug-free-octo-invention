@@ -28,10 +28,10 @@
         "heading": "INT. SAFE HOUSE - NIGHT",
         "would_break": 5,
         "impacted_scenes": [
+          "scene_002",
+          "scene_007",
           "scene_005",
           "scene_008",
-          "scene_007",
-          "scene_002",
           "scene_010"
         ]
       },
@@ -40,10 +40,10 @@
         "heading": "INT. EMBASSY ANNEX - SECURITY HUB - NIGHT",
         "would_break": 4,
         "impacted_scenes": [
-          "scene_008",
-          "scene_005",
+          "scene_007",
           "scene_010",
-          "scene_007"
+          "scene_005",
+          "scene_008"
         ]
       },
       {
@@ -62,9 +62,9 @@
         "heading": "INT. EMBASSY BASEMENT - NIGHT",
         "would_break": 3,
         "impacted_scenes": [
-          "scene_008",
+          "scene_007",
           "scene_010",
-          "scene_007"
+          "scene_008"
         ]
       },
       {
@@ -95,9 +95,9 @@
     ]
   },
   "contradictions": {
-    "total_found": 2,
+    "total_found": 3,
     "by_tier": {
-      "tier1": 2,
+      "tier1": 3,
       "tier2": 0
     },
     "items": [
@@ -114,6 +114,17 @@
       },
       {
         "scenes_involved": [
+          3,
+          7
+        ],
+        "contradiction_type": "name_consistency",
+        "explanation": "Character name 'OSEI' in scene_003 and 'OSHEA' in scene_007 look like the same person (edit distance 2).",
+        "confidence": 0.75,
+        "tier": 1,
+        "status": "possible"
+      },
+      {
+        "scenes_involved": [
           1,
           10
         ],
@@ -125,7 +136,7 @@
       }
     ]
   },
-  "health_score": 81,
+  "health_score": 73,
   "input": {
     "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\action_10scene_errors.fountain",
     "filename": "action_10scene_errors.fountain",

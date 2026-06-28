@@ -23,7 +23,7 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_002 - EXT. FARMHOUSE PORCH - DUSK
-     Removing this would weaken 4 later scene(s): scene_008, scene_004, scene_006, scene_007.
+     Removing this would weaken 4 later scene(s): scene_008, scene_006, scene_004, scene_007.
   2. scene_004 - INT. UPSTAIRS HALL - NIGHT
      Removing this would weaken 2 later scene(s): scene_006, scene_008.
   3. scene_003 - INT. LIVING ROOM - NIGHT
@@ -35,20 +35,25 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
 
 STORY CONSISTENCY ISSUES
 ------------------------------------------------------------------------
-  Found 2 possible inconsistency(ies): 2 clear conflict(s), 0 subtler mismatch(es).
+  Found 3 possible inconsistency(ies): 3 clear conflict(s), 0 subtler mismatch(es).
 
   Issue 1: A character's job or role contradicts an earlier scene
     Between scene 2 and scene 6
     DAN is described as 'unconvinced' in scene_002 and 'believer' in scene_006 with no overlapping trait terms.
     Confidence: about 85%
 
-  Possible issue 2: Numeric Count
+  Possible issue 2: Location Continuity
+    Between scene 4 and scene 7
+    The bedroom is described as east in scene_004 but west in scene_007.
+    Confidence: about 70%
+
+  Possible issue 3: Numeric Count
     Between scene 2 and scene 8
     'family' count is 3 in scene_002 but 4 in scene_008.
     Confidence: about 50%
 
 OVERALL SCRIPT HEALTH
 ------------------------------------------------------------------------
-  Score: 72 / 100
-  Solid draft with room to tighten loose scenes or fix a few story beats.
+  Score: 64 / 100
+  Worth a revision pass: address contradictions and scenes that feel disconnected.
 

@@ -33,20 +33,25 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
 
 STORY CONSISTENCY ISSUES
 ------------------------------------------------------------------------
-  Found 2 possible inconsistency(ies): 2 clear conflict(s), 0 subtler mismatch(es).
+  Found 3 possible inconsistency(ies): 3 clear conflict(s), 0 subtler mismatch(es).
 
-  Possible issue 1: Object Identity
+  Possible issue 1: Character Knowledge
+    Between scene 3 and scene 9
+    Dialogue implies the adversary already knows (scene_003) before the ''THEY KNOW'' reveal in scene_009.
+    Confidence: about 65%
+
+  Possible issue 2: Object Identity
     Between scene 6 and scene 10
     The sketch is 'vermeer' in scene_006 but 'rembrandt' in scene_010 (artist mismatch).
     Confidence: about 60%
 
-  Possible issue 2: Numeric Count
+  Possible issue 3: Numeric Count
     Between scene 4 and scene 6
-    'second' count is 12 in scene_004 but 20 in scene_006.
+    'gap' count is 12 in scene_004 but 20 in scene_006.
     Confidence: about 50%
 
 OVERALL SCRIPT HEALTH
 ------------------------------------------------------------------------
-  Score: 66 / 100
+  Score: 58 / 100
   Worth a revision pass: address contradictions and scenes that feel disconnected.
 

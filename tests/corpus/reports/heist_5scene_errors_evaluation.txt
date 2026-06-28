@@ -12,4 +12,4 @@ CONTRADICTIONS
     - character_knowledge: scene 5 vs scene 2
 
   Extra (engine-only):
-    - numeric_count: scene 2 vs scene 3
+    - character_knowledge: scene 2 vs scene 5

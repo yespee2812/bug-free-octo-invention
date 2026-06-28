@@ -28,8 +28,8 @@
         "heading": "INT. MERCER'S OFFICE - DAY",
         "would_break": 5,
         "impacted_scenes": [
-          "scene_003",
           "scene_010",
+          "scene_003",
           "scene_006",
           "scene_008",
           "scene_009"

@@ -57,12 +57,23 @@
     ]
   },
   "contradictions": {
-    "total_found": 2,
+    "total_found": 3,
     "by_tier": {
-      "tier1": 2,
+      "tier1": 3,
       "tier2": 0
     },
     "items": [
+      {
+        "scenes_involved": [
+          3,
+          9
+        ],
+        "contradiction_type": "character_knowledge",
+        "explanation": "Dialogue implies the adversary already knows (scene_003) before the ''THEY KNOW'' reveal in scene_009.",
+        "confidence": 0.65,
+        "tier": 1,
+        "status": "possible"
+      },
       {
         "scenes_involved": [
           6,
@@ -80,14 +91,14 @@
           6
         ],
         "contradiction_type": "numeric_count",
-        "explanation": "'second' count is 12 in scene_004 but 20 in scene_006.",
+        "explanation": "'gap' count is 12 in scene_004 but 20 in scene_006.",
         "confidence": 0.5,
         "tier": 1,
         "status": "possible"
       }
     ]
   },
-  "health_score": 66,
+  "health_score": 58,
   "input": {
     "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\heist_10scene_errors.fountain",
     "filename": "heist_10scene_errors.fountain",

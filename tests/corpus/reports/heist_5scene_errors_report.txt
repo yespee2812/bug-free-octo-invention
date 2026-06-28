@@ -23,7 +23,7 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_001 - INT. ART MUSEUM - CLOSED GALLERY - NIGHT
-     Removing this would weaken 3 later scene(s): scene_003, scene_002, scene_005.
+     Removing this would weaken 3 later scene(s): scene_003, scene_005, scene_002.
   2. scene_003 - INT. VAULT ANTEROOM - NIGHT
      Removing this would weaken 1 later scene(s): scene_005.
 
@@ -31,15 +31,15 @@ STORY CONSISTENCY ISSUES
 ------------------------------------------------------------------------
   Found 2 possible inconsistency(ies): 2 clear conflict(s), 0 subtler mismatch(es).
 
-  Possible issue 1: Object Identity
+  Possible issue 1: Character Knowledge
+    Between scene 2 and scene 5
+    Dialogue implies the adversary already knows (scene_002) before the ''THEY KNOW'' reveal in scene_005.
+    Confidence: about 65%
+
+  Possible issue 2: Object Identity
     Between scene 3 and scene 5
     The sketch is 'vermeer' in scene_003 but 'rembrandt' in scene_005 (artist mismatch).
     Confidence: about 60%
-
-  Possible issue 2: Numeric Count
-    Between scene 2 and scene 3
-    'second' count is 12 in scene_002 but 30 in scene_003.
-    Confidence: about 50%
 
 OVERALL SCRIPT HEALTH
 ------------------------------------------------------------------------

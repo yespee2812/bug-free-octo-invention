@@ -33,22 +33,22 @@
         "heading": "INT. FEDERAL ARCHIVES - DAY",
         "would_break": 16,
         "impacted_scenes": [
-          "scene_019",
           "scene_009",
+          "scene_019",
           "scene_012",
           "scene_017",
           "scene_005",
-          "scene_020",
           "scene_014",
+          "scene_020",
           "scene_004",
-          "scene_008",
-          "scene_016",
+          "scene_006",
           "scene_011",
           "scene_022",
-          "scene_006",
+          "scene_008",
           "scene_015",
-          "scene_021",
-          "scene_010"
+          "scene_016",
+          "scene_010",
+          "scene_021"
         ]
       },
       {
@@ -57,20 +57,20 @@
         "would_break": 15,
         "impacted_scenes": [
           "scene_012",
+          "scene_006",
           "scene_017",
           "scene_022",
-          "scene_006",
           "scene_015",
           "scene_005",
-          "scene_020",
           "scene_014",
-          "scene_008",
-          "scene_016",
+          "scene_020",
           "scene_011",
           "scene_019",
+          "scene_008",
+          "scene_016",
           "scene_009",
-          "scene_021",
-          "scene_010"
+          "scene_010",
+          "scene_021"
         ]
       },
       {
@@ -81,14 +81,14 @@
           "scene_017",
           "scene_019",
           "scene_009",
-          "scene_020",
           "scene_014",
-          "scene_008",
-          "scene_016",
+          "scene_020",
+          "scene_006",
           "scene_011",
           "scene_022",
-          "scene_006",
+          "scene_008",
           "scene_015",
+          "scene_016",
           "scene_010",
           "scene_021",
           "scene_012"
@@ -100,14 +100,14 @@
         "would_break": 10,
         "impacted_scenes": [
           "scene_017",
-          "scene_021",
           "scene_022",
           "scene_015",
-          "scene_020",
-          "scene_008",
-          "scene_016",
+          "scene_021",
           "scene_011",
           "scene_019",
+          "scene_008",
+          "scene_020",
+          "scene_016",
           "scene_009"
         ]
       },
@@ -118,12 +118,12 @@
         "impacted_scenes": [
           "scene_022",
           "scene_021",
-          "scene_003",
-          "scene_014",
           "scene_007",
-          "scene_018",
+          "scene_014",
           "scene_010",
-          "scene_020"
+          "scene_020",
+          "scene_018",
+          "scene_003"
         ]
       },
       {
@@ -133,12 +133,12 @@
         "impacted_scenes": [
           "scene_019",
           "scene_021",
-          "scene_020",
-          "scene_016",
-          "scene_017",
           "scene_011",
+          "scene_017",
           "scene_022",
-          "scene_015"
+          "scene_015",
+          "scene_020",
+          "scene_016"
         ]
       },
       {
@@ -149,9 +149,9 @@
           "scene_021",
           "scene_020",
           "scene_016",
+          "scene_022",
           "scene_019",
-          "scene_015",
-          "scene_022"
+          "scene_015"
         ]
       },
       {
@@ -159,12 +159,12 @@
         "heading": "INT. PARKING GARAGE - NIGHT",
         "would_break": 6,
         "impacted_scenes": [
-          "scene_016",
+          "scene_022",
           "scene_019",
           "scene_015",
           "scene_021",
-          "scene_022",
-          "scene_020"
+          "scene_020",
+          "scene_016"
         ]
       },
       {
@@ -184,11 +184,11 @@
         "heading": "INT. UNDERGROUND VAULT - NIGHT",
         "would_break": 5,
         "impacted_scenes": [
-          "scene_021",
           "scene_022",
-          "scene_016",
+          "scene_021",
           "scene_019",
-          "scene_020"
+          "scene_020",
+          "scene_016"
         ]
       },
       {
@@ -227,8 +227,8 @@
         "heading": "INT. TRAUMA WARD - DAY",
         "would_break": 2,
         "impacted_scenes": [
-          "scene_021",
-          "scene_022"
+          "scene_022",
+          "scene_021"
         ]
       },
       {

@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m spacy download en_core_web_sm
+
+      - name: Run unit tests
+        run: python -m pytest tests/ -q
+
+      - name: Run corpus batch against planted ground truth
+        run: python scripts/run_corpus_batch.py --compare-ground-truth
+
+      - name: Enforce corpus baseline thresholds
+        run: >-
+          python scripts/score_corpus_baseline.py
+          --check
+          --min-recall 0.90
+          --max-false-positives 4

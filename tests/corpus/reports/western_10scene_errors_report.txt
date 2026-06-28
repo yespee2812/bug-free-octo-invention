@@ -36,15 +36,20 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
 
 STORY CONSISTENCY ISSUES
 ------------------------------------------------------------------------
-  Found 1 possible inconsistency(ies): 1 clear conflict(s), 0 subtler mismatch(es).
+  Found 2 possible inconsistency(ies): 2 clear conflict(s), 0 subtler mismatch(es).
 
   Possible issue 1: Character Age
     Between scene 4 and scene 8
     WILL DAWSON is described as age 45 in scene_004 but age 50 in scene_008.
     Confidence: about 70%
 
+  Possible issue 2: Location Continuity
+    Between scene 3 and scene 4
+    The land is described as south in scene_003 but north in scene_004.
+    Confidence: about 70%
+
 OVERALL SCRIPT HEALTH
 ------------------------------------------------------------------------
-  Score: 83 / 100
+  Score: 75 / 100
   Solid draft with room to tighten loose scenes or fix a few story beats.
 

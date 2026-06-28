@@ -25,7 +25,7 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
   1. scene_001 - EXT. DRY RIVER CROSSING - DAY
      Removing this would weaken 4 later scene(s): scene_005, scene_002, scene_003, scene_004.
   2. scene_002 - EXT. RIDGE TRAIL - DAY
-     Removing this would weaken 3 later scene(s): scene_003, scene_004, scene_005.
+     Removing this would weaken 3 later scene(s): scene_003, scene_005, scene_004.
   3. scene_003 - INT. DAWSON RANCH HOUSE - DAY
      Removing this would weaken 1 later scene(s): scene_005.
   4. scene_004 - EXT. DRY RIVER CROSSING - DUSK
@@ -33,15 +33,20 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
 
 STORY CONSISTENCY ISSUES
 ------------------------------------------------------------------------
-  Found 1 possible inconsistency(ies): 1 clear conflict(s), 0 subtler mismatch(es).
+  Found 2 possible inconsistency(ies): 2 clear conflict(s), 0 subtler mismatch(es).
 
   Possible issue 1: Character Age
     Between scene 2 and scene 4
     JESSE is described as age 30 in scene_002 but age 25 in scene_004.
     Confidence: about 70%
 
+  Possible issue 2: Location Continuity
+    Between scene 2 and scene 3
+    The land is described as south in scene_002 but north in scene_003.
+    Confidence: about 70%
+
 OVERALL SCRIPT HEALTH
 ------------------------------------------------------------------------
-  Score: 92 / 100
-  Your draft is in strong shape - few structural or logic concerns.
+  Score: 84 / 100
+  Solid draft with room to tighten loose scenes or fix a few story beats.
 

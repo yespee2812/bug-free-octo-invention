@@ -33,30 +33,20 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
 
 STORY CONSISTENCY ISSUES
 ------------------------------------------------------------------------
-  Found 4 possible inconsistency(ies): 4 clear conflict(s), 0 subtler mismatch(es).
+  Found 2 possible inconsistency(ies): 2 clear conflict(s), 0 subtler mismatch(es).
 
-  Issue 1: Relationship Fact
-    Between scene 1 and scene 2
-    ANTONIO is described with incompatible relations (parent_child, sibling) across scene_001 and scene_002.
-    Confidence: about 85%
-
-  Possible issue 2: Character Age
-    Between scene 3 and scene 3
-    RAUL MORALES is described as age 65 in scene_003 but age 18 in scene_003.
-    Confidence: about 70%
-
-  Possible issue 3: Numeric Count
+  Possible issue 1: Numeric Count
     Between scene 1 and scene 3
     'seating' count is 20 in scene_001 but 18 in scene_003.
     Confidence: about 50%
 
-  Possible issue 4: Numeric Count
+  Possible issue 2: Numeric Count
     Between scene 2 and scene 4
     'year' count is 20 in scene_002 but 15 in scene_004.
     Confidence: about 50%
 
 OVERALL SCRIPT HEALTH
 ------------------------------------------------------------------------
-  Score: 68 / 100
-  Worth a revision pass: address contradictions and scenes that feel disconnected.
+  Score: 84 / 100
+  Solid draft with room to tighten loose scenes or fix a few story beats.
 

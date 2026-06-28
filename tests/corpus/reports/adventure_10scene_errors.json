@@ -38,8 +38,8 @@
         "would_break": 3,
         "impacted_scenes": [
           "scene_008",
-          "scene_005",
-          "scene_010"
+          "scene_010",
+          "scene_005"
         ]
       },
       {
@@ -78,12 +78,23 @@
     ]
   },
   "contradictions": {
-    "total_found": 3,
+    "total_found": 4,
     "by_tier": {
-      "tier1": 3,
+      "tier1": 4,
       "tier2": 0
     },
     "items": [
+      {
+        "scenes_involved": [
+          2,
+          9
+        ],
+        "contradiction_type": "name_consistency",
+        "explanation": "Character name 'TENZIN' in scene_002 and 'TENSING' in scene_009 look like the same person (edit distance 2).",
+        "confidence": 0.75,
+        "tier": 1,
+        "status": "possible"
+      },
       {
         "scenes_involved": [
           4,
@@ -119,7 +130,7 @@
       }
     ]
   },
-  "health_score": 67,
+  "health_score": 59,
   "input": {
     "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\adventure_10scene_errors.fountain",
     "filename": "adventure_10scene_errors.fountain",

@@ -23,20 +23,20 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_001 - INT. SAFE HOUSE - KITCHEN - NIGHT
-     Removing this would weaken 9 later scene(s): scene_004, scene_003, scene_005, scene_008, scene_007, scene_002, scene_006, scene_010, scene_009.
+     Removing this would weaken 9 later scene(s): scene_004, scene_003, scene_006, scene_002, scene_007, scene_005, scene_008, scene_010, scene_009.
   2. scene_002 - INT. PARKING GARAGE - LEVEL 4 - NIGHT
-     Removing this would weaken 8 later scene(s): scene_010, scene_004, scene_005, scene_008, scene_007, scene_006, scene_009, scene_003.
+     Removing this would weaken 8 later scene(s): scene_010, scene_004, scene_006, scene_007, scene_005, scene_009, scene_008, scene_003.
   3. scene_003 - INT. PARKING GARAGE - STAIRWELL - NIGHT
-     Removing this would weaken 5 later scene(s): scene_009, scene_008, scene_010, scene_007, scene_004.
+     Removing this would weaken 5 later scene(s): scene_009, scene_008, scene_010, scene_004, scene_007.
   4. scene_005 - INT. UNDERPASS - NIGHT
-     Removing this would weaken 5 later scene(s): scene_008, scene_007, scene_006, scene_010, scene_009.
+     Removing this would weaken 5 later scene(s): scene_006, scene_007, scene_008, scene_010, scene_009.
   5. scene_004 - INT. SILVER SUV - MOVING - NIGHT
-     Removing this would weaken 4 later scene(s): scene_008, scene_010, scene_007, scene_009.
+     Removing this would weaken 4 later scene(s): scene_010, scene_008, scene_007, scene_009.
   ... and 4 more scene(s) with downstream ties.
 
 STORY CONSISTENCY ISSUES
 ------------------------------------------------------------------------
-  Found 4 possible inconsistency(ies): 4 clear conflict(s), 0 subtler mismatch(es).
+  Found 3 possible inconsistency(ies): 3 clear conflict(s), 0 subtler mismatch(es).
 
   Possible issue 1: Object Identity
     Between scene 2 and scene 6
@@ -49,17 +49,12 @@ STORY CONSISTENCY ISSUES
     Confidence: about 50%
 
   Possible issue 3: Numeric Count
-    Between scene 5 and scene 7
-    'group' count is 1 in scene_005 but 5 in scene_007.
-    Confidence: about 50%
-
-  Possible issue 4: Numeric Count
     Between scene 7 and scene 9
     'group' count is 5 in scene_007 but 3 in scene_009.
     Confidence: about 50%
 
 OVERALL SCRIPT HEALTH
 ------------------------------------------------------------------------
-  Score: 68 / 100
-  Worth a revision pass: address contradictions and scenes that feel disconnected.
+  Score: 76 / 100
+  Solid draft with room to tighten loose scenes or fix a few story beats.
 

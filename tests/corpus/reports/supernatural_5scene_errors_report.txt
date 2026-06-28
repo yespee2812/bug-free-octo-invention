@@ -23,7 +23,7 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_001 - EXT. ABANDONED FARMHOUSE - DUSK
-     Removing this would weaken 4 later scene(s): scene_003, scene_002, scene_004, scene_005.
+     Removing this would weaken 4 later scene(s): scene_003, scene_002, scene_005, scene_004.
   2. scene_002 - INT. FARMHOUSE - UPSTAIRS HALL - NIGHT
      Removing this would weaken 3 later scene(s): scene_005, scene_004, scene_003.
   3. scene_003 - INT. EAST BEDROOM - NIGHT
@@ -31,15 +31,20 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
 
 STORY CONSISTENCY ISSUES
 ------------------------------------------------------------------------
-  Found 1 possible inconsistency(ies): 1 clear conflict(s), 0 subtler mismatch(es).
+  Found 2 possible inconsistency(ies): 2 clear conflict(s), 0 subtler mismatch(es).
 
-  Possible issue 1: Numeric Count
+  Possible issue 1: Location Continuity
+    Between scene 2 and scene 5
+    The bedroom is described as east in scene_002 but west in scene_005.
+    Confidence: about 70%
+
+  Possible issue 2: Numeric Count
     Between scene 1 and scene 5
     'family' count is 3 in scene_001 but 4 in scene_005.
     Confidence: about 50%
 
 OVERALL SCRIPT HEALTH
 ------------------------------------------------------------------------
-  Score: 92 / 100
-  Your draft is in strong shape - few structural or logic concerns.
+  Score: 84 / 100
+  Solid draft with room to tighten loose scenes or fix a few story beats.
 

@@ -5,10 +5,14 @@ planted ground truth (from :mod:`build_planted_ground_truth`), then computes
 corpus-level recall / precision / F1 with order-insensitive scene matching.
 
 Outputs ``tests/corpus/BASELINE_SCORE.md`` and prints a summary.
+
+With ``--check``, exits non-zero when recall or false-positive counts regress
+below configured thresholds (for CI).
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -53,8 +57,32 @@ def _f1(precision: float, recall: float) -> float:
     return 2 * precision * recall / (precision + recall)
 
 
+def _parse_args() -> argparse.Namespace:
+    """Parse command-line options for baseline scoring."""
+    parser = argparse.ArgumentParser(description="Score corpus planted-error detection.")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Exit with code 1 when metrics fall below threshold flags.",
+    )
+    parser.add_argument(
+        "--min-recall",
+        type=float,
+        default=0.80,
+        help="Minimum required recall when --check is set (default: 0.80).",
+    )
+    parser.add_argument(
+        "--max-false-positives",
+        type=int,
+        default=4,
+        help="Maximum allowed false positives when --check is set (default: 4).",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
     """Compute and write the corpus baseline score."""
+    args = _parse_args()
     dataset = build_dataset()
 
     total_planted = 0
@@ -147,6 +175,27 @@ def main() -> None:
     print(f"Supported-subset recall: {subset_recall:.1%} "
           f"({engine_subset_hits}/{engine_subset_total})")
     print(f"Wrote: {BASELINE_PATH}")
+
+    if args.check:
+        failures: list[str] = []
+        if recall < args.min_recall:
+            failures.append(
+                f"recall {recall:.1%} is below minimum {args.min_recall:.1%}"
+            )
+        if false_positives > args.max_false_positives:
+            failures.append(
+                f"false positives {false_positives} exceed maximum "
+                f"{args.max_false_positives}"
+            )
+        if failures:
+            for message in failures:
+                print(f"BASELINE CHECK FAILED: {message}", file=sys.stderr)
+            sys.exit(1)
+        print(
+            "Baseline check passed "
+            f"(recall >= {args.min_recall:.1%}, "
+            f"FP <= {args.max_false_positives})."
+        )
 
 
 if __name__ == "__main__":

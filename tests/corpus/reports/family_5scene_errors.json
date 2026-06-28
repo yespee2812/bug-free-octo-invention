@@ -64,34 +64,12 @@
     ]
   },
   "contradictions": {
-    "total_found": 4,
+    "total_found": 2,
     "by_tier": {
-      "tier1": 4,
+      "tier1": 2,
       "tier2": 0
     },
     "items": [
-      {
-        "scenes_involved": [
-          1,
-          2
-        ],
-        "contradiction_type": "relationship_fact",
-        "explanation": "ANTONIO is described with incompatible relations (parent_child, sibling) across scene_001 and scene_002.",
-        "confidence": 0.85,
-        "tier": 1,
-        "status": "confirmed"
-      },
-      {
-        "scenes_involved": [
-          3,
-          3
-        ],
-        "contradiction_type": "character_age",
-        "explanation": "RAUL MORALES is described as age 65 in scene_003 but age 18 in scene_003.",
-        "confidence": 0.7,
-        "tier": 1,
-        "status": "possible"
-      },
       {
         "scenes_involved": [
           1,
@@ -116,7 +94,7 @@
       }
     ]
   },
-  "health_score": 68,
+  "health_score": 84,
   "input": {
     "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\family_5scene_errors.fountain",
     "filename": "family_5scene_errors.fountain",

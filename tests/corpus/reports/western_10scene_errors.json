@@ -86,9 +86,9 @@
     ]
   },
   "contradictions": {
-    "total_found": 1,
+    "total_found": 2,
     "by_tier": {
-      "tier1": 1,
+      "tier1": 2,
       "tier2": 0
     },
     "items": [
@@ -102,10 +102,21 @@
         "confidence": 0.7,
         "tier": 1,
         "status": "possible"
+      },
+      {
+        "scenes_involved": [
+          3,
+          4
+        ],
+        "contradiction_type": "location_continuity",
+        "explanation": "The land is described as south in scene_003 but north in scene_004.",
+        "confidence": 0.7,
+        "tier": 1,
+        "status": "possible"
       }
     ]
   },
-  "health_score": 83,
+  "health_score": 75,
   "input": {
     "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\western_10scene_errors.fountain",
     "filename": "western_10scene_errors.fountain",

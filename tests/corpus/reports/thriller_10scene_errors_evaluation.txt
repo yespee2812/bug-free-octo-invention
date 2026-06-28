@@ -3,10 +3,7 @@ GROUND TRUTH EVALUATION: thriller_10scene_errors
 
 CONTRADICTIONS
   Expected (manual + planted): 3
-  Detected by engine:          4
+  Detected by engine:          3
   Matched:                     3
   Missed (false negatives):    0
-  Extra (false positives):     1
-
-  Extra (engine-only):
-    - numeric_count: scene 5 vs scene 7
+  Extra (false positives):     0

@@ -31,10 +31,10 @@
         "impacted_scenes": [
           "scene_007",
           "scene_010",
-          "scene_005",
-          "scene_003",
-          "scene_008",
           "scene_006",
+          "scene_005",
+          "scene_008",
+          "scene_003",
           "scene_002",
           "scene_009"
         ]
@@ -55,8 +55,8 @@
         "heading": "INT. BRIDAL SHOP LOBBY - DAY",
         "would_break": 3,
         "impacted_scenes": [
-          "scene_010",
           "scene_007",
+          "scene_010",
           "scene_009"
         ]
       },

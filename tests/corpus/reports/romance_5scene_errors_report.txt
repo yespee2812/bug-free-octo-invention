@@ -23,9 +23,9 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_001 - EXT. CAPE COD INN - PORCH - DAWN
-     Removing this would weaken 4 later scene(s): scene_003, scene_005, scene_004, scene_002.
+     Removing this would weaken 4 later scene(s): scene_005, scene_003, scene_004, scene_002.
   2. scene_002 - INT. INN LOBBY - MORNING
-     Removing this would weaken 3 later scene(s): scene_004, scene_003, scene_005.
+     Removing this would weaken 3 later scene(s): scene_005, scene_004, scene_003.
   3. scene_003 - EXT. BEACH - AFTERNOON
      Removing this would weaken 2 later scene(s): scene_005, scene_004.
   4. scene_004 - INT. CLAIRE'S ROOM - NIGHT

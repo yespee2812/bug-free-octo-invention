@@ -28,11 +28,11 @@
         "impacted_scenes": [
           "scene_004",
           "scene_003",
+          "scene_006",
+          "scene_002",
+          "scene_007",
           "scene_005",
           "scene_008",
-          "scene_007",
-          "scene_002",
-          "scene_006",
           "scene_010",
           "scene_009"
         ]
@@ -44,11 +44,11 @@
         "impacted_scenes": [
           "scene_010",
           "scene_004",
-          "scene_005",
-          "scene_008",
-          "scene_007",
           "scene_006",
+          "scene_007",
+          "scene_005",
           "scene_009",
+          "scene_008",
           "scene_003"
         ]
       },
@@ -60,8 +60,8 @@
           "scene_009",
           "scene_008",
           "scene_010",
-          "scene_007",
-          "scene_004"
+          "scene_004",
+          "scene_007"
         ]
       },
       {
@@ -69,9 +69,9 @@
         "heading": "INT. UNDERPASS - NIGHT",
         "would_break": 5,
         "impacted_scenes": [
-          "scene_008",
-          "scene_007",
           "scene_006",
+          "scene_007",
+          "scene_008",
           "scene_010",
           "scene_009"
         ]
@@ -81,8 +81,8 @@
         "heading": "INT. SILVER SUV - MOVING - NIGHT",
         "would_break": 4,
         "impacted_scenes": [
-          "scene_008",
           "scene_010",
+          "scene_008",
           "scene_007",
           "scene_009"
         ]
@@ -92,9 +92,9 @@
         "heading": "EXT. RIVER ROAD OVERPASS - NIGHT",
         "would_break": 4,
         "impacted_scenes": [
-          "scene_008",
           "scene_010",
           "scene_007",
+          "scene_008",
           "scene_009"
         ]
       },
@@ -128,9 +128,9 @@
     ]
   },
   "contradictions": {
-    "total_found": 4,
+    "total_found": 3,
     "by_tier": {
-      "tier1": 4,
+      "tier1": 3,
       "tier2": 0
     },
     "items": [
@@ -158,17 +158,6 @@
       },
       {
         "scenes_involved": [
-          5,
-          7
-        ],
-        "contradiction_type": "numeric_count",
-        "explanation": "'group' count is 1 in scene_005 but 5 in scene_007.",
-        "confidence": 0.5,
-        "tier": 1,
-        "status": "possible"
-      },
-      {
-        "scenes_involved": [
           7,
           9
         ],
@@ -180,7 +169,7 @@
       }
     ]
   },
-  "health_score": 68,
+  "health_score": 76,
   "input": {
     "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\thriller_10scene_errors.fountain",
     "filename": "thriller_10scene_errors.fountain",

@@ -23,7 +23,7 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_001 - INT. EMBASSY ANNEX - SECURITY HUB - NIGHT
-     Removing this would weaken 4 later scene(s): scene_002, scene_003, scene_005, scene_004.
+     Removing this would weaken 4 later scene(s): scene_005, scene_004, scene_002, scene_003.
   2. scene_002 - INT. ROOFTOP STAGING - NIGHT
      Removing this would weaken 3 later scene(s): scene_004, scene_005, scene_003.
   3. scene_003 - INT. EMBASSY BASEMENT - NIGHT

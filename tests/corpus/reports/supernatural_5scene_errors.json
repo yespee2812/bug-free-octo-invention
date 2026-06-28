@@ -32,8 +32,8 @@
         "impacted_scenes": [
           "scene_003",
           "scene_002",
-          "scene_004",
-          "scene_005"
+          "scene_005",
+          "scene_004"
         ]
       },
       {
@@ -57,12 +57,23 @@
     ]
   },
   "contradictions": {
-    "total_found": 1,
+    "total_found": 2,
     "by_tier": {
-      "tier1": 1,
+      "tier1": 2,
       "tier2": 0
     },
     "items": [
+      {
+        "scenes_involved": [
+          2,
+          5
+        ],
+        "contradiction_type": "location_continuity",
+        "explanation": "The bedroom is described as east in scene_002 but west in scene_005.",
+        "confidence": 0.7,
+        "tier": 1,
+        "status": "possible"
+      },
       {
         "scenes_involved": [
           1,
@@ -76,7 +87,7 @@
       }
     ]
   },
-  "health_score": 92,
+  "health_score": 84,
   "input": {
     "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\supernatural_5scene_errors.fountain",
     "filename": "supernatural_5scene_errors.fountain",

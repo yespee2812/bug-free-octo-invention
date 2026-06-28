@@ -19,6 +19,7 @@ from screenplay_coref import (
     FIRST_PERSON_AGE_RE,
     FOR_AGE_DIALOGUE_RE,
     INTRO_ROLE_RE,
+    NON_NAME_TOKENS,
     PAYMENT_OBJECT_RE,
     ROLE_NOUNS,
     RoleRegistry,
@@ -45,11 +46,120 @@ from scene_dependency import (
     POSSESSION_VERB_LABELS,
     SceneBlock,
     _is_character_cue,
+    _is_scene_heading,
     _is_transition,
     _normalize_object_key,
     _normalize_token,
     _trailing_caps_name,
 )
+
+# Name-drift detection (P3.1): ALL-CAPS action tokens that are props, slugs,
+# or editorial directions — not character names.
+NAME_DRIFT_CAPS_STOPWORDS: frozenset[str] = frozenset(
+    {
+        *NON_NAME_TOKENS,
+        "ALL",
+        "BIRD",
+        "BLACK",
+        "BLUE",
+        "CANISTER",
+        "CHRISTMAS",
+        "CLASS",
+        "CLOSED",
+        "DATA",
+        "DIAMOND",
+        "EXT",
+        "FLARE",
+        "GLASS",
+        "GOLD",
+        "GRAY",
+        "GREEN",
+        "GREY",
+        "HOSTAGE",
+        "HOSTAGES",
+        "HOTEL",
+        "INT",
+        "JOURNAL",
+        "KEY",
+        "LEATHER",
+        "MAGNETIC",
+        "METAL",
+        "NIGHT",
+        "PLAN",
+        "RED",
+        "ROOF",
+        "ROOM",
+        "SAFE",
+        "SATCHEL",
+        "SILVER",
+        "STUDY",
+        "SUPER",
+        "TAPE",
+        "THERMAL",
+        "TUBE",
+        "VHS",
+        "WAX",
+        "WHITE",
+        "WEST",
+        "EAST",
+    }
+)
+NAME_DRIFT_MAX_DISTANCE: int = 2
+NAME_DRIFT_MIN_LENGTH: int = 4
+COMMA_CAPS_NAME_LIST_RE: re.Pattern[str] = re.compile(
+    r"(?:^|[.;]\s*)(?P<list>[A-Z][A-Z0-9'\-]+(?:\s*,\s*[A-Z][A-Z0-9'\-]+)+)"
+)
+GUIDE_NAME_RE: re.Pattern[str] = re.compile(
+    r"\bguide\s+(?P<name>[A-Z][A-Z0-9'\-]+)\b", re.IGNORECASE
+)
+NAME_DRIFT_SUBJECT_VERBS: frozenset[str] = frozenset(
+    {
+        "adjusts", "argues", "bypasses", "carries", "checks", "clears", "climbs",
+        "copies", "descends", "disables", "enters", "fires", "lifts", "loops",
+        "neutralizes", "prep", "preps", "returns", "reviews", "runs", "shields",
+        "signals", "suppresses", "walks", "wants", "watches",
+    }
+)
+CARDINAL_DIRECTIONS: frozenset[str] = frozenset({"EAST", "WEST", "NORTH", "SOUTH"})
+CARDINAL_OPPOSITE_PAIRS: tuple[tuple[str, str], ...] = (
+    ("EAST", "WEST"),
+    ("NORTH", "SOUTH"),
+)
+LOCATION_LAND_NOUNS: frozenset[str] = frozenset(
+    {"PASTURE", "PASTURES", "FIELD", "FIELDS", "MEADOW", "MEADOWS"}
+)
+CARDINAL_PLACE_RE: re.Pattern[str] = re.compile(
+    r"\b(?:the\s+)?(?P<dir>east|west|north|south)\s+"
+    r"(?P<place>bedroom|bedrooms|pasture|pastures|field|fields|meadow|meadows)\b",
+    re.IGNORECASE,
+)
+KNOWLEDGE_FAMILIAR_TRAPDOOR_RE: re.Pattern[str] = re.compile(
+    r"\b(?P<obj>floor\s+trapdoor|trapdoor)\b[^.]{0,60}?\b(?:stepped over|walked over|"
+    r"walked past|crossed)\b[^.]{0,40}?\b(?:a\s+)?(?:thousand|\d+\s+times)\b",
+    re.IGNORECASE,
+)
+KNOWLEDGE_UNAWARE_TRAPDOOR_RE: re.Pattern[str] = re.compile(
+    r"\b(?P<obj>floor\s+trapdoor|trapdoor)\b[^.]{0,40}?\b(?:never\s+noticed|"
+    r"never\s+noted|didn't notice|did not notice)\b|"
+    r"\b(?:never\s+noticed|didn't notice|did not notice)\b[^.]{0,40}?\b"
+    r"(?P<obj2>floor\s+trapdoor|trapdoor)\b",
+    re.IGNORECASE,
+)
+KNOWLEDGE_HERE_AT_MIDNIGHT_RE: re.Pattern[str] = re.compile(
+    r"\b(?:the\s+)?(?P<obj>glass\s+key|[A-Z][A-Z0-9 ]{0,20})\s+was\s+here\s+at\s+midnight\b",
+    re.IGNORECASE,
+)
+KNOWLEDGE_GONE_NOT_MIDNIGHT_RE: re.Pattern[str] = re.compile(
+    r"\b(?:that\s+)?(?P<obj>glass\s+key|key)(?:'s|s)?\s+been\s+gone\s+since\b"
+    r"[^.]{0,50}?\bnot\s+midnight\b",
+    re.IGNORECASE,
+)
+KNOWLEDGE_PREMATURE_RE: re.Pattern[str] = re.compile(
+    r"\b(?:somebody|someone|they)\s+already\s+(?:knows?|made us)\b|"
+    r"\bthey know we(?:'re|\s+are)\s+coming\b",
+    re.IGNORECASE,
+)
+KNOWLEDGE_REVEAL_THEY_KNOW_RE: re.Pattern[str] = re.compile(r"\bTHEY KNOW\b")
 
 # Alternation of handoff verbs (e.g. "gives|hands") for parsing transfer
 # facts back out of a stored ownership value string.
@@ -75,7 +185,8 @@ FACT_TYPES: tuple[str, ...] = (
 # continuity errors (clock/measure/abstract time), kept out of numeric_count.
 COUNT_NOUN_BLOCKLIST: frozenset[str] = frozenset(
     {
-        "minute", "hour", "moment", "day", "time", "oclock", "step", "inch",
+        "minute", "minutes", "second", "seconds", "hour", "moment", "day",
+        "time", "oclock", "step", "inch",
         "foot", "degree", "percent", "dollar", "cent", "way", "bit", "kind",
         "sort", "part", "side", "thing",
     }
@@ -211,12 +322,24 @@ COUNT_PHRASE_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
         "GROUP",
     ),
     (
+        re.compile(
+            rf"\b(?P<num>{_COUNT_NUM})[\s-]second\s+holes?\b", re.IGNORECASE
+        ),
+        "GAP",
+    ),
+    (
+        re.compile(
+            rf"\b(?P<num>{_COUNT_NUM})[\s-]second\s+gaps?\b", re.IGNORECASE
+        ),
+        "TIMING",
+    ),
+    (
         re.compile(rf"\b(?P<num>{_COUNT_NUM})\s+meters?\b", re.IGNORECASE),
         "METERS",
     ),
     (
         re.compile(
-            rf"\b(?P<num>{_COUNT_NUM})\s+of them\b", re.IGNORECASE
+            rf"(?<!every\s)(?P<num>{_COUNT_NUM})\s+of them\b", re.IGNORECASE
         ),
         "GROUP",
     ),
@@ -961,6 +1084,16 @@ INCOMPATIBLE_RELATION_CATEGORIES: tuple[frozenset[str], ...] = (
     frozenset({"cousin", "wedding_party"}),
     frozenset({"sibling", "professional"}),
 )
+# Role combinations that cannot describe one character across a script.
+# Unlike pair-level rules, parent_child + sibling on the same person is normal
+# (someone can be a parent's child and a sibling to another character).
+SINGLE_CHARACTER_INCOMPATIBLE: tuple[frozenset[str], ...] = (
+    frozenset({"sibling", "in_law"}),
+    frozenset({"sibling", "cousin"}),
+    frozenset({"sibling", "professional"}),
+    frozenset({"cousin", "wedding_party"}),
+    frozenset({"parent_child", "niece_nephew"}),
+)
 
 _REL_NAME = (
     r"(?:[A-Z][A-Z0-9'\-.]*|[A-Z][a-z]+)"
@@ -1526,6 +1659,269 @@ def _character_appears_in_scene(scene: SceneBlock, entity: str) -> tuple[bool, s
     return False, ""
 
 
+def _name_drift_lcs_length(name_a: str, name_b: str) -> int:
+    """Return the length of the longest common subsequence of two compact names."""
+    compact_a = name_a.replace(" ", "")
+    compact_b = name_b.replace(" ", "")
+    if not compact_a or not compact_b:
+        return 0
+    previous = [0] * (len(compact_b) + 1)
+    for char_a in compact_a:
+        current = [0]
+        for index, char_b in enumerate(compact_b, start=1):
+            if char_a == char_b:
+                current.append(previous[index - 1] + 1)
+            else:
+                current.append(max(previous[index], current[-1]))
+        previous = current
+    return previous[-1]
+
+
+def _name_drift_plausible_pair(name_a: str, name_b: str, min_lcs: int = 3) -> bool:
+    """Return True when two spellings share enough letters to be a typo, not two people."""
+    compact_a = name_a.replace(" ", "")
+    compact_b = name_b.replace(" ", "")
+    if len(compact_a) < 2 or len(compact_b) < 2:
+        return False
+    if compact_a[:2] != compact_b[:2]:
+        return False
+    return _name_drift_lcs_length(name_a, name_b) >= min_lcs
+
+
+def _register_drift_name_mentions(
+    registry: EntityRegistry, scenes: list[SceneBlock]
+) -> set[str]:
+    """Register action-line name spellings for typo / drift detection.
+
+    Character cues and the scene parser miss cue-less team lists (``VEGA, PARK,
+    OSEI``) and title-case action subjects (``Oshea shields``). Each distinct
+    spelling becomes its own canonical id so :meth:`EntityRegistry.near_duplicate_pairs`
+    can surface likely name-consistency issues without merging typos.
+
+    Returns:
+        Canonical ids registered from name-like action mentions (not headings
+        or generic prose).
+    """
+    eligible: set[str] = set()
+    for scene in scenes:
+        for kind, text in iter_scene_lines(scene):
+            if kind != "action" or _is_scene_heading(text):
+                continue
+            for match in COMMA_CAPS_NAME_LIST_RE.finditer(text):
+                for token in re.split(r"\s*,\s*", match.group("list")):
+                    if token in NAME_DRIFT_CAPS_STOPWORDS:
+                        continue
+                    canonical_id = registry.register(token)
+                    if canonical_id is not None:
+                        eligible.add(canonical_id)
+            guide_match = GUIDE_NAME_RE.search(text)
+            if guide_match:
+                canonical_id = registry.register(guide_match.group("name"))
+                if canonical_id is not None:
+                    eligible.add(canonical_id)
+            for match in ACTION_NAME_RE.finditer(text):
+                raw = match.group("name")
+                if " " in raw or raw.split()[0] in NON_NAME_TOKENS:
+                    continue
+                verb = _first_word_after(text, match.end()).lower()
+                if verb not in NAME_DRIFT_SUBJECT_VERBS:
+                    continue
+                canonical_id = registry.register(raw)
+                if canonical_id is not None:
+                    eligible.add(canonical_id)
+    return eligible
+
+
+@dataclass(frozen=True)
+class _CardinalMention:
+    """One cardinal-direction reference to a place (slug line or prose)."""
+
+    scene: SceneBlock
+    direction: str
+    base: str
+    excerpt: str
+
+
+def _canonical_cardinal_base(raw_base: str) -> str:
+    """Normalize a place head noun for cardinal-direction continuity checks."""
+    token = _normalize_token(raw_base)
+    if token in LOCATION_LAND_NOUNS:
+        return "LAND"
+    return token
+
+
+def _parse_cardinal_slug(location: str) -> tuple[str, str] | None:
+    """Parse a slug location such as ``EAST BEDROOM`` into direction and base."""
+    tokens = location.upper().split()
+    if len(tokens) >= 2 and tokens[0] in CARDINAL_DIRECTIONS:
+        return tokens[0], _canonical_cardinal_base(" ".join(tokens[1:]))
+    return None
+
+
+def _extract_cardinal_location_mentions(
+    scenes: list[SceneBlock],
+) -> list[_CardinalMention]:
+    """Collect east/west (and north/south) place references across the script."""
+    mentions: list[_CardinalMention] = []
+    for scene in sorted(scenes, key=lambda item: item.scene_number):
+        for location in scene.locations:
+            parsed = _parse_cardinal_slug(location)
+            if parsed is None:
+                continue
+            direction, base = parsed
+            mentions.append(
+                _CardinalMention(
+                    scene=scene,
+                    direction=direction,
+                    base=base,
+                    excerpt=scene.heading.strip(),
+                )
+            )
+        for kind, text in iter_scene_lines(scene):
+            if kind not in ("action", "dialogue"):
+                continue
+            for match in CARDINAL_PLACE_RE.finditer(text):
+                mentions.append(
+                    _CardinalMention(
+                        scene=scene,
+                        direction=match.group("dir").upper(),
+                        base=_canonical_cardinal_base(match.group("place")),
+                        excerpt=text.strip(),
+                    )
+                )
+    return mentions
+
+
+@dataclass(frozen=True)
+class _KnowledgeClaim:
+    """A character-knowledge assertion extracted from one scene line."""
+
+    scene: SceneBlock
+    entity: str
+    claim: str
+    excerpt: str
+
+
+def _canonical_knowledge_object(raw: str, glass_key_script: bool) -> str:
+    """Normalize object heads for cross-scene knowledge matching."""
+    token = _normalize_token(raw)
+    if token in {"TRAPDOOR", "FLOOR TRAPDOOR"}:
+        return "TRAPDOOR"
+    if token in {"KEY", "GLASS KEY"} or (token == "KEY" and glass_key_script):
+        return "GLASS KEY"
+    return token
+
+
+def _script_mentions_glass_key(scenes: list[SceneBlock]) -> bool:
+    """Return True when the script names a glass key anywhere."""
+    for scene in scenes:
+        if re.search(r"\bglass\s+key\b", scene.raw_text, re.IGNORECASE):
+            return True
+    return False
+
+
+def _extract_knowledge_claims(scenes: list[SceneBlock]) -> list[_KnowledgeClaim]:
+    """Collect knowledge-state claims used by the character-knowledge checker."""
+    glass_key_script = _script_mentions_glass_key(scenes)
+    claims: list[_KnowledgeClaim] = []
+    for scene in sorted(scenes, key=lambda item: item.scene_number):
+        for kind, text in iter_scene_lines(scene):
+            if kind not in ("action", "dialogue"):
+                continue
+            familiar = KNOWLEDGE_FAMILIAR_TRAPDOOR_RE.search(text)
+            if familiar:
+                obj = familiar.group("obj") or "trapdoor"
+                claims.append(
+                    _KnowledgeClaim(
+                        scene=scene,
+                        entity=_canonical_knowledge_object(obj, glass_key_script),
+                        claim="familiar",
+                        excerpt=text.strip(),
+                    )
+                )
+            unaware = KNOWLEDGE_UNAWARE_TRAPDOOR_RE.search(text)
+            if unaware:
+                obj = unaware.group("obj") or unaware.group("obj2") or "trapdoor"
+                claims.append(
+                    _KnowledgeClaim(
+                        scene=scene,
+                        entity=_canonical_knowledge_object(obj, glass_key_script),
+                        claim="unaware",
+                        excerpt=text.strip(),
+                    )
+                )
+            here_midnight = KNOWLEDGE_HERE_AT_MIDNIGHT_RE.search(text)
+            if here_midnight:
+                obj = here_midnight.group("obj")
+                claims.append(
+                    _KnowledgeClaim(
+                        scene=scene,
+                        entity=_canonical_knowledge_object(obj, glass_key_script),
+                        claim="here_midnight",
+                        excerpt=text.strip(),
+                    )
+                )
+            gone_not = KNOWLEDGE_GONE_NOT_MIDNIGHT_RE.search(text)
+            if gone_not:
+                obj = gone_not.group("obj")
+                claims.append(
+                    _KnowledgeClaim(
+                        scene=scene,
+                        entity=_canonical_knowledge_object(obj, glass_key_script),
+                        claim="gone_not_midnight",
+                        excerpt=text.strip(),
+                    )
+                )
+            if KNOWLEDGE_PREMATURE_RE.search(text):
+                claims.append(
+                    _KnowledgeClaim(
+                        scene=scene,
+                        entity="THEY KNOW",
+                        claim="premature",
+                        excerpt=text.strip(),
+                    )
+                )
+            if KNOWLEDGE_REVEAL_THEY_KNOW_RE.search(text):
+                claims.append(
+                    _KnowledgeClaim(
+                        scene=scene,
+                        entity="THEY KNOW",
+                        claim="reveal",
+                        excerpt=text.strip(),
+                    )
+                )
+    return claims
+
+
+def _drift_eligible_character_ids(
+    registry: EntityRegistry, scenes: list[SceneBlock]
+) -> set[str]:
+    """Return canonical ids that may participate in name-drift pairing."""
+    eligible = _register_drift_name_mentions(registry, scenes)
+    for scene in scenes:
+        for line in scene.raw_text.splitlines():
+            stripped = line.strip()
+            if not _is_character_cue(stripped):
+                continue
+            cue = re.sub(r"\([^)]*\)", "", stripped)
+            canonical_id = registry.resolve(cue)
+            if canonical_id is not None:
+                eligible.add(canonical_id)
+    return eligible
+
+
+def _first_scene_with_entity_mention(
+    scenes: list[SceneBlock], entity_id: str
+) -> tuple[Optional[SceneBlock], str]:
+    """Return the earliest scene where ``entity_id`` is mentioned, and an excerpt."""
+    ordered = sorted(scenes, key=lambda scene: scene.scene_number)
+    for scene in ordered:
+        found, excerpt = _character_appears_in_scene(scene, entity_id)
+        if found:
+            return scene, excerpt
+    return None, ""
+
+
 def _find_excerpt(text: str, needle: str) -> str:
     """Find the first line in text containing needle (case-insensitive)."""
     for line in text.splitlines():
@@ -1888,6 +2284,7 @@ class ContradictionEngine:
                     continue
                 for match in INTRO_ROLE_RE.finditer(text):
                     registry.register(match.group("name"))
+        _register_drift_name_mentions(registry, scenes)
         return registry
 
     def _record_age_fact(
@@ -1967,13 +2364,16 @@ class ContradictionEngine:
                 if entity:
                     self._record_age_fact(scene, store, entity, age, text, seen)
 
-            for match in FOR_AGE_DIALOGUE_RE.finditer(text):
-                age = _parse_inline_age(match.group("age"))
-                if age is None:
-                    continue
-                entity = tracker.resolve_subject(text)
-                if entity:
-                    self._record_age_fact(scene, store, entity, age, text, seen)
+            if kind == "dialogue":
+                for match in FOR_AGE_DIALOGUE_RE.finditer(text):
+                    age = _parse_inline_age(match.group("age"))
+                    if age is None:
+                        continue
+                    entity = tracker.resolve_subject(text)
+                    if entity:
+                        self._record_age_fact(
+                            scene, store, entity, age, text, seen
+                        )
 
     def _extract_payment_descriptor_facts(
         self, scene: SceneBlock, store: FactStore
@@ -2721,8 +3121,248 @@ class ContradictionEngine:
         contradictions.extend(self._check_object_identity(fact_store))
         contradictions.extend(self._check_numeric_count(fact_store))
         contradictions.extend(self._check_date_year(fact_store))
+        contradictions.extend(self._check_name_consistency(scenes))
+        contradictions.extend(self._check_location_continuity(scenes))
+        contradictions.extend(self._check_character_knowledge(scenes))
         contradictions.sort(key=lambda item: item.confidence, reverse=True)
         return contradictions
+
+    def _check_character_knowledge(
+        self, scenes: list[SceneBlock]
+    ) -> list[Contradiction]:
+        """Flag knowledge-state slips: unaware vs familiar, timing, early reveals.
+
+        Deterministic tier for planted corpus patterns (trapdoor awareness,
+        glass-key timing, and ``THEY KNOW`` dialogue before the reveal beat).
+        """
+        claims = _extract_knowledge_claims(scenes)
+        by_entity: dict[str, dict[str, _KnowledgeClaim]] = {}
+        for claim in claims:
+            bucket = by_entity.setdefault(claim.entity, {})
+            if claim.claim not in bucket:
+                bucket[claim.claim] = claim
+
+        results: list[Contradiction] = []
+        reported: set[tuple[str, str, str]] = set()
+
+        def _emit_pair(
+            first: _KnowledgeClaim,
+            second: _KnowledgeClaim,
+            entity: str,
+            explanation: str,
+        ) -> None:
+            if first.scene.scene_id == second.scene.scene_id:
+                return
+            pair_key = (
+                entity,
+                first.scene.scene_id,
+                second.scene.scene_id,
+            )
+            if pair_key in reported:
+                return
+            if first.scene.scene_number <= second.scene.scene_number:
+                earlier, later = first, second
+            else:
+                earlier, later = second, first
+            fact_a = self._make_fact(
+                earlier.scene,
+                "character_knowledge",
+                entity,
+                f"{earlier.claim}/{later.claim}",
+                earlier.excerpt,
+            )
+            results.append(
+                Contradiction(
+                    contradiction_id=_new_contradiction_id(),
+                    scene_id_a=earlier.scene.scene_id,
+                    scene_id_b=later.scene.scene_id,
+                    scene_number_a=earlier.scene.scene_number,
+                    scene_number_b=later.scene.scene_number,
+                    fact_a=fact_a,
+                    excerpt_b=later.excerpt,
+                    contradiction_type="character_knowledge",
+                    explanation=explanation,
+                    confidence=0.65,
+                    tier=1,
+                    status=STATUS_POSSIBLE,
+                )
+            )
+            reported.add(pair_key)
+
+        trapdoor = by_entity.get("TRAPDOOR", {})
+        if "familiar" in trapdoor and "unaware" in trapdoor:
+            _emit_pair(
+                trapdoor["familiar"],
+                trapdoor["unaware"],
+                "TRAPDOOR",
+                (
+                    "The trapdoor is treated as long-familiar in "
+                    f"{trapdoor['familiar'].scene.scene_id} but "
+                    f"{trapdoor['unaware'].scene.scene_id} says it was never noticed."
+                ),
+            )
+
+        glass_key = by_entity.get("GLASS KEY", {})
+        if "here_midnight" in glass_key and "gone_not_midnight" in glass_key:
+            _emit_pair(
+                glass_key["here_midnight"],
+                glass_key["gone_not_midnight"],
+                "GLASS KEY",
+                (
+                    "The glass key is said to be present at midnight in "
+                    f"{glass_key['here_midnight'].scene.scene_id} but "
+                    f"{glass_key['gone_not_midnight'].scene.scene_id} says it "
+                    "was already gone, not at midnight."
+                ),
+            )
+
+        they_know = by_entity.get("THEY KNOW", {})
+        premature = they_know.get("premature")
+        reveal = they_know.get("reveal")
+        if premature is not None and reveal is not None:
+            if premature.scene.scene_number != reveal.scene.scene_number:
+                _emit_pair(
+                    premature,
+                    reveal,
+                    "THEY KNOW",
+                    (
+                        "Dialogue implies the adversary already knows "
+                        f"({premature.scene.scene_id}) before the "
+                        f"''THEY KNOW'' reveal in {reveal.scene.scene_id}."
+                    ),
+                )
+        return results
+
+    def _check_location_continuity(
+        self, scenes: list[SceneBlock]
+    ) -> list[Contradiction]:
+        """Flag opposing cardinal directions for the same place across scenes.
+
+        Catches slug flips (``INT. EAST BEDROOM`` vs ``INT. WEST BEDROOM``) and
+        prose references (``south pasture`` vs ``north pasture``).
+        """
+        mentions = _extract_cardinal_location_mentions(scenes)
+        earliest: dict[tuple[str, str], _CardinalMention] = {}
+        for mention in mentions:
+            key = (mention.base, mention.direction)
+            if key not in earliest:
+                earliest[key] = mention
+
+        results: list[Contradiction] = []
+        reported: set[tuple[str, str, str]] = set()
+        bases = {mention.base for mention in mentions}
+
+        for base in bases:
+            for dir_a, dir_b in CARDINAL_OPPOSITE_PAIRS:
+                first = earliest.get((base, dir_a))
+                second = earliest.get((base, dir_b))
+                if first is None or second is None:
+                    continue
+                if first.scene.scene_id == second.scene.scene_id:
+                    continue
+                report_key = (base, dir_a, dir_b)
+                if report_key in reported:
+                    continue
+                if first.scene.scene_number <= second.scene.scene_number:
+                    earlier, later = first, second
+                else:
+                    earlier, later = second, first
+                place_label = base.lower() if base != "LAND" else "land"
+                fact_a = self._make_fact(
+                    earlier.scene,
+                    "location_cardinal",
+                    base,
+                    f"{earlier.direction}/{later.direction}",
+                    earlier.excerpt,
+                )
+                results.append(
+                    Contradiction(
+                        contradiction_id=_new_contradiction_id(),
+                        scene_id_a=earlier.scene.scene_id,
+                        scene_id_b=later.scene.scene_id,
+                        scene_number_a=earlier.scene.scene_number,
+                        scene_number_b=later.scene.scene_number,
+                        fact_a=fact_a,
+                        excerpt_b=later.excerpt,
+                        contradiction_type="location_continuity",
+                        explanation=(
+                            f"The {place_label} is described as {earlier.direction.lower()} "
+                            f"in {earlier.scene.scene_id} but {later.direction.lower()} "
+                            f"in {later.scene.scene_id}."
+                        ),
+                        confidence=0.7,
+                        tier=1,
+                        status=STATUS_POSSIBLE,
+                    )
+                )
+                reported.add(report_key)
+        return results
+
+    def _check_name_consistency(
+        self, scenes: list[SceneBlock]
+    ) -> list[Contradiction]:
+        """Flag near-duplicate character names that likely refer to one person.
+
+        Uses Levenshtein distance on registered spellings (e.g. OSEI vs OSHEA)
+        and reports the earliest scene each variant appears in.
+        """
+        registry = self._build_entity_registry(scenes)
+        eligible = _drift_eligible_character_ids(registry, scenes)
+        results: list[Contradiction] = []
+        reported: set[tuple[str, str]] = set()
+
+        for name_a, name_b, distance in registry.near_duplicate_pairs(
+            max_distance=NAME_DRIFT_MAX_DISTANCE,
+            min_length=NAME_DRIFT_MIN_LENGTH,
+        ):
+            if name_a not in eligible or name_b not in eligible:
+                continue
+            if not _name_drift_plausible_pair(name_a, name_b):
+                continue
+            pair_key = tuple(sorted([name_a, name_b]))
+            if pair_key in reported:
+                continue
+            scene_a, excerpt_a = _first_scene_with_entity_mention(scenes, name_a)
+            scene_b, excerpt_b = _first_scene_with_entity_mention(scenes, name_b)
+            if scene_a is None or scene_b is None:
+                continue
+            if scene_a.scene_id == scene_b.scene_id:
+                continue
+            if scene_a.scene_number <= scene_b.scene_number:
+                earlier_scene, earlier_name, earlier_excerpt = scene_a, name_a, excerpt_a
+                later_scene, later_name, later_excerpt = scene_b, name_b, excerpt_b
+            else:
+                earlier_scene, earlier_name, earlier_excerpt = scene_b, name_b, excerpt_b
+                later_scene, later_name, later_excerpt = scene_a, name_a, excerpt_a
+            fact_a = self._make_fact(
+                earlier_scene,
+                "name_spelling",
+                earlier_name,
+                later_name,
+                earlier_excerpt,
+            )
+            results.append(
+                Contradiction(
+                    contradiction_id=_new_contradiction_id(),
+                    scene_id_a=earlier_scene.scene_id,
+                    scene_id_b=later_scene.scene_id,
+                    scene_number_a=earlier_scene.scene_number,
+                    scene_number_b=later_scene.scene_number,
+                    fact_a=fact_a,
+                    excerpt_b=later_excerpt,
+                    contradiction_type="name_consistency",
+                    explanation=(
+                        f"Character name '{earlier_name}' in {earlier_scene.scene_id} "
+                        f"and '{later_name}' in {later_scene.scene_id} look like "
+                        f"the same person (edit distance {distance})."
+                    ),
+                    confidence=0.75,
+                    tier=1,
+                    status=STATUS_POSSIBLE,
+                )
+            )
+            reported.add(pair_key)
+        return results
 
     def _check_numeric_count(
         self, fact_store: FactStore
@@ -2833,6 +3473,8 @@ class ContradictionEngine:
                     left = facts[left_index]
                     right = facts[right_index]
                     if left.value == right.value:
+                        continue
+                    if left.scene_number == right.scene_number:
                         continue
                     earlier, later = (
                         (left, right)
@@ -3438,7 +4080,7 @@ class ContradictionEngine:
                 _parse_relationship_value(fact.value)[0] for fact in facts
             }
             categories.discard(None)
-            for incompatible in INCOMPATIBLE_RELATION_CATEGORIES:
+            for incompatible in SINGLE_CHARACTER_INCOMPATIBLE:
                 if not incompatible.issubset(categories):
                     continue
                 ordered = sorted(

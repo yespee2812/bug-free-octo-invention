@@ -23,15 +23,15 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_001 - EXT. CAPE COD INN - ESTABLISHING - DAWN
-     Removing this would weaken 8 later scene(s): scene_010, scene_003, scene_008, scene_007, scene_004, scene_006, scene_009, scene_002.
+     Removing this would weaken 8 later scene(s): scene_010, scene_006, scene_007, scene_009, scene_008, scene_003, scene_004, scene_002.
   2. scene_002 - EXT. CAPE COD INN - PORCH - DAWN
-     Removing this would weaken 7 later scene(s): scene_010, scene_003, scene_008, scene_007, scene_004, scene_006, scene_009.
+     Removing this would weaken 7 later scene(s): scene_010, scene_006, scene_007, scene_009, scene_008, scene_003, scene_004.
   3. scene_003 - INT. INN LOBBY - MORNING
-     Removing this would weaken 6 later scene(s): scene_008, scene_007, scene_004, scene_006, scene_010, scene_009.
+     Removing this would weaken 6 later scene(s): scene_006, scene_004, scene_007, scene_008, scene_010, scene_009.
   4. scene_004 - INT. RETREAT WORKSHOP - DAY
-     Removing this would weaken 5 later scene(s): scene_008, scene_007, scene_006, scene_010, scene_009.
+     Removing this would weaken 5 later scene(s): scene_006, scene_007, scene_008, scene_010, scene_009.
   5. scene_005 - EXT. BEACH - AFTERNOON
-     Removing this would weaken 5 later scene(s): scene_008, scene_010, scene_007, scene_006, scene_009.
+     Removing this would weaken 5 later scene(s): scene_008, scene_010, scene_006, scene_007, scene_009.
   ... and 4 more scene(s) with downstream ties.
 
 STORY CONSISTENCY ISSUES
