@@ -6,12 +6,12 @@ Matching is order-insensitive on (contradiction_type, {scene_a, scene_b}).
 ## Headline
 
 - Planted errors (ground truth):        **100**
-- Detected by engine (any):             **97**
-- True positives (correct catches):     **95**
+- Detected by engine (any):             **98**
+- True positives (correct catches):     **96**
 - False positives:                      **2**
-- **Recall (overall): 95.0%** (95/100)
-- Precision: 97.9%
-- F1: 96.4%
+- **Recall (overall): 96.0%** (96/100)
+- Precision: 98.0%
+- F1: 97.0%
 
 ## On the engine's own supported categories
 
@@ -35,7 +35,7 @@ Subset = planted errors whose type the engine claims to support (object_ownershi
 | medical_state | 1 | 1 | 100% |
 | name_consistency | 2 | 2 | 100% |
 | numeric_count | 28 | 28 | 100% |
-| object_identity | 16 | 15 | 94% |
+| object_identity | 16 | 16 | 100% |
 | object_ownership | 6 | 6 | 100% |
 | relationship_fact | 9 | 9 | 100% |
 
@@ -48,7 +48,7 @@ Subset = planted errors whose type the engine claims to support (object_ownershi
 | crime_5scene_errors | 2 | 2 | 2 |
 | crime_10scene_errors | 3 | 2 | 2 |
 | romance_5scene_errors | 2 | 2 | 2 |
-| romance_10scene_errors | 3 | 2 | 2 |
+| romance_10scene_errors | 3 | 3 | 3 |
 | scifi_5scene_errors | 2 | 1 | 1 |
 | scifi_10scene_errors | 3 | 3 | 3 |
 | horror_5scene_errors | 2 | 2 | 2 |

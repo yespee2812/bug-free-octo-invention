@@ -23,9 +23,9 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_001 - INT. ASHWORTH MANOR - LIBRARY - DAY
-     Removing this would weaken 4 later scene(s): scene_004, scene_002, scene_005, scene_003.
+     Removing this would weaken 4 later scene(s): scene_005, scene_002, scene_003, scene_004.
   2. scene_002 - INT. MANOR - GREENHOUSE - DAY
-     Removing this would weaken 3 later scene(s): scene_003, scene_005, scene_004.
+     Removing this would weaken 3 later scene(s): scene_005, scene_003, scene_004.
   3. scene_003 - INT. MANOR - NORTH WING HALL - DAY
      Removing this would weaken 2 later scene(s): scene_005, scene_004.
   4. scene_004 - INT. HIDDEN STUDY - DAY

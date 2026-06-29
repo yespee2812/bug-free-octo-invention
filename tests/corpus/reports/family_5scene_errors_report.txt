@@ -25,7 +25,7 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
   1. scene_001 - INT. MORALES HOME - KITCHEN - DAY
      Removing this would weaken 4 later scene(s): scene_005, scene_002, scene_003, scene_004.
   2. scene_002 - INT. MORALES HOME - LIVING ROOM - DAY
-     Removing this would weaken 3 later scene(s): scene_005, scene_004, scene_003.
+     Removing this would weaken 3 later scene(s): scene_005, scene_003, scene_004.
   3. scene_003 - INT. MORALES HOME - DINING ROOM - NIGHT
      Removing this would weaken 2 later scene(s): scene_005, scene_004.
   4. scene_004 - INT. MORALES HOME - DINING ROOM - NIGHT

@@ -34,8 +34,8 @@
         "impacted_scenes": [
           "scene_007",
           "scene_009",
-          "scene_006",
           "scene_004",
+          "scene_006",
           "scene_010"
         ]
       },
@@ -44,9 +44,9 @@
         "heading": "INT. ELENA'S KITCHEN - NIGHT",
         "would_break": 4,
         "impacted_scenes": [
-          "scene_005",
-          "scene_007",
           "scene_010",
+          "scene_007",
+          "scene_005",
           "scene_009"
         ]
       },

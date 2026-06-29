@@ -25,10 +25,10 @@
         "heading": "EXT. FRONT LINE TRENCH - DAWN",
         "would_break": 4,
         "impacted_scenes": [
-          "scene_004",
-          "scene_002",
           "scene_005",
-          "scene_003"
+          "scene_002",
+          "scene_003",
+          "scene_004"
         ]
       },
       {
@@ -36,9 +36,9 @@
         "heading": "INT. DUGOUT - DAY",
         "would_break": 3,
         "impacted_scenes": [
-          "scene_004",
+          "scene_005",
           "scene_003",
-          "scene_005"
+          "scene_004"
         ]
       },
       {
