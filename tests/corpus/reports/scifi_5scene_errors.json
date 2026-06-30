@@ -55,12 +55,23 @@
     ]
   },
   "contradictions": {
-    "total_found": 1,
+    "total_found": 2,
     "by_tier": {
-      "tier1": 1,
+      "tier1": 2,
       "tier2": 0
     },
     "items": [
+      {
+        "scenes_involved": [
+          2,
+          5
+        ],
+        "contradiction_type": "character_knowledge",
+        "explanation": "A character treats the signal as personally meant for them in scene_002 before scene_005 reveals it is asking for them by name.",
+        "confidence": 0.65,
+        "tier": 1,
+        "status": "possible"
+      },
       {
         "scenes_involved": [
           1,
@@ -74,7 +85,7 @@
       }
     ]
   },
-  "health_score": 89,
+  "health_score": 81,
   "input": {
     "path": "C:\\Users\\subhi\\Documents\\Subhiksha_Files\\scriptlensCore\\tests\\corpus\\input\\scifi_5scene_errors.fountain",
     "filename": "scifi_5scene_errors.fountain",

@@ -32,9 +32,9 @@
         "heading": "INT. ELENA'S KITCHEN - NIGHT",
         "would_break": 4,
         "impacted_scenes": [
-          "scene_010",
-          "scene_007",
           "scene_005",
+          "scene_007",
+          "scene_010",
           "scene_009"
         ]
       },
@@ -63,8 +63,8 @@
         "heading": "EXT. COMMUNITY POOL - DAY",
         "would_break": 2,
         "impacted_scenes": [
-          "scene_010",
-          "scene_008"
+          "scene_008",
+          "scene_010"
         ]
       },
       {

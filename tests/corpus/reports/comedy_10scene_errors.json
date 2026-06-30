@@ -31,12 +31,12 @@
         "impacted_scenes": [
           "scene_007",
           "scene_010",
-          "scene_003",
-          "scene_005",
           "scene_006",
           "scene_008",
-          "scene_002",
-          "scene_009"
+          "scene_005",
+          "scene_003",
+          "scene_009",
+          "scene_002"
         ]
       },
       {
@@ -44,8 +44,8 @@
         "heading": "INT. STRIP MALL BAR - NIGHT",
         "would_break": 4,
         "impacted_scenes": [
-          "scene_010",
           "scene_008",
+          "scene_010",
           "scene_009",
           "scene_006"
         ]
@@ -55,9 +55,9 @@
         "heading": "INT. BRIDAL SHOP LOBBY - DAY",
         "would_break": 3,
         "impacted_scenes": [
+          "scene_009",
           "scene_007",
-          "scene_010",
-          "scene_009"
+          "scene_010"
         ]
       },
       {
@@ -65,8 +65,8 @@
         "heading": "INT. HOTEL SUITE - NIGHT",
         "would_break": 3,
         "impacted_scenes": [
-          "scene_010",
           "scene_009",
+          "scene_010",
           "scene_008"
         ]
       },
@@ -76,8 +76,8 @@
         "would_break": 3,
         "impacted_scenes": [
           "scene_009",
-          "scene_010",
-          "scene_008"
+          "scene_008",
+          "scene_010"
         ]
       },
       {
@@ -94,8 +94,8 @@
         "heading": "INT. HOTEL BALLROOM - NIGHT",
         "would_break": 2,
         "impacted_scenes": [
-          "scene_010",
-          "scene_009"
+          "scene_009",
+          "scene_010"
         ]
       },
       {

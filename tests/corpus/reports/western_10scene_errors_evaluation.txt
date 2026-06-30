@@ -3,10 +3,13 @@ GROUND TRUTH EVALUATION: western_10scene_errors
 
 CONTRADICTIONS
   Expected (manual + planted): 3
-  Detected by engine:          2
+  Detected by engine:          3
   Matched:                     2
   Missed (false negatives):    1
-  Extra (false positives):     0
+  Extra (false positives):     1
 
   Missed:
     - character_knowledge: scene 8 vs scene 3
+
+  Extra (engine-only):
+    - character_knowledge: scene 3 vs scene 8

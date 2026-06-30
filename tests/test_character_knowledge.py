@@ -43,6 +43,8 @@ def _knowledge_hits(
         ("mystery_5scene_errors.fountain", (1, 3)),
         ("heist_5scene_errors.fountain", (2, 5)),
         ("heist_10scene_errors.fountain", (3, 9)),
+        ("scifi_5scene_errors.fountain", (2, 5)),
+        ("western_10scene_errors.fountain", (3, 8)),
     ],
 )
 def test_planted_character_knowledge_slips(
@@ -61,5 +63,22 @@ def test_clean_horror_starter_has_no_knowledge_conflict(
 ) -> None:
     """Clean genre starters must not emit spurious character-knowledge flags."""
     path = _REPO_ROOT / "docs/genre_starter_scripts/horror_starter_5scene.fountain"
+    hits = _knowledge_hits(engines, path.read_text(encoding="utf-8"))
+    assert hits == []
+
+
+@pytest.mark.parametrize(
+    "starter_name",
+    [
+        "scifi_starter_5scene.fountain",
+        "western_starter_10scene.fountain",
+    ],
+)
+def test_clean_starters_have_no_knowledge_conflict(
+    engines: tuple[SceneDependencyEngine, ContradictionEngine],
+    starter_name: str,
+) -> None:
+    """Clean sci-fi and western starters must not emit knowledge false positives."""
+    path = _REPO_ROOT / "docs/genre_starter_scripts" / starter_name
     hits = _knowledge_hits(engines, path.read_text(encoding="utf-8"))
     assert hits == []

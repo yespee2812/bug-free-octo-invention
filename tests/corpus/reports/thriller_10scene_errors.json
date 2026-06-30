@@ -28,13 +28,13 @@
         "impacted_scenes": [
           "scene_004",
           "scene_003",
-          "scene_007",
-          "scene_002",
-          "scene_010",
-          "scene_005",
+          "scene_009",
           "scene_006",
           "scene_008",
-          "scene_009"
+          "scene_002",
+          "scene_005",
+          "scene_007",
+          "scene_010"
         ]
       },
       {
@@ -44,11 +44,11 @@
         "impacted_scenes": [
           "scene_010",
           "scene_004",
-          "scene_007",
-          "scene_005",
+          "scene_009",
           "scene_006",
           "scene_008",
-          "scene_009",
+          "scene_007",
+          "scene_005",
           "scene_003"
         ]
       },
@@ -58,10 +58,10 @@
         "would_break": 5,
         "impacted_scenes": [
           "scene_009",
-          "scene_010",
           "scene_008",
-          "scene_007",
-          "scene_004"
+          "scene_010",
+          "scene_004",
+          "scene_007"
         ]
       },
       {
@@ -69,11 +69,11 @@
         "heading": "INT. UNDERPASS - NIGHT",
         "would_break": 5,
         "impacted_scenes": [
-          "scene_007",
-          "scene_010",
+          "scene_009",
           "scene_006",
           "scene_008",
-          "scene_009"
+          "scene_007",
+          "scene_010"
         ]
       },
       {
@@ -81,8 +81,8 @@
         "heading": "INT. SILVER SUV - MOVING - NIGHT",
         "would_break": 4,
         "impacted_scenes": [
-          "scene_010",
           "scene_008",
+          "scene_010",
           "scene_007",
           "scene_009"
         ]
@@ -92,10 +92,10 @@
         "heading": "EXT. RIVER ROAD OVERPASS - NIGHT",
         "would_break": 4,
         "impacted_scenes": [
-          "scene_010",
-          "scene_007",
           "scene_008",
-          "scene_009"
+          "scene_010",
+          "scene_009",
+          "scene_007"
         ]
       },
       {
@@ -104,8 +104,8 @@
         "would_break": 3,
         "impacted_scenes": [
           "scene_009",
-          "scene_010",
-          "scene_008"
+          "scene_008",
+          "scene_010"
         ]
       },
       {
@@ -113,8 +113,8 @@
         "heading": "EXT. OVERPASS GUARDRAIL - NIGHT",
         "would_break": 2,
         "impacted_scenes": [
-          "scene_010",
-          "scene_009"
+          "scene_009",
+          "scene_010"
         ]
       },
       {

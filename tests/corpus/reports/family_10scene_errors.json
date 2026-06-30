@@ -28,8 +28,8 @@
         "would_break": 3,
         "impacted_scenes": [
           "scene_008",
-          "scene_006",
-          "scene_010"
+          "scene_010",
+          "scene_006"
         ]
       },
       {
@@ -47,8 +47,8 @@
         "heading": "EXT. FRONT PORCH - NIGHT",
         "would_break": 2,
         "impacted_scenes": [
-          "scene_010",
-          "scene_008"
+          "scene_008",
+          "scene_010"
         ]
       },
       {

@@ -25,7 +25,7 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
   1. scene_002 - INT. HALLWAY - DAY
      Removing this would weaken 4 later scene(s): scene_010, scene_009, scene_004, scene_005.
   2. scene_004 - EXT. ROOFTOP - AFTERNOON
-     Removing this would weaken 2 later scene(s): scene_010, scene_009.
+     Removing this would weaken 2 later scene(s): scene_009, scene_010.
   3. scene_001 - EXT. HIGH SCHOOL - ESTABLISHING - DAY
      Removing this would weaken 1 later scene(s): scene_006.
   4. scene_005 - INT. MAYA'S GARAGE - NIGHT

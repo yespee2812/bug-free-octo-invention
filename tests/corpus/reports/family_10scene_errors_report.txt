@@ -23,11 +23,11 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_002 - INT. KITCHEN - DAY
-     Removing this would weaken 3 later scene(s): scene_008, scene_006, scene_010.
+     Removing this would weaken 3 later scene(s): scene_008, scene_010, scene_006.
   2. scene_005 - INT. DINING ROOM - NIGHT
      Removing this would weaken 3 later scene(s): scene_009, scene_007, scene_010.
   3. scene_006 - EXT. FRONT PORCH - NIGHT
-     Removing this would weaken 2 later scene(s): scene_010, scene_008.
+     Removing this would weaken 2 later scene(s): scene_008, scene_010.
   4. scene_007 - INT. DINING ROOM - NIGHT
      Removing this would weaken 2 later scene(s): scene_009, scene_010.
   5. scene_008 - INT. KITCHEN - NIGHT

@@ -34,12 +34,12 @@
           "scene_005",
           "scene_003",
           "scene_008",
-          "scene_007",
+          "scene_009",
+          "scene_006",
           "scene_002",
           "scene_004",
-          "scene_010",
-          "scene_006",
-          "scene_009"
+          "scene_007",
+          "scene_010"
         ]
       },
       {
@@ -47,14 +47,14 @@
         "heading": "INT. BASEMENT - NIGHT",
         "would_break": 8,
         "impacted_scenes": [
+          "scene_009",
           "scene_007",
           "scene_010",
-          "scene_009",
           "scene_005",
-          "scene_004",
           "scene_006",
-          "scene_003",
-          "scene_008"
+          "scene_004",
+          "scene_008",
+          "scene_003"
         ]
       },
       {
@@ -64,9 +64,9 @@
         "impacted_scenes": [
           "scene_005",
           "scene_008",
+          "scene_009",
           "scene_007",
-          "scene_010",
-          "scene_009"
+          "scene_010"
         ]
       },
       {
@@ -75,10 +75,10 @@
         "would_break": 5,
         "impacted_scenes": [
           "scene_008",
-          "scene_007",
-          "scene_010",
+          "scene_009",
           "scene_006",
-          "scene_009"
+          "scene_007",
+          "scene_010"
         ]
       },
       {
@@ -88,8 +88,8 @@
         "impacted_scenes": [
           "scene_008",
           "scene_010",
-          "scene_007",
-          "scene_009"
+          "scene_009",
+          "scene_007"
         ]
       },
       {
@@ -98,9 +98,9 @@
         "would_break": 4,
         "impacted_scenes": [
           "scene_008",
+          "scene_009",
           "scene_007",
-          "scene_010",
-          "scene_009"
+          "scene_010"
         ]
       },
       {

@@ -30,13 +30,13 @@
         "would_break": 8,
         "impacted_scenes": [
           "scene_010",
-          "scene_005",
           "scene_008",
+          "scene_005",
           "scene_007",
           "scene_009",
-          "scene_003",
+          "scene_006",
           "scene_004",
-          "scene_006"
+          "scene_003"
         ]
       },
       {
@@ -46,11 +46,11 @@
         "impacted_scenes": [
           "scene_009",
           "scene_007",
-          "scene_004",
-          "scene_010",
-          "scene_005",
           "scene_006",
-          "scene_008"
+          "scene_008",
+          "scene_004",
+          "scene_005",
+          "scene_010"
         ]
       },
       {
@@ -59,11 +59,11 @@
         "would_break": 6,
         "impacted_scenes": [
           "scene_007",
-          "scene_010",
-          "scene_005",
+          "scene_009",
           "scene_006",
           "scene_008",
-          "scene_009"
+          "scene_005",
+          "scene_010"
         ]
       },
       {
@@ -71,11 +71,11 @@
         "heading": "INT. MANOR - SERVANTS' STAIR - DAY",
         "would_break": 5,
         "impacted_scenes": [
-          "scene_010",
           "scene_008",
+          "scene_010",
           "scene_007",
-          "scene_006",
-          "scene_009"
+          "scene_009",
+          "scene_006"
         ]
       },
       {
@@ -83,9 +83,9 @@
         "heading": "INT. MANOR - NORTH WING HALL - DAY",
         "would_break": 3,
         "impacted_scenes": [
-          "scene_010",
           "scene_008",
-          "scene_009"
+          "scene_009",
+          "scene_010"
         ]
       },
       {
@@ -94,8 +94,8 @@
         "would_break": 3,
         "impacted_scenes": [
           "scene_009",
-          "scene_010",
-          "scene_008"
+          "scene_008",
+          "scene_010"
         ]
       },
       {
