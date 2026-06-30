@@ -23,13 +23,13 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_001 - EXT. FRONT LINE TRENCH - DAWN
-     Removing this would weaken 7 later scene(s): scene_007, scene_003, scene_002, scene_010, scene_005, scene_006, scene_008.
+     Removing this would weaken 7 later scene(s): scene_007, scene_003, scene_006, scene_008, scene_002, scene_005, scene_010.
   2. scene_002 - INT. DUGOUT - DAY
-     Removing this would weaken 6 later scene(s): scene_007, scene_010, scene_005, scene_006, scene_008, scene_003.
+     Removing this would weaken 6 later scene(s): scene_007, scene_006, scene_008, scene_005, scene_010, scene_003.
   3. scene_005 - EXT. NO-MAN'S-LAND - NIGHT
-     Removing this would weaken 3 later scene(s): scene_008, scene_006, scene_010.
+     Removing this would weaken 3 later scene(s): scene_008, scene_010, scene_006.
   4. scene_006 - INT. ENEMY LISTENING POST - NIGHT
-     Removing this would weaken 2 later scene(s): scene_010, scene_008.
+     Removing this would weaken 2 later scene(s): scene_008, scene_010.
   5. scene_003 - INT. DUGOUT - NIGHT
      Removing this would weaken 1 later scene(s): scene_007.
   ... and 1 more scene(s) with downstream ties.

@@ -33,22 +33,22 @@
         "heading": "INT. FEDERAL ARCHIVES - DAY",
         "would_break": 16,
         "impacted_scenes": [
-          "scene_019",
           "scene_009",
+          "scene_019",
           "scene_012",
           "scene_017",
           "scene_004",
-          "scene_005",
           "scene_014",
+          "scene_005",
           "scene_020",
-          "scene_022",
+          "scene_015",
           "scene_011",
           "scene_006",
-          "scene_015",
-          "scene_016",
           "scene_008",
-          "scene_010",
-          "scene_021"
+          "scene_022",
+          "scene_016",
+          "scene_021",
+          "scene_010"
         ]
       },
       {
@@ -57,20 +57,20 @@
         "would_break": 15,
         "impacted_scenes": [
           "scene_012",
-          "scene_022",
-          "scene_006",
           "scene_015",
           "scene_017",
-          "scene_005",
+          "scene_006",
+          "scene_022",
           "scene_014",
+          "scene_005",
           "scene_020",
-          "scene_019",
-          "scene_011",
-          "scene_016",
-          "scene_008",
           "scene_009",
-          "scene_010",
-          "scene_021"
+          "scene_011",
+          "scene_008",
+          "scene_019",
+          "scene_016",
+          "scene_021",
+          "scene_010"
         ]
       },
       {
@@ -78,20 +78,20 @@
         "heading": "INT. BANK VAULT ANTEROOM - NIGHT",
         "would_break": 14,
         "impacted_scenes": [
-          "scene_019",
           "scene_009",
           "scene_017",
+          "scene_019",
           "scene_014",
           "scene_020",
-          "scene_022",
-          "scene_011",
           "scene_015",
+          "scene_011",
           "scene_006",
-          "scene_016",
           "scene_008",
+          "scene_016",
+          "scene_022",
           "scene_012",
-          "scene_010",
-          "scene_021"
+          "scene_021",
+          "scene_010"
         ]
       },
       {
@@ -99,16 +99,16 @@
         "heading": "INT. ROOFTOP GARDEN - NIGHT",
         "would_break": 10,
         "impacted_scenes": [
-          "scene_022",
           "scene_015",
-          "scene_021",
           "scene_017",
-          "scene_019",
+          "scene_022",
+          "scene_021",
+          "scene_009",
           "scene_011",
-          "scene_016",
-          "scene_020",
           "scene_008",
-          "scene_009"
+          "scene_019",
+          "scene_016",
+          "scene_020"
         ]
       },
       {
@@ -119,10 +119,10 @@
           "scene_022",
           "scene_021",
           "scene_007",
-          "scene_010",
-          "scene_003",
           "scene_014",
           "scene_018",
+          "scene_003",
+          "scene_010",
           "scene_020"
         ]
       },
@@ -133,12 +133,12 @@
         "impacted_scenes": [
           "scene_019",
           "scene_021",
-          "scene_022",
-          "scene_011",
           "scene_015",
+          "scene_017",
+          "scene_011",
           "scene_016",
-          "scene_020",
-          "scene_017"
+          "scene_022",
+          "scene_020"
         ]
       },
       {
@@ -146,12 +146,12 @@
         "heading": "INT. SERVICE TUNNEL - NIGHT",
         "would_break": 6,
         "impacted_scenes": [
-          "scene_020",
           "scene_021",
+          "scene_020",
           "scene_016",
-          "scene_022",
+          "scene_015",
           "scene_019",
-          "scene_015"
+          "scene_022"
         ]
       },
       {
@@ -159,12 +159,12 @@
         "heading": "INT. PARKING GARAGE - NIGHT",
         "would_break": 6,
         "impacted_scenes": [
-          "scene_022",
-          "scene_019",
           "scene_015",
+          "scene_019",
           "scene_016",
-          "scene_020",
-          "scene_021"
+          "scene_022",
+          "scene_021",
+          "scene_020"
         ]
       },
       {
@@ -174,8 +174,8 @@
         "impacted_scenes": [
           "scene_022",
           "scene_021",
-          "scene_010",
           "scene_014",
+          "scene_010",
           "scene_020"
         ]
       },
@@ -218,8 +218,8 @@
         "would_break": 3,
         "impacted_scenes": [
           "scene_021",
-          "scene_020",
-          "scene_022"
+          "scene_022",
+          "scene_020"
         ]
       },
       {
@@ -227,8 +227,8 @@
         "heading": "INT. TRAUMA WARD - DAY",
         "would_break": 2,
         "impacted_scenes": [
-          "scene_021",
-          "scene_022"
+          "scene_022",
+          "scene_021"
         ]
       },
       {

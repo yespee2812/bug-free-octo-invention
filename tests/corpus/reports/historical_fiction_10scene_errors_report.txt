@@ -23,9 +23,9 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_001 - INT. RESISTANCE SAFE HOUSE - LYON - NIGHT - 1943
-     Removing this would weaken 5 later scene(s): scene_010, scene_004, scene_007, scene_006, scene_008.
+     Removing this would weaken 5 later scene(s): scene_004, scene_010, scene_007, scene_006, scene_008.
   2. scene_002 - INT. GERMAN FIELD OFFICE - DAY
-     Removing this would weaken 3 later scene(s): scene_010, scene_006, scene_008.
+     Removing this would weaken 3 later scene(s): scene_010, scene_008, scene_006.
   3. scene_004 - INT. SAFE HOUSE - NIGHT
      Removing this would weaken 2 later scene(s): scene_007, scene_010.
   4. scene_006 - EXT. CANAL PATH - NIGHT

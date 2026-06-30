@@ -27,12 +27,12 @@
         "would_break": 8,
         "impacted_scenes": [
           "scene_010",
-          "scene_007",
-          "scene_003",
-          "scene_004",
+          "scene_009",
           "scene_006",
           "scene_008",
-          "scene_009",
+          "scene_007",
+          "scene_004",
+          "scene_003",
           "scene_002"
         ]
       },
@@ -42,12 +42,12 @@
         "would_break": 7,
         "impacted_scenes": [
           "scene_010",
-          "scene_007",
-          "scene_003",
-          "scene_004",
+          "scene_009",
           "scene_006",
           "scene_008",
-          "scene_009"
+          "scene_007",
+          "scene_004",
+          "scene_003"
         ]
       },
       {
@@ -55,12 +55,12 @@
         "heading": "INT. INN LOBBY - MORNING",
         "would_break": 6,
         "impacted_scenes": [
-          "scene_007",
-          "scene_004",
-          "scene_010",
+          "scene_009",
           "scene_006",
           "scene_008",
-          "scene_009"
+          "scene_004",
+          "scene_007",
+          "scene_010"
         ]
       },
       {
@@ -68,11 +68,11 @@
         "heading": "INT. RETREAT WORKSHOP - DAY",
         "would_break": 5,
         "impacted_scenes": [
-          "scene_007",
-          "scene_010",
+          "scene_009",
           "scene_006",
           "scene_008",
-          "scene_009"
+          "scene_007",
+          "scene_010"
         ]
       },
       {
@@ -82,9 +82,9 @@
         "impacted_scenes": [
           "scene_008",
           "scene_010",
-          "scene_007",
+          "scene_009",
           "scene_006",
-          "scene_009"
+          "scene_007"
         ]
       },
       {
@@ -92,9 +92,9 @@
         "heading": "INT. INN DINING ROOM - NIGHT",
         "would_break": 4,
         "impacted_scenes": [
-          "scene_010",
-          "scene_007",
           "scene_009",
+          "scene_007",
+          "scene_010",
           "scene_008"
         ]
       },
@@ -103,8 +103,8 @@
         "heading": "INT. CLAIRE'S ROOM - NIGHT",
         "would_break": 3,
         "impacted_scenes": [
-          "scene_010",
           "scene_009",
+          "scene_010",
           "scene_008"
         ]
       },
@@ -113,8 +113,8 @@
         "heading": "EXT. LIGHTHOUSE PATH - MORNING",
         "would_break": 2,
         "impacted_scenes": [
-          "scene_010",
-          "scene_009"
+          "scene_009",
+          "scene_010"
         ]
       },
       {

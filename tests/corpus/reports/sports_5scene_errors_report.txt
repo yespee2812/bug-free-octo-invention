@@ -25,7 +25,7 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
   1. scene_001 - INT. UNIVERSITY POOL - MORNING
      Removing this would weaken 3 later scene(s): scene_003, scene_005, scene_004.
   2. scene_002 - INT. ATHLETIC TRAINING ROOM - DAY
-     Removing this would weaken 2 later scene(s): scene_004, scene_005.
+     Removing this would weaken 2 later scene(s): scene_005, scene_004.
   3. scene_004 - INT. UNIVERSITY POOL - NIGHT
      Removing this would weaken 1 later scene(s): scene_005.
 

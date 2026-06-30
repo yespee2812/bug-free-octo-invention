@@ -6,12 +6,12 @@ Matching is order-insensitive on (contradiction_type, {scene_a, scene_b}).
 ## Headline
 
 - Planted errors (ground truth):        **100**
-- Detected by engine (any):             **98**
-- True positives (correct catches):     **96**
+- Detected by engine (any):             **100**
+- True positives (correct catches):     **98**
 - False positives:                      **2**
-- **Recall (overall): 96.0%** (96/100)
+- **Recall (overall): 98.0%** (98/100)
 - Precision: 98.0%
-- F1: 97.0%
+- F1: 98.0%
 
 ## On the engine's own supported categories
 
@@ -27,7 +27,7 @@ Subset = planted errors whose type the engine claims to support (object_ownershi
 |------|---------|--------|--------|
 | character_age | 13 | 13 | 100% |
 | character_fact | 2 | 2 | 100% |
-| character_knowledge | 8 | 4 | 50% |
+| character_knowledge | 8 | 6 | 75% |
 | character_trait_conflict | 2 | 2 | 100% |
 | date_year | 8 | 8 | 100% |
 | fact_consistency | 1 | 1 | 100% |
@@ -49,7 +49,7 @@ Subset = planted errors whose type the engine claims to support (object_ownershi
 | crime_10scene_errors | 3 | 2 | 2 |
 | romance_5scene_errors | 2 | 2 | 2 |
 | romance_10scene_errors | 3 | 3 | 3 |
-| scifi_5scene_errors | 2 | 1 | 1 |
+| scifi_5scene_errors | 2 | 2 | 2 |
 | scifi_10scene_errors | 3 | 3 | 3 |
 | horror_5scene_errors | 2 | 2 | 2 |
 | horror_10scene_errors | 3 | 3 | 3 |
@@ -82,4 +82,4 @@ Subset = planted errors whose type the engine claims to support (object_ownershi
 | war_5scene_errors | 2 | 2 | 2 |
 | war_10scene_errors | 3 | 3 | 3 |
 | western_5scene_errors | 2 | 2 | 2 |
-| western_10scene_errors | 3 | 2 | 2 |
+| western_10scene_errors | 3 | 3 | 3 |

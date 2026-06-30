@@ -41,5 +41,5 @@ jobs:
         run: >-
           python scripts/score_corpus_baseline.py
           --check
-          --min-recall 0.96
+          --min-recall 0.98
           --max-false-positives 4

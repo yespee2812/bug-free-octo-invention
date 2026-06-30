@@ -160,6 +160,20 @@ KNOWLEDGE_PREMATURE_RE: re.Pattern[str] = re.compile(
     re.IGNORECASE,
 )
 KNOWLEDGE_REVEAL_THEY_KNOW_RE: re.Pattern[str] = re.compile(r"\bTHEY KNOW\b")
+KNOWLEDGE_MEANT_FOR_ME_RE: re.Pattern[str] = re.compile(
+    r"\bmeant for me\b", re.IGNORECASE
+)
+KNOWLEDGE_ASKING_BY_NAME_RE: re.Pattern[str] = re.compile(
+    r"\basking for you by name\b", re.IGNORECASE
+)
+KNOWLEDGE_RAILROAD_FEUD_PREMATURE_RE: re.Pattern[str] = re.compile(
+    r"\brailroad\s+work\b[^.]{0,50}?\bfeud\b|"
+    r"\bsomebody(?:'s| is)\s+paying for a feud\b",
+    re.IGNORECASE,
+)
+KNOWLEDGE_RAILROAD_FEUD_REVEAL_RE: re.Pattern[str] = re.compile(
+    r"\bRailroad\s+man\s+paid\s+for\s+a\s+feud\b", re.IGNORECASE
+)
 MIL_DIALOGUE_RE: re.Pattern[str] = re.compile(
     r"\b(?:your|Your)\s+(?:future\s+)?mother-in-law\b"
 )
@@ -1924,6 +1938,42 @@ def _extract_knowledge_claims(scenes: list[SceneBlock]) -> list[_KnowledgeClaim]
                         excerpt=text.strip(),
                     )
                 )
+            if KNOWLEDGE_MEANT_FOR_ME_RE.search(text):
+                claims.append(
+                    _KnowledgeClaim(
+                        scene=scene,
+                        entity="SIGNAL",
+                        claim="premature_me",
+                        excerpt=text.strip(),
+                    )
+                )
+            if KNOWLEDGE_ASKING_BY_NAME_RE.search(text):
+                claims.append(
+                    _KnowledgeClaim(
+                        scene=scene,
+                        entity="SIGNAL",
+                        claim="reveal_named",
+                        excerpt=text.strip(),
+                    )
+                )
+            if KNOWLEDGE_RAILROAD_FEUD_PREMATURE_RE.search(text):
+                claims.append(
+                    _KnowledgeClaim(
+                        scene=scene,
+                        entity="RAILROAD FEUD",
+                        claim="premature",
+                        excerpt=text.strip(),
+                    )
+                )
+            if KNOWLEDGE_RAILROAD_FEUD_REVEAL_RE.search(text):
+                claims.append(
+                    _KnowledgeClaim(
+                        scene=scene,
+                        entity="RAILROAD FEUD",
+                        claim="reveal",
+                        excerpt=text.strip(),
+                    )
+                )
     return claims
 
 
@@ -3445,7 +3495,8 @@ class ContradictionEngine:
         """Flag knowledge-state slips: unaware vs familiar, timing, early reveals.
 
         Deterministic tier for planted corpus patterns (trapdoor awareness,
-        glass-key timing, and ``THEY KNOW`` dialogue before the reveal beat).
+        glass-key timing, ``THEY KNOW`` dialogue, signal naming, and railroad-feud
+        reveals).
         """
         claims = _extract_knowledge_claims(scenes)
         by_entity: dict[str, dict[str, _KnowledgeClaim]] = {}
@@ -3543,6 +3594,37 @@ class ContradictionEngine:
                         f"''THEY KNOW'' reveal in {reveal.scene.scene_id}."
                     ),
                 )
+
+        signal = by_entity.get("SIGNAL", {})
+        premature_me = signal.get("premature_me")
+        reveal_named = signal.get("reveal_named")
+        if premature_me is not None and reveal_named is not None:
+            _emit_pair(
+                premature_me,
+                reveal_named,
+                "SIGNAL",
+                (
+                    "A character treats the signal as personally meant for them in "
+                    f"{premature_me.scene.scene_id} before "
+                    f"{reveal_named.scene.scene_id} reveals it is asking for them "
+                    "by name."
+                ),
+            )
+
+        railroad_feud = by_entity.get("RAILROAD FEUD", {})
+        feud_premature = railroad_feud.get("premature")
+        feud_reveal = railroad_feud.get("reveal")
+        if feud_premature is not None and feud_reveal is not None:
+            _emit_pair(
+                feud_premature,
+                feud_reveal,
+                "RAILROAD FEUD",
+                (
+                    "A railroad-backed feud is named in "
+                    f"{feud_premature.scene.scene_id} before "
+                    f"{feud_reveal.scene.scene_id} confirms who paid for it."
+                ),
+            )
         return results
 
     def _check_location_continuity(

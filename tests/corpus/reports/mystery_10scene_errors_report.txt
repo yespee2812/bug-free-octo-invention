@@ -23,15 +23,15 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_002 - INT. MANOR - LIBRARY - DAY
-     Removing this would weaken 8 later scene(s): scene_010, scene_005, scene_008, scene_007, scene_009, scene_003, scene_004, scene_006.
+     Removing this would weaken 8 later scene(s): scene_010, scene_008, scene_005, scene_007, scene_009, scene_006, scene_004, scene_003.
   2. scene_003 - INT. MANOR - DINING ROOM - DAY
-     Removing this would weaken 7 later scene(s): scene_009, scene_007, scene_004, scene_010, scene_005, scene_006, scene_008.
+     Removing this would weaken 7 later scene(s): scene_009, scene_007, scene_006, scene_008, scene_004, scene_005, scene_010.
   3. scene_004 - INT. MANOR - GREENHOUSE - DAY
-     Removing this would weaken 6 later scene(s): scene_007, scene_010, scene_005, scene_006, scene_008, scene_009.
+     Removing this would weaken 6 later scene(s): scene_007, scene_009, scene_006, scene_008, scene_005, scene_010.
   4. scene_005 - INT. MANOR - SERVANTS' STAIR - DAY
-     Removing this would weaken 5 later scene(s): scene_010, scene_008, scene_007, scene_006, scene_009.
+     Removing this would weaken 5 later scene(s): scene_008, scene_010, scene_007, scene_009, scene_006.
   5. scene_006 - INT. MANOR - NORTH WING HALL - DAY
-     Removing this would weaken 3 later scene(s): scene_010, scene_008, scene_009.
+     Removing this would weaken 3 later scene(s): scene_008, scene_009, scene_010.
   ... and 3 more scene(s) with downstream ties.
 
 STORY CONSISTENCY ISSUES

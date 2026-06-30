@@ -31,15 +31,20 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
 
 STORY CONSISTENCY ISSUES
 ------------------------------------------------------------------------
-  Found 1 possible inconsistency(ies): 1 clear conflict(s), 0 subtler mismatch(es).
+  Found 2 possible inconsistency(ies): 2 clear conflict(s), 0 subtler mismatch(es).
 
-  Possible issue 1: Object Identity
+  Possible issue 1: Character Knowledge
+    Between scene 2 and scene 5
+    A character treats the signal as personally meant for them in scene_002 before scene_005 reveals it is asking for them by name.
+    Confidence: about 65%
+
+  Possible issue 2: Object Identity
     Between scene 1 and scene 3
     The data is 'gold' in scene_001 but 'silver' in scene_003 (material mismatch).
     Confidence: about 60%
 
 OVERALL SCRIPT HEALTH
 ------------------------------------------------------------------------
-  Score: 89 / 100
-  Your draft is in strong shape - few structural or logic concerns.
+  Score: 81 / 100
+  Solid draft with room to tighten loose scenes or fix a few story beats.
 

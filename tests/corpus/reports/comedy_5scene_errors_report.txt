@@ -25,7 +25,7 @@ SCENES YOU SHOULD NOT CUT LIGHTLY
   1. scene_001 - INT. TUXEDO SHOP - DAY
      Removing this would weaken 4 later scene(s): scene_002, scene_003, scene_004, scene_005.
   2. scene_002 - INT. STRIP MALL BAR - NIGHT
-     Removing this would weaken 2 later scene(s): scene_004, scene_005.
+     Removing this would weaken 2 later scene(s): scene_005, scene_004.
   3. scene_004 - INT. HOTEL BALLROOM - DAY
      Removing this would weaken 1 later scene(s): scene_005.
 

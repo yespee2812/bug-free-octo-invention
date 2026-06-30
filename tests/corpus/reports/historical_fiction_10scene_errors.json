@@ -37,8 +37,8 @@
         "heading": "INT. RESISTANCE SAFE HOUSE - LYON - NIGHT - 1943",
         "would_break": 5,
         "impacted_scenes": [
-          "scene_010",
           "scene_004",
+          "scene_010",
           "scene_007",
           "scene_006",
           "scene_008"
@@ -50,8 +50,8 @@
         "would_break": 3,
         "impacted_scenes": [
           "scene_010",
-          "scene_006",
-          "scene_008"
+          "scene_008",
+          "scene_006"
         ]
       },
       {

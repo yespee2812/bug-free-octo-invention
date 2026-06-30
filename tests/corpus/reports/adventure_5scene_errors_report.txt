@@ -23,7 +23,7 @@ HOW YOUR SCENES CONNECT
 SCENES YOU SHOULD NOT CUT LIGHTLY
 ------------------------------------------------------------------------
   1. scene_002 - EXT. ICE FALL - DAY
-     Removing this would weaken 2 later scene(s): scene_003, scene_005.
+     Removing this would weaken 2 later scene(s): scene_005, scene_003.
   2. scene_001 - EXT. NEPAL BASE CAMP - DAY
      Removing this would weaken 1 later scene(s): scene_004.
   3. scene_003 - INT. TENT - NIGHT
