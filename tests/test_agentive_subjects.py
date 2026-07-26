@@ -72,3 +72,12 @@ def test_pronoun_subject_is_not_promoted() -> None:
         set(),
     )
     assert chars == set()
+
+
+def test_guest_book_that_sits_stays_a_prop() -> None:
+    """Inanimate prop head nouns are not promoted by common action verbs."""
+    scene = _first_scene(
+        "INT. BAR - NIGHT\n\nA MAGNETIC GUEST BOOK sits in Dave's backpack.\n"
+    )
+    assert "MAGNETIC GUEST BOOK" in scene.objects
+    assert "MAGNETIC GUEST BOOK" not in scene.characters

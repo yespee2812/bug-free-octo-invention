@@ -35,11 +35,32 @@ def _built_engine(script: str) -> SceneDependencyEngine:
     return engine
 
 
-def test_intermediate_scene_ripples_downstream() -> None:
-    """Deleting an intermediate carrier scene now surfaces later reuse scenes."""
+SOLE_PATH_SCRIPT = """INT. BASE CAMP - DAY
+
+Tenzin checks the weather.
+
+INT. RIDGE - DAY
+
+June spreads a ROUTE MAP on the ice.
+
+INT. TENT - NIGHT
+
+The ROUTE MAP shows the cave entrance.
+"""
+
+
+def test_intermediate_scene_ripples_when_only_path() -> None:
+    """Deleting the sole carrier scene still surfaces downstream reuse."""
+    engine = _built_engine(SOLE_PATH_SCRIPT)
+    impacted = {r["scene_id"] for r in engine.get_delete_impact("scene_002")}
+    assert impacted == {"scene_003"}
+
+
+def test_intermediate_cut_skips_when_upstream_bypass_exists() -> None:
+    """Downstream scenes with an earlier bypass path are not flagged."""
     engine = _built_engine(CHAINED_PROP_SCRIPT)
     impacted = {r["scene_id"] for r in engine.get_delete_impact("scene_002")}
-    assert "scene_003" in impacted
+    assert impacted == set()
 
 
 def test_intermediate_edge_is_created() -> None:

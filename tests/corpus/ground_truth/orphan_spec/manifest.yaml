@@ -1,0 +1,34 @@
+# AR-OSD-2026-SPEC golden orphan fixtures (Sprint 1).
+#
+# Each entry lists the scene ids that must be flagged as orphans by the OSD
+# weighted graph (C/L/P linkage, E=0). Expand this file as new fixtures land.
+
+scripts:
+  - id: orphan_statue_demo
+    path: docs/demo_scripts/orphan_statue_demo.fountain
+    description: Statue beat is never referenced downstream; ledger thread continues.
+    orphans:
+      - scene_002
+    orphan_types:
+      scene_002: hard
+
+  - id: orphan_prologue_demo
+    path: docs/demo_scripts/orphan_prologue_demo.fountain
+    description: Prologue opening scenes are exempt from orphan flags.
+    orphans: []
+
+  - id: orphan_montage_demo
+    path: docs/demo_scripts/orphan_montage_demo.fountain
+    description: Montage block is collapsed and exempt from orphan flags.
+    orphans: []
+
+  - id: orphan_flashback_demo
+    path: docs/demo_scripts/orphan_flashback_demo.fountain
+    description: Flashback sharing a main-plot character is exempt from orphan flags.
+    orphans: []
+
+  - id: orphan_semantic_thread_demo
+    path: docs/demo_scripts/orphan_semantic_thread_demo.fountain
+    description: Command-post thread stays connected; E_ij semantic score augments C/L/P links.
+    orphans: []
+    requires_semantic: true

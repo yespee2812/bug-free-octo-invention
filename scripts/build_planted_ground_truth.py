@@ -243,8 +243,8 @@ def build_dataset() -> list[ScriptErrors]:
             [
                 _e("object_ownership", 1, 5, ("RICHARD", "ELENA"), ("SILVER WEDDING BAND",), True,
                    "Richard holds the band (sc1) vs 'stays in Elena's pocket' (sc5)."),
-                _e("character_age", 2, 3, ("SOFIA",), (), False,
-                   "Sofia, 12 (sc2) vs 'fastest ten-year-old' (sc3)."),
+                _e("object_referent_swap", 3, 3, ("SOFIA", "ALMA"), ("BLANKET", "TOWEL"), True,
+                   "Wrapped in BLANKET then 'Once wrapped in the TOWEL' (sc3, same referent)."),
             ],
         ),
         ScriptErrors(
@@ -265,8 +265,8 @@ def build_dataset() -> list[ScriptErrors]:
             [
                 _e("numeric_count", 1, 3, ("MARIA",), (), False,
                    "'Twenty people at six' (sc1) vs 'a table set for eighteen' (sc3)."),
-                _e("numeric_count", 2, 4, ("RAUL",), (), False,
-                   "Father 'absent twenty years' (sc2) vs 'Fifteen years' (sc4)."),
+                _e("object_referent_swap", 4, 4, ("MARIA",), ("ENVELOPE", "FOLDER"), True,
+                   "Placed in ENVELOPE then 'Once placed in the FOLDER' (sc4)."),
             ],
         ),
         ScriptErrors(
@@ -463,8 +463,8 @@ def build_dataset() -> list[ScriptErrors]:
             [
                 _e("numeric_count", 2, 5, ("HALE",), ("listening post",), False,
                    "Listening post '200 meters out' (sc2) vs 'Three hundred meters' (sc5)."),
-                _e("character_age", 1, 3, ("TOM HALE",), (), False,
-                   "Sergeant Tom Hale, 28 (sc1) vs 'thirty-one' (sc3)."),
+                _e("object_referent_swap", 3, 3, ("HALE",), ("TARP", "SACK"), True,
+                   "Shoved into TARP then 'Once shoved into the SACK' (sc3)."),
             ],
         ),
         ScriptErrors(

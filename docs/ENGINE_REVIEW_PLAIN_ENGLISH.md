@@ -3,8 +3,10 @@
 | | |
 |---|---|
 | **What this is** | A simple, jargon-free explanation of what your two analysis engines do, how good they are right now, where they fall short, and what to do next. |
-| **Date** | June 13, 2026 |
+| **Date** | June 13, 2026 (updated note: July 2026) |
 | **Who it's for** | You — to decide what to work on, in plain English. |
+
+> **July 2026:** The **customer-facing product** is now structure-only (orphans, simulate cut/edit). The contradiction engine described here remains valuable for **internal CI** but is not shown in the v3 web app. See [`SCRIPTLENS_STATUS_REPORT.md`](SCRIPTLENS_STATUS_REPORT.md).
 
 ---
 

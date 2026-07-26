@@ -9,10 +9,10 @@ planted_contradictions:
     objects: []
     engine_detectable: false
     note: "'Twenty people at six' (sc1) vs 'a table set for eighteen' (sc3)."
-  - type: numeric_count
-    scene_number_a: 2
+  - type: object_referent_swap
+    scene_number_a: 4
     scene_number_b: 4
-    characters: ["RAUL"]
-    objects: []
-    engine_detectable: false
-    note: "Father 'absent twenty years' (sc2) vs 'Fifteen years' (sc4)."
+    characters: ["MARIA"]
+    objects: ["ENVELOPE", "FOLDER"]
+    engine_detectable: true
+    note: "Placed in ENVELOPE then 'Once placed in the FOLDER' (sc4)."

@@ -1,0 +1,161 @@
+# American Pie Fountain — planted errors mapped to 118-scene engine numbering
+# Source: tests/corpus/input/American_Pie.fountain (numbered blocks, no INT./EXT.)
+
+script_title: American Pie
+filename: American_Pie.fountain
+writer_name: Chella Thurai
+date: "2026-07-08"
+script_type: full-length
+total_scenes: 118
+base_script_provided_by_us: false
+
+planted_errors:
+  - error_number: 1
+    category: Character age Slip
+    establishing_scene: 1
+    contradicting_scene: 16
+    characters_involved: [JIM, NADIA]
+    establishing_quote: "We PULL BACK to see JIM age 12"
+    contradicting_quote: "You are in my English class, no?"
+    establishing_moment: "Jim's age given as 12"
+    contradicting_moment: "Nadia implies Jim is a high school senior"
+    how_a_reader_notices: "12-year-old cannot be a high school senior"
+    writer_intent: deliberate
+
+  - error_number: 2
+    category: Character_knowledge
+    establishing_scene: 10
+    contradicting_scene: 6
+    characters_involved: [JIM, KEVIN]
+    establishing_quote: "I actually know his number"
+    contradicting_quote: "Nothing, I just hugged her back"
+    establishing_moment: "Kevin knows his father's phone number"
+    contradicting_moment: "Earlier scene establishes he did not know the number"
+    how_a_reader_notices: "Inconsistent knowledge of dad's contact"
+    writer_intent: deliberate
+
+  - error_number: 3
+    category: Numeric_Mismatch
+    establishing_scene: 12
+    contradicting_scene: 12
+    characters_involved: [JIM, KEVIN, OZ, FINCH]
+    establishing_quote: "Kevin, Oz, Jim and Finch sit at a table"
+    contradicting_quote: "skipping Finch, which means he gives it to the other four guys"
+    establishing_moment: "Four guys at table"
+    contradicting_moment: "Skipping one from four leaves three not four"
+    how_a_reader_notices: "Gum handout arithmetic error"
+    writer_intent: deliberate
+
+  - error_number: 4
+    category: Name_Mismatch
+    establishing_scene: 26
+    contradicting_scene: 26
+    characters_involved: [SHERMAN, RAJAN]
+    establishing_quote: "Rajan pokes his head out"
+    contradicting_quote: "SHERMAN: Don't you think you fellas could try a little tact?"
+    establishing_moment: "Rajan named in action"
+    contradicting_moment: "Sherman speaks in dialogue cue"
+    how_a_reader_notices: "Wrong character name in action"
+    writer_intent: deliberate
+
+  - error_number: 5
+    category: Action vs Dia_Mismatch
+    establishing_scene: 28
+    contradicting_scene: 28
+    characters_involved: [SHERMAN, GIRL]
+    establishing_quote: "firm handshake"
+    contradicting_quote: "I am now a man"
+    establishing_moment: "Formal handshake in action"
+    contradicting_moment: "Dialogue claims sexual success"
+    how_a_reader_notices: "Action contradicts dialogue tone"
+    writer_intent: deliberate
+
+  - error_number: 6
+    category: Culture Name_Mismatch
+    establishing_scene: 43
+    contradicting_scene: 43
+    characters_involved: [KEVIN]
+    establishing_quote: "India Jones found that gold statue"
+    establishing_moment: "Indiana Jones misspelled as India"
+    how_a_reader_notices: "Famous character name typo"
+    writer_intent: deliberate
+
+  - error_number: 7
+    category: Name_Mismatch
+    establishing_scene: 51
+    contradicting_scene: 51
+    characters_involved: [OZ, HEATHER, MYLUS]
+    establishing_quote: "Mylus uniform"
+    contradicting_quote: "OZ: Whoops, excuse me"
+    establishing_moment: "Mylus in action"
+    contradicting_moment: "Oz is the established actor"
+    how_a_reader_notices: "Unintroduced name Mylus"
+    writer_intent: deliberate
+
+  - error_number: 8
+    category: Age_Mismatch
+    establishing_scene: 61
+    contradicting_scene: 61
+    characters_involved: ["JIM'S DAD", JIM]
+    establishing_quote: "seventy years old"
+    contradicting_moment: "Jim is a high school teenager"
+    how_a_reader_notices: "Teen described as seventy"
+    writer_intent: deliberate
+
+  - error_number: 9
+    category: Place_Mismatch
+    establishing_scene: 62
+    contradicting_scene: 62
+    characters_involved: [JIM]
+    establishing_quote: "sprints down the Corrider"
+    establishing_moment: "Corrider vs hallway heading mismatch"
+    how_a_reader_notices: "Location inconsistency"
+    writer_intent: deliberate
+
+  - error_number: 10
+    category: Character Presence_Mismatch
+    establishing_scene: 76
+    contradicting_scene: 76
+    characters_involved: [JIM, MICHELLE]
+    establishing_quote: "Michelle -- the reject"
+    contradicting_quote: "Michelle's empty desk"
+    establishing_moment: "Michelle present at desk"
+    contradicting_moment: "Jim looks at empty desk"
+    how_a_reader_notices: "Present and absent simultaneously"
+    writer_intent: deliberate
+
+  - error_number: 11
+    category: Props_Mismatch
+    establishing_scene: 93
+    contradicting_scene: 93
+    characters_involved: [OZ, HEATHER]
+    establishing_quote: "riding a mule carrying sacks"
+    establishing_moment: "Mule in modern music hall"
+    how_a_reader_notices: "Absurd prop for setting"
+    writer_intent: deliberate
+
+  - error_number: 12
+    category: Char Conty_Mismatch
+    establishing_scene: 102
+    contradicting_scene: 103
+    characters_involved: [JIM, MICHELLE, JHONNY]
+    establishing_quote: "Jim and Jhonny are walking"
+    contradicting_quote: "MICHELLE: Are they gross"
+    establishing_moment: "Jhonny is Jim's date"
+    contradicting_moment: "Michelle is established date"
+    how_a_reader_notices: "Date character swaps"
+    writer_intent: deliberate
+
+  - error_number: 13
+    category: Location_Mismatch
+    establishing_scene: 115
+    contradicting_scene: 115
+    characters_involved: [JIM, KEVIN, OZ, FINCH]
+    establishing_quote: "Kodaikkaanl Estate Supervisor's office"
+    establishing_moment: "American diner becomes Kodaikanal office"
+    how_a_reader_notices: "Geographic teleport"
+    writer_intent: deliberate
+
+notes: >
+  Scene numbers from quote positions after converting numbered-block Fountain to
+  synthetic INT. headings (118 scenes). Writer log original indices (e.g. 207) differ.

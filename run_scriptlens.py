@@ -1,54 +1,129 @@
-"""CLI entry point for ScriptLens screenplay analysis (PDF or text)."""
+"""CLI entry point for ScriptLens screenplay analysis."""
 
+from __future__ import annotations
+
+import argparse
+import sys
 from pathlib import Path
 
-import click
-
-from scriptlens_analyser import analyze_from_path, pretty_print_results
-
-
-@click.command()
-@click.argument(
-    "input_path",
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+from legacy.scriptlens_analyser import analyze_from_path, pretty_print_results
+from scriptlens_structure import (
+    analyze_structure_from_path,
+    get_simulate_cut_impact,
+    pretty_print_structure_results,
 )
-@click.option(
-    "--save-extracted",
-    type=click.Path(dir_okay=False, path_type=Path),
-    default=None,
-    help="Save normalized text extracted from a PDF to this .txt/.fountain path.",
-)
-@click.option(
-    "--json",
-    "output_json",
-    is_flag=True,
-    help="Print raw results dict instead of the screenwriter report.",
-)
-def main(
-    input_path: Path,
-    save_extracted: Path | None,
-    output_json: bool,
-) -> None:
-    """Analyze a screenplay PDF or Fountain/text file."""
-    include_text = save_extracted is not None
-    results = analyze_from_path(input_path, include_extracted_text=include_text)
+from scene_dependency import SceneDependencyEngine
 
-    if save_extracted is not None:
-        extracted = results.get("input", {}).get("extracted_text", "")
-        if not extracted:
-            raise click.ClickException(
-                "--save-extracted only applies to PDF inputs."
-            )
-        save_extracted.write_text(extracted, encoding="utf-8")
-        click.echo(f"Saved extracted screenplay text to {save_extracted}")
 
-    if output_json:
-        import json
+def _print_simulate_cut(results: dict[str, object], scene_id: str) -> None:
+    """Print simulate-cut impact for a structure analysis session.
 
-        click.echo(json.dumps(results, indent=2))
+    Args:
+        results: Structure analysis results with an attached engine.
+        scene_id: Scene identifier to evaluate, e.g. ``scene_005``.
+
+    Raises:
+        SystemExit: When the engine or scene id is missing.
+    """
+    engine = results.get("engine")
+    if not isinstance(engine, SceneDependencyEngine):
+        print(
+            "Simulate cut requires a built engine. Re-run with --structure-only "
+            "and --simulate-cut together.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
+    impact = get_simulate_cut_impact(engine, scene_id, engine._scene_lookup)
+    removed = impact["removed_scene"]
+    if removed is None:
+        print(f"Unknown scene id: {scene_id}", file=sys.stderr)
+        raise SystemExit(1)
+
+    print()
+    print("=" * 72)
+    print("SIMULATE CUT")
+    print("=" * 72)
+    print(
+        f"Removing scene {removed['scene_number']}: {removed['heading']} "
+        f"({removed['scene_id']})"
+    )
+    print(f"  {impact['summary']}")
+    print(f"  Risk level: {impact['risk_level']}")
+    impacted = impact["impacted_scenes"]
+    if not impacted:
+        print("  No downstream scenes depend on this scene.")
         return
 
-    click.echo(f"Analyzing: {results['input']['filename']} ({results['input']['format']})")
+    print(f"  Would affect {len(impacted)} later scene(s):")
+    for record in impacted[:10]:
+        path = " -> ".join(record["dependency_path"])
+        reason = record.get("impact_reason") or record.get("explanation", "")
+        print(
+            f"    Scene {record['scene_number']}: {record['heading']} "
+            f"(path: {path})"
+        )
+        if reason:
+            print(f"      {reason}")
+    if len(impacted) > 10:
+        print(f"    ... and {len(impacted) - 10} more.")
+    print()
+
+
+def build_parser() -> argparse.ArgumentParser:
+    """Build the ScriptLens CLI argument parser.
+
+    Returns:
+        Configured argument parser for ``run_scriptlens.py``.
+    """
+    parser = argparse.ArgumentParser(
+        description="Analyse a screenplay with ScriptLens.",
+    )
+    parser.add_argument(
+        "screenplay",
+        type=Path,
+        help="Path to .fountain, .pdf, or other supported screenplay file.",
+    )
+    parser.add_argument(
+        "--structure-only",
+        action="store_true",
+        help="Structure-only mode: orphans and scene graph (no contradictions).",
+    )
+    parser.add_argument(
+        "--simulate-cut",
+        metavar="SCENE_ID",
+        help="With --structure-only, preview delete impact for SCENE_ID.",
+    )
+    return parser
+
+
+def main() -> None:
+    """Analyse a screenplay file and print the selected report."""
+    parser = build_parser()
+    args = parser.parse_args()
+
+    if not args.screenplay.is_file():
+        print(f"File not found: {args.screenplay}", file=sys.stderr)
+        raise SystemExit(1)
+
+    if args.structure_only:
+        results = analyze_structure_from_path(
+            args.screenplay,
+            include_engine=bool(args.simulate_cut),
+        )
+        pretty_print_structure_results(results)
+        if args.simulate_cut:
+            _print_simulate_cut(results, args.simulate_cut)
+        return
+
+    if args.simulate_cut:
+        print(
+            "--simulate-cut requires --structure-only.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
+    results = analyze_from_path(args.screenplay)
     pretty_print_results(results)
 
 

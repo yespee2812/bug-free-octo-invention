@@ -1,22 +1,31 @@
 # ScriptLens Corpus Evaluation Guide
 
-How to use **15–20 screenplays** you read manually, map dependencies and contradictions (including planted ones), run them through the engines, and compare to what a **customer would see**.
+How to use screenplays you read manually, map dependencies and planted errors, run them through the engines, and compare to what **customers** or **internal evaluators** should see.
 
 ---
 
-## What the customer sees today
+## What the customer sees today (v3 structure product)
 
-There is **no Chrome extension UI yet**. The customer-facing output today is the **SCRIPTLENS STORY REPORT** printed by `pretty_print_results()` — the same text you get from the CLI.
+The **customer v1 product** is the web workspace served by `run_api.py` (or a deployed instance). It shows:
 
-It includes:
+1. **Scene list** — parsed sluglines with orphan badges  
+2. **Orphan count and summary** — type (`hard`, `subplot_chain`) and reasons  
+3. **Story graph** — OSD timeline visualization  
+4. **Simulate cut** — downstream impact, risk level, dependency paths, Go to scene  
+5. **Simulate edit** — edge diff and orphan delta when scene text changes  
+6. **Draft workflow** — delete scene, apply edit, undo, export `.fountain`  
 
-1. **Your script at a glance** — scene count, characters, props  
-2. **How your scenes connect** — edges, orphans, average dependencies  
-3. **Scenes you should not cut lightly** — delete-impact ranking (top 5)  
-4. **Story consistency issues** — contradictions with scene numbers, explanation, confidence %  
-5. **Overall script health** — score /100 + short message  
+**Plot contradictions are not in customer v1.** The contradiction engine still runs in CI via `run_corpus_batch.py` and on the legacy CLI path (`run_scriptlens.py` without `--structure-only`).
 
-Later, the extension **Dependencies** and **Contradictions** tabs will show the same data in cards + **Go to scene**. For tuning, treat the `.txt` report as the customer view.
+### Internal / CLI outputs (still used for corpus tuning)
+
+| Path | Output |
+|------|--------|
+| `run_scriptlens.py` (full) | Text report + JSON with contradictions + structure |
+| `run_scriptlens.py --structure-only` | Structure report only (matches v3 product scope) |
+| `run_corpus_batch.py` | Batch reports + optional ground-truth comparison |
+
+For **contradiction** corpus work, treat `reports/*_report.txt` and `*_evaluation.txt` as the evaluator view. For **simulate** work, use `expected_simulate_delete` in ground-truth YAML (template exists; population in progress).
 
 ---
 

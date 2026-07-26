@@ -1,0 +1,164 @@
+# American Pie — writer planted-error log (Chella Thurai / Jul 2026)
+# Scene numbers below are mapped to engine scenes in American_Pie_refined.fountain
+# (26 synthetic scenes from Word export — not the writer's original 207-scene PDF index).
+
+script_title: American Pie
+filename: American_Pie.docx
+writer_name: Chella Thurai
+date: "2026-07-07"
+script_type: full-length
+total_scenes: 26
+base_script_provided_by_us: false
+
+planted_errors:
+  - error_number: 1
+    category: Character age Slip
+    establishing_scene: 1
+    contradicting_scene: 4
+    characters_involved: [JIM, NADIA]
+    establishing_quote: "We PULL BACK to see JIM age 12"
+    contradicting_quote: "NADIA: You are in my English class, no?"
+    establishing_moment: "Action attributes Jim's age as 12"
+    contradicting_moment: "Dialogue implies Jim is a high school senior"
+    how_a_reader_notices: "A 12-year-old child cannot be a high school senior"
+    writer_intent: deliberate
+
+  - error_number: 2
+    category: Character_knowledge
+    establishing_scene: 4
+    contradicting_scene: 4
+    characters_involved: [JIM, KEVIN]
+    establishing_quote: "KEVIN: I actually know his number"
+    contradicting_quote: "KEVIN: Nothing, I just hugged her back"
+    establishing_moment: "Kevin knows his father's phone number"
+    contradicting_moment: "Earlier in the same block he did not know his dad's number"
+    how_a_reader_notices: "Character claims to know a specific contact inconsistently"
+    writer_intent: deliberate
+
+  - error_number: 3
+    category: Numeric_Mismatch
+    establishing_scene: 4
+    contradicting_scene: 4
+    characters_involved: [JIM, KEVIN, OZ, FINCH]
+    establishing_quote: "Kevin, Oz, Jim and Finch sit at a table"
+    contradicting_quote: "skipping Finch, which means he gives it to the other four guys"
+    establishing_moment: "Exactly four characters sitting together"
+    contradicting_moment: "Skipping one person from four leaves three, not four"
+    how_a_reader_notices: "Arithmetic contradiction in gum handout"
+    writer_intent: deliberate
+
+  - error_number: 4
+    category: Name_Mismatch
+    establishing_scene: 5
+    contradicting_scene: 5
+    characters_involved: [SHERMAN, RAJAN]
+    establishing_quote: "Rajan pokes his head out"
+    contradicting_quote: "SHERMAN: Don't you think you fellas could try a little tact?"
+    establishing_moment: "Foreign character name Rajan opens the door"
+    contradicting_moment: "Dialogue block immediately cues Sherman"
+    how_a_reader_notices: "Unknown character name appears then wrong cue speaks"
+    writer_intent: deliberate
+
+  - error_number: 5
+    category: Action vs Dia_Mismatch
+    establishing_scene: 7
+    contradicting_scene: 7
+    characters_involved: [SHERMAN, GIRL]
+    establishing_quote: "Just gives Sherman a firm handshake"
+    contradicting_quote: "SHERMAN: I am now a man"
+    establishing_moment: "Action shows formal non-romantic handshake"
+    contradicting_moment: "Dialogue celebrates successful hookup"
+    how_a_reader_notices: "Handshake described as sexual success"
+    writer_intent: deliberate
+
+  - error_number: 6
+    category: Culture Name_Mismatch
+    establishing_scene: 7
+    contradicting_scene: 7
+    characters_involved: [KEVIN]
+    establishing_quote: "Remember when India Jones found that gold statue?"
+    establishing_moment: "Film character misspelled as India instead of Indiana"
+    how_a_reader_notices: "Universally famous character name altered"
+    writer_intent: deliberate
+
+  - error_number: 7
+    category: Name_Mismatch
+    establishing_scene: 9
+    contradicting_scene: 9
+    characters_involved: [OZ, HEATHER, MYLUS]
+    establishing_quote: "A clod of mud falls from Mylus uniform"
+    contradicting_quote: "OZ: Whoops, excuse me"
+    establishing_moment: "Action shifts to random character Mylus"
+    contradicting_moment: "Oz is established as the speaker in context"
+    how_a_reader_notices: "Unintroduced name Mylus controls the action"
+    writer_intent: deliberate
+
+  - error_number: 8
+    category: Age_Mismatch
+    establishing_scene: 11
+    contradicting_scene: 11
+    characters_involved: ["JIM'S DAD", JIM]
+    establishing_quote: "He is seventy years old after all"
+    contradicting_moment: "Jim is a high school teenager throughout"
+    how_a_reader_notices: "High school son described as seventy years old"
+    writer_intent: deliberate
+
+  - error_number: 9
+    category: Place_Mismatch
+    establishing_scene: 11
+    contradicting_scene: 11
+    characters_involved: [JIM]
+    establishing_quote: "Jim sprints down the Corrider"
+    contradicting_moment: "Scene heading says hallway; action says corridor sprint"
+    how_a_reader_notices: "Location/action spatial mismatch"
+    writer_intent: deliberate
+
+  - error_number: 10
+    category: Character Presence_Mismatch
+    establishing_scene: 13
+    contradicting_scene: 13
+    characters_involved: [JIM, MICHELLE]
+    establishing_quote: "Next to Jim is Michelle -- the reject"
+    contradicting_quote: "Jim looks wistfully over at Michelle's empty desk"
+    establishing_moment: "Michelle physically present at desk"
+    contradicting_moment: "Jim stares at Michelle's empty desk"
+    how_a_reader_notices: "Character cannot be present and absent simultaneously"
+    writer_intent: deliberate
+
+  - error_number: 11
+    category: Props_Mismatch
+    establishing_scene: 16
+    contradicting_scene: 16
+    characters_involved: [OZ, HEATHER]
+    establishing_quote: "Oz bursts into the room, riding a mule carrying sacks"
+    contradicting_moment: "Modern high school music hall setting"
+    how_a_reader_notices: "Mule in modern backstage music hall"
+    writer_intent: deliberate
+
+  - error_number: 12
+    category: Char Conty_Mismatch
+    establishing_scene: 18
+    contradicting_scene: 18
+    characters_involved: [JIM, MICHELLE, JHONNY]
+    establishing_quote: "Jim and Jhonny are walking up to the cottage"
+    contradicting_quote: "MICHELLE: Are they gross or something"
+    establishing_moment: "Jhonny introduced as Jim's date"
+    contradicting_moment: "Michelle established as Jim's band-geek date"
+    how_a_reader_notices: "Jim's date swaps from Michelle to Jhonny"
+    writer_intent: deliberate
+
+  - error_number: 13
+    category: Location_Mismatch
+    establishing_scene: 22
+    contradicting_scene: 22
+    characters_involved: [JIM, KEVIN, OZ, FINCH]
+    establishing_quote: "hot dogs at the Kodaikkaanl Estate Supervisor's office"
+    establishing_moment: "American diner hot-dog scene"
+    contradicting_moment: "Suddenly located in South Indian hill-station office"
+    how_a_reader_notices: "American graduation wrap-up teleports to Kodaikanal"
+    writer_intent: deliberate
+
+notes: >
+  Writer log used original PDF scene numbers (1–207). This file remaps quotes to
+  the 26-scene Fountain produced from the Word document. Re-run with a PDF that
+  has INT./EXT. headings for fair full-length comparison.

@@ -7,7 +7,7 @@ comedy_10scene_errors.fountain,10,21,1,3,3,0,73,comedy_10scene_errors_report.txt
 comedy_5scene_errors.fountain,5,7,0,2,2,0,84,comedy_5scene_errors_report.txt
 coming_of_age_10scene_errors.fountain,10,9,4,3,3,0,64,coming_of_age_10scene_errors_report.txt
 coming_of_age_5scene_errors.fountain,5,10,0,2,2,0,84,coming_of_age_5scene_errors_report.txt
-crime_10scene_errors.fountain,10,13,3,2,2,0,75,crime_10scene_errors_report.txt
+crime_10scene_errors.fountain,10,13,3,3,3,0,67,crime_10scene_errors_report.txt
 crime_5scene_errors.fountain,5,4,2,2,2,0,78,crime_5scene_errors_report.txt
 custody_drama.fountain,10,19,2,0,0,0,94,custody_drama_report.txt
 demo_real.fountain,22,81,2,2,2,0,78,demo_real_report.txt
@@ -25,7 +25,7 @@ horror_10scene_errors.fountain,10,36,0,3,3,0,76,horror_10scene_errors_report.txt
 horror_5scene_errors.fountain,5,7,0,2,2,0,84,horror_5scene_errors_report.txt
 mystery_10scene_errors.fountain,10,32,1,3,3,0,73,mystery_10scene_errors_report.txt
 mystery_5scene_errors.fountain,5,10,0,2,2,0,84,mystery_5scene_errors_report.txt
-noir_10scene_errors.fountain,10,16,3,2,2,0,75,noir_10scene_errors_report.txt
+noir_10scene_errors.fountain,10,16,3,3,3,0,67,noir_10scene_errors_report.txt
 noir_5scene_errors.fountain,5,4,2,2,2,0,78,noir_5scene_errors_report.txt
 romance_10scene_errors.fountain,10,33,1,3,3,0,73,romance_10scene_errors_report.txt
 romance_5scene_errors.fountain,5,10,0,2,2,0,84,romance_5scene_errors_report.txt

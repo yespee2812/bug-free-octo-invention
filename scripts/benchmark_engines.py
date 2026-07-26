@@ -13,9 +13,9 @@ if str(_REPO_ROOT) not in sys.path:
 from statistics import median
 from typing import Callable
 
-from plot_contradiction import ContradictionEngine
+from legacy.plot_contradiction import ContradictionEngine
 from scene_dependency import SceneDependencyEngine
-from scriptlens_analyser import analyze_screenplay
+from legacy.scriptlens_analyser import analyze_screenplay
 
 
 def _percentile(sorted_values: list[float], pct: float) -> float:

@@ -9,10 +9,10 @@ planted_contradictions:
     objects: ["SILVER WEDDING BAND"]
     engine_detectable: true
     note: "Richard holds the band (sc1) vs 'stays in Elena's pocket' (sc5)."
-  - type: character_age
-    scene_number_a: 2
+  - type: object_referent_swap
+    scene_number_a: 3
     scene_number_b: 3
-    characters: ["SOFIA"]
-    objects: []
-    engine_detectable: false
-    note: "Sofia, 12 (sc2) vs 'fastest ten-year-old' (sc3)."
+    characters: ["SOFIA", "ALMA"]
+    objects: ["BLANKET", "TOWEL"]
+    engine_detectable: true
+    note: "Wrapped in BLANKET then 'Once wrapped in the TOWEL' (sc3, same referent)."
