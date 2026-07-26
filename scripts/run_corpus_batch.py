@@ -266,8 +266,8 @@ def main() -> None:
     parser.add_argument(
         "--ground-truth-dir",
         type=Path,
-        default=_REPO_ROOT / "tests" / "corpus" / "ground_truth",
-        help="Folder with <stem>.yaml ground truth files.",
+        default=_REPO_ROOT / "legacy" / "corpus" / "ground_truth",
+        help="Folder with <stem>.yaml ground truth files (legacy contradiction corpus).",
     )
     parser.add_argument(
         "--compare-ground-truth",

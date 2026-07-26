@@ -5,7 +5,8 @@
 | Folder | You put | Generated |
 |--------|---------|-----------|
 | `input/` | Planted-error `.fountain` / `.pdf` screenplays (CI) | — |
-| `ground_truth/` | One `.yaml` per planted script | — |
+| `ground_truth/` | v3 fixtures only: orphan-spec + simulate demo (`_template.yaml`, `action_5scene_simulate_demo.yaml`, `orphan_spec/`) | — |
+| `../../legacy/corpus/ground_truth/` | Legacy contradiction ground truth (de-scoped; used only by the manual `legacy-contradiction-baseline` CI job) | — |
 | `reports/` | — | `*_report.txt`, `*.json`, `manifest.csv`, `*_evaluation.txt` |
 | `benchmark/clean_produced/` | Clean Hollywood / produced scripts (local, gitignored) | — |
 | `benchmark/MANIFEST.md` | Script inventory metadata (committed) | — |

@@ -28,7 +28,7 @@ from legacy.scriptlens_analyser import analyze_from_path, pretty_print_results
 from scripts.run_corpus_batch import _capture_customer_report, _evaluate_ground_truth, _load_ground_truth
 
 _DEFAULT_INPUT_DIR = _REPO_ROOT / "tests" / "corpus" / "input"
-_DEFAULT_GT_DIR = _REPO_ROOT / "tests" / "corpus" / "ground_truth"
+_DEFAULT_GT_DIR = _REPO_ROOT / "legacy" / "corpus" / "ground_truth"
 _DEFAULT_OUTPUT_DIR = _REPO_ROOT / "tests" / "corpus" / "reports"
 
 
