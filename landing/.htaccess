@@ -1,0 +1,4 @@
+# Block public download of the waitlist CSV (Apache / Hostinger).
+<Files "waitlist.csv">
+  Require all denied
+</Files>

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScriptLens — Client Pitch: Simulate Features</title>
+  <style>
+    :root {
+      --teal: #0d9488;
+      --ink: #1a1a2e;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --bg: #f8fafc;
+      --card: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      color: var(--ink);
+      background: var(--bg);
+      margin: 0;
+      padding: 2rem 1rem 4rem;
+    }
+    .wrap { max-width: 820px; margin: 0 auto; }
+    header {
+      background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
+      color: #fff;
+      padding: 2.5rem 2rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+    }
+    header h1 { margin: 0 0 0.5rem; font-size: 1.75rem; font-weight: 700; }
+    header .tagline { font-size: 1.15rem; opacity: 0.95; margin: 0; }
+    header .meta { margin-top: 1rem; font-size: 0.85rem; opacity: 0.8; }
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 1.5rem;
+    }
+    h2 { color: var(--teal); font-size: 1.35rem; margin-top: 0; border-bottom: 2px solid var(--teal); padding-bottom: 0.4rem; }
+    h3 { font-size: 1.05rem; margin-top: 1.5rem; color: var(--ink); }
+    .pitch-line {
+      background: #f0fdfa;
+      border-left: 4px solid var(--teal);
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      font-style: italic;
+    }
+    blockquote {
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      margin: 1rem 0;
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+    }
+    pre, .script {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: "Cascadia Code", "Consolas", monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+    th, td { border: 1px solid var(--border); padding: 0.6rem 0.75rem; text-align: left; }
+    th { background: #f1f5f9; font-weight: 600; }
+    tr:nth-child(even) { background: #fafafa; }
+    .diagram {
+      background: #f8fafc;
+      border: 1px dashed var(--border);
+      padding: 1rem;
+      font-family: monospace;
+      font-size: 0.85rem;
+      border-radius: 8px;
+    }
+    ol.steps { padding-left: 1.25rem; }
+    ol.steps li { margin-bottom: 0.5rem; }
+    .closing-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 0.5rem 1rem; }
+    .closing-grid dt { font-weight: 600; }
+    .print-hint {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-top: 2rem;
+    }
+    @media print {
+      body { background: #fff; padding: 0; }
+      section { break-inside: avoid; box-shadow: none; }
+      header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>ScriptLens — Client Pitch</h1>
+      <p class="tagline">Upload your script. See what breaks. Simulate the cut — without changing your file.</p>
+      <p class="meta">Orphan Scenes · Simulate Cut · Simulate Edit · July 2026</p>
+    </header>
+
+    <section>
+      <h2>What ScriptLens tracks</h2>
+      <p>Every scene introduces things the story carries forward: <strong>props, objects, characters, setups</strong>. ScriptLens builds a <strong>dependency graph</strong> — "Scene 3 only works because Scene 1 introduced the revolver."</p>
+      <p>That graph powers all three features below.</p>
+    </section>
+
+    <section>
+      <h2>Demo script — Revolver chain</h2>
+      <pre>INT. ROOM ONE - DAY
+
+A REVOLVER lies on the table.
+
+INT. ROOM TWO - DAY
+
+MARCUS grabs the revolver.
+
+INT. ROOM THREE - NIGHT
+
+MARCUS aims the revolver.</pre>
+      <div class="diagram">Scene 1 (Revolver introduced)
+    ├──► Scene 2 (Marcus grabs it)
+    │         └──► Scene 3 (Marcus aims it)
+    └──► Scene 3 (direct setup link)</div>
+      <p><strong>Scene 1</strong> = setup · <strong>Scene 2</strong> = carrier · <strong>Scene 3</strong> = payoff</p>
+    </section>
+
+    <section>
+      <h2>1. Orphan scenes</h2>
+      <p class="pitch-line">"These are scenes the rest of the script never looks back at."</p>
+      <h3>What it means</h3>
+      <p>A scene is an <strong>orphan</strong> when <strong>no later scene depends on it</strong>. Nothing downstream references what that scene introduced. It may be cuttable — or it may need a stronger tie-in.</p>
+      <h3>Example</h3>
+      <pre>INT. A - DAY
+MARCUS holds a LEDGER.
+
+INT. B - DAY
+A lone STATUE sits in the dark.
+
+INT. C - DAY
+MARCUS reads the ledger.</pre>
+      <table>
+        <thead><tr><th>Scene</th><th>What happens</th><th>Orphan?</th></tr></thead>
+        <tbody>
+          <tr><td>Scene 1</td><td>Marcus gets a ledger</td><td>No — Scene 3 reads it</td></tr>
+          <tr><td><strong>Scene 2</strong></td><td>A statue appears</td><td><strong>Yes — nothing later uses it</strong></td></tr>
+          <tr><td>Scene 3</td><td>Marcus reads the ledger</td><td>No — depends on Scene 1</td></tr>
+        </tbody>
+      </table>
+      <h3>What the client sees</h3>
+      <ul>
+        <li>Left panel: <strong>ORPHANS — 1</strong></li>
+        <li>Scene 2 flagged in the scene list</li>
+        <li>Click orphans → jump to Scene 2</li>
+      </ul>
+      <blockquote>"You've got a beautiful statue scene, but the rest of the script never pays it off. ScriptLens flags that immediately — before your producer asks why it's in the cut."</blockquote>
+      <h3>Writer actions</h3>
+      <ul>
+        <li><strong>Cut it</strong> (safe candidate)</li>
+        <li><strong>Add a callback</strong> later</li>
+        <li><strong>Merge it</strong> into a scene that already carries story weight</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>2. Simulate cut</h2>
+      <p class="pitch-line">"Cut with confidence. See the blast radius before you touch Final Draft."</p>
+      <h3>What it means</h3>
+      <p>Pick a scene, click <strong>Simulate cut</strong>. ScriptLens shows every <strong>downstream scene</strong> that would lose its setup. Your file is <strong>never modified</strong> — it's a preview only.</p>
+      <h3>Example: cut Scene 2</h3>
+      <table>
+        <thead><tr><th>Impacted scene</th><th>Why it breaks</th><th>Path</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Scene 3</strong></td><td>Marcus aims the revolver, but the "grab" in Scene 2 is gone</td><td>Scene 2 → Scene 3</td></tr>
+        </tbody>
+      </table>
+      <p>Cut <strong>Scene 1</strong> instead → both Scene 2 and Scene 3 break.</p>
+      <h3>What the client sees</h3>
+      <ul>
+        <li>Center: Scene 2 as ghost/strikethrough — "Simulated removal"</li>
+        <li>Right panel: impact list with dependency paths</li>
+        <li><strong>Go to scene</strong> links — one click to broken payoffs</li>
+        <li>Banner: <em>"Simulation only — your script is unchanged."</em></li>
+      </ul>
+      <blockquote>"Writers cut constantly in development. Usually you find out three scenes later that something doesn't land. ScriptLens shows you that in one click."</blockquote>
+      <blockquote><strong>Producer analogy:</strong> "It's like deleting a row in a spreadsheet and seeing which formulas break — but for story logic."</blockquote>
+    </section>
+
+    <section>
+      <h2>3. Simulate edit</h2>
+      <p class="pitch-line">"You don't have to cut a whole scene to break the story — sometimes you just rewrite one line."</p>
+      <h3>What it means</h3>
+      <p>Edit a scene's text, then click <strong>Simulate edit</strong>. ScriptLens re-parses with your change and shows edges removed, scenes at risk, and orphan count before vs. after.</p>
+      <h3>Example: remove the revolver from Scene 1</h3>
+      <p><strong>Original:</strong></p>
+      <pre>INT. ROOM ONE - DAY
+A REVOLVER lies on the table.</pre>
+      <p><strong>Your edit:</strong></p>
+      <pre>INT. ROOM ONE - DAY
+An empty table.</pre>
+      <table>
+        <thead><tr><th>Change</th><th>Detail</th></tr></thead>
+        <tbody>
+          <tr><td>Removed edge</td><td>Scene 1 → Scene 2 (revolver setup gone)</td></tr>
+          <tr><td>Downstream at risk</td><td>Scene 2</td></tr>
+          <tr><td>Orphans</td><td>Unchanged</td></tr>
+        </tbody>
+      </table>
+      <blockquote>"Simulate cut is for restructuring — 'Do I need this scene at all?' Simulate edit is for polishing — 'Can I simplify this beat without killing the gun payoff in Act 3?'"</blockquote>
+    </section>
+
+    <section>
+      <h2>Comparison (slide-ready)</h2>
+      <table>
+        <thead>
+          <tr><th>Feature</th><th>Question it answers</th><th>Writer action</th><th>Touches file?</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Orphan scenes</strong></td><td>What's disconnected?</td><td>Review, cut, add callbacks</td><td>No</td></tr>
+          <tr><td><strong>Simulate cut</strong></td><td>If I delete this scene, what breaks?</td><td>Restructure, tighten page count</td><td>No</td></tr>
+          <tr><td><strong>Simulate edit</strong></td><td>If I rewrite this scene, what drops?</td><td>Trim props, simplify action</td><td>No</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>60-second live demo</h2>
+      <ol class="steps">
+        <li><strong>Upload</strong> the revolver demo script (or client's Fountain/PDF).</li>
+        <li><strong>Orphans</strong> — "Zero orphans — every scene is wired in."</li>
+        <li><strong>Select Scene 2 → Simulate cut</strong> — "Scene 3 loses its bridge."</li>
+        <li><strong>Edit Scene 1</strong> (remove revolver) → <strong>Simulate edit</strong> — "Same problem, different cause."</li>
+        <li><strong>Close:</strong> "Your original file never changes. This is a writer's sandbox for structure."</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Closing lines</h2>
+      <dl class="closing-grid">
+        <dt>Writers</dt><dd>"Stop guessing whether a cut is safe."</dd>
+        <dt>Showrunners</dt><dd>"See structural risk before the table read."</dd>
+        <dt>Producers</dt><dd>"Fewer continuity surprises in production — cheaper fixes in development."</dd>
+      </dl>
+    </section>
+
+    <section>
+      <h2>FAQ</h2>
+      <h3>Does ScriptLens change my script?</h3>
+      <p><strong>No.</strong> All features are read-only previews.</p>
+      <h3>Simulate cut vs. simulate edit?</h3>
+      <p><strong>Cut</strong> = remove entire scene. <strong>Edit</strong> = rewrite one scene's content.</p>
+      <h3>What makes a scene an orphan?</h3>
+      <p>No incoming dependency edges from later scenes (excluding the opening scene).</p>
+      <h3>Supported formats?</h3>
+      <p>Fountain, PDF, FDX.</p>
+    </section>
+
+    <p class="print-hint">Open in browser → File → Print → Save as PDF for a shareable deck handout.</p>
+  </div>
+</body>
+</html>

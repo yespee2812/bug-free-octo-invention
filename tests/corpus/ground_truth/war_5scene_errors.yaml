@@ -9,10 +9,10 @@ planted_contradictions:
     objects: ["listening post"]
     engine_detectable: false
     note: "Listening post '200 meters out' (sc2) vs 'Three hundred meters' (sc5)."
-  - type: character_age
-    scene_number_a: 1
+  - type: object_referent_swap
+    scene_number_a: 3
     scene_number_b: 3
-    characters: ["TOM HALE"]
-    objects: []
-    engine_detectable: false
-    note: "Sergeant Tom Hale, 28 (sc1) vs 'thirty-one' (sc3)."
+    characters: ["HALE"]
+    objects: ["TARP", "SACK"]
+    engine_detectable: true
+    note: "Shoved into TARP then 'Once shoved into the SACK' (sc3)."

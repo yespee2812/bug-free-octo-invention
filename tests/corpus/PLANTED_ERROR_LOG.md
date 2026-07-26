@@ -7,7 +7,7 @@ Scene numbers are 1-indexed by INT./EXT. heading order (matches the
 - Scripts: **40** (20 genres x 5-scene + 10-scene)
 - 5-scene scripts: 2 planted errors each; 10-scene scripts: 3 each
 - Total planted errors: **100**
-- Currently engine-detectable (Tier 1/2): **9** (ownership / trait / medical-state types)
+- Currently engine-detectable (Tier 1/2): **12** (ownership / trait / medical-state types)
 
 Inputs live in `tests/corpus/input/`; ground truth in `tests/corpus/ground_truth/`.
 
@@ -54,12 +54,12 @@ Inputs live in `tests/corpus/input/`; ground truth in `tests/corpus/ground_truth
 | coming_of_age_10scene_errors | 2 | numeric_count | sc9 | sc9 | PRINCIPAL, JORDAN | — | no | Principal 'You broke three rules' vs Jordan 'Five rules' (both sc9). |
 | coming_of_age_10scene_errors | 3 | date_year | sc1 | sc6 | — | class banner | no | Banner CLASS OF 2026 (sc1) vs CLASS OF 2025 (sc6). |
 | drama_5scene_errors | 1 | object_ownership | sc1 | sc5 | RICHARD, ELENA | SILVER WEDDING BAND | yes | Richard holds the band (sc1) vs 'stays in Elena's pocket' (sc5). |
-| drama_5scene_errors | 2 | character_age | sc2 | sc3 | SOFIA | — | no | Sofia, 12 (sc2) vs 'fastest ten-year-old' (sc3). |
+| drama_5scene_errors | 2 | object_referent_swap | sc3 | sc3 | SOFIA, ALMA | BLANKET, TOWEL | yes | Wrapped in BLANKET then 'Once wrapped in the TOWEL' (sc3, same referent). |
 | drama_10scene_errors | 1 | object_ownership | sc1 | sc10 | RICHARD, ELENA | SILVER WEDDING BAND | yes | Richard holds the band (sc1) vs 'Elena keeps the SILVER BAND' (sc10). |
 | drama_10scene_errors | 2 | character_age | sc2 | sc3 | SOFIA | — | no | Sofia, 12 (sc2) vs 'For eleven' (sc3). |
 | drama_10scene_errors | 3 | relationship_fact | sc3 | sc8 | ALMA, RICHARD | — | no | Coach Alma (sc3) vs 'Alma, his sister' (sc8). |
 | family_5scene_errors | 1 | numeric_count | sc1 | sc3 | MARIA | — | no | 'Twenty people at six' (sc1) vs 'a table set for eighteen' (sc3). |
-| family_5scene_errors | 2 | numeric_count | sc2 | sc4 | RAUL | — | no | Father 'absent twenty years' (sc2) vs 'Fifteen years' (sc4). |
+| family_5scene_errors | 2 | object_referent_swap | sc4 | sc4 | MARIA | ENVELOPE, FOLDER | yes | Placed in ENVELOPE then 'Once placed in the FOLDER' (sc4). |
 | family_10scene_errors | 1 | numeric_count | sc1 | sc9 | RAUL | — | no | 'reunion twenty years in the making' (sc1) vs 'Twenty-five years of silence' (sc9). |
 | family_10scene_errors | 2 | numeric_count | sc5 | sc10 | MARIA | — | no | 'Twenty chairs' (sc5) vs 'a table set for eighteen' (sc10). |
 | family_10scene_errors | 3 | relationship_fact | sc3 | sc8 | DIANA, ANTONIO | — | no | Antonio's sister Diana (sc3) vs 'Antonio's cousin Diana' (sc8). |
@@ -104,7 +104,7 @@ Inputs live in `tests/corpus/input/`; ground truth in `tests/corpus/ground_truth
 | thriller_10scene_errors | 2 | numeric_count | sc1 | sc5 | LENA | — | no | 'three exchange points' (sc1) vs 'Four exchange points' (sc5). |
 | thriller_10scene_errors | 3 | numeric_count | sc7 | sc9 | DMITRI, LENA | — | no | 'Five of them, I counted five' (sc7) vs 'Three men exit the sedan' (sc9). |
 | war_5scene_errors | 1 | numeric_count | sc2 | sc5 | HALE | listening post | no | Listening post '200 meters out' (sc2) vs 'Three hundred meters' (sc5). |
-| war_5scene_errors | 2 | character_age | sc1 | sc3 | TOM HALE | — | no | Sergeant Tom Hale, 28 (sc1) vs 'thirty-one' (sc3). |
+| war_5scene_errors | 2 | object_referent_swap | sc3 | sc3 | HALE | TARP, SACK | yes | Shoved into TARP then 'Once shoved into the SACK' (sc3). |
 | war_10scene_errors | 1 | character_age | sc1 | sc8 | TOM HALE | — | no | Sergeant Tom Hale, 28 (sc1) vs 'thirty-one' (sc8). |
 | war_10scene_errors | 2 | medical_state | sc8 | sc9 | KOWALSKI | — | yes | Kowalski hit in the shoulder (sc8) vs medics 'bind Kowalski's leg' (sc9). |
 | war_10scene_errors | 3 | numeric_count | sc2 | sc10 | HALE | listening post | no | Listening post '200 meters out' (sc2) vs 'Three hundred meters out' (sc10). |

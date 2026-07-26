@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScriptLens — Structure</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div id="upload-screen" class="upload-screen">
+    <header class="top-bar">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">◎</span>
+        <span class="brand-name">ScriptLens</span>
+      </div>
+    </header>
+    <main class="upload-main">
+      <div class="upload-card">
+        <h1>Structural editing for screenplays</h1>
+        <p class="upload-sub">
+          Orphan scenes · simulate cut · simulate edit. PDFs are cleaned automatically; Fountain is best.
+        </p>
+        <label class="dropzone" id="dropzone" for="file-input">
+          <input id="file-input" type="file" accept=".fountain,.pdf,.txt,.md,.fadein,.screenplay" hidden />
+          <span class="dropzone-title">Drop Fountain or PDF</span>
+          <span class="dropzone-hint">or click to choose a file</span>
+        </label>
+        <p id="upload-status" class="upload-status" role="status"></p>
+        <p class="privacy-note">Analysis runs on our server. Scripts are deleted within 24 hours.</p>
+      </div>
+    </main>
+  </div>
+
+  <div id="workspace" class="workspace hidden" hidden>
+    <header class="top-bar">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">◎</span>
+        <span class="brand-name">ScriptLens</span>
+      </div>
+      <div id="structure-banner" class="structure-banner hidden" role="status"></div>
+      <div id="simulation-banner" class="simulation-banner hidden" role="status">
+        Preview only — working draft unchanged
+      </div>
+      <button type="button" id="new-upload-btn" class="text-btn">Upload new script</button>
+    </header>
+
+    <div class="workspace-body">
+      <aside class="panel panel-left" aria-label="Scene navigation">
+        <div class="metric-card" id="orphans-card">
+          <span class="metric-label">Orphans</span>
+          <span class="metric-value" id="orphan-count">0</span>
+        </div>
+        <div id="orphan-summary" class="orphan-summary hidden" aria-live="polite"></div>
+        <button type="button" id="story-graph-btn" class="secondary-btn story-graph-btn" disabled>
+          Story graph
+        </button>
+
+        <div class="panel-section">
+          <div class="panel-heading">
+            <span>Scenes</span>
+            <span class="panel-meta" id="scene-count-label"></span>
+          </div>
+          <ul id="scene-list" class="scene-list" role="listbox" aria-label="Scenes"></ul>
+        </div>
+
+        <div class="action-buttons">
+          <button type="button" id="simulate-cut-btn" class="primary-btn" disabled>
+            Simulate cut
+          </button>
+          <button type="button" id="delete-scene-btn" class="secondary-btn" disabled>
+            Delete scene
+          </button>
+          <button type="button" id="edit-scene-btn" class="secondary-btn" disabled>
+            Edit scene
+          </button>
+          <button type="button" id="undo-draft-btn" class="secondary-btn" disabled>
+            Undo draft
+          </button>
+          <button type="button" id="export-draft-btn" class="secondary-btn" disabled>
+            Export draft
+          </button>
+        </div>
+      </aside>
+
+      <main class="panel panel-center" aria-label="Script reader">
+        <div id="reader-view" class="reader-view">
+          <div id="reader" class="reader">
+            <p class="reader-placeholder">Select a scene from the list.</p>
+          </div>
+        </div>
+        <div id="edit-view" class="edit-view hidden" hidden>
+          <div class="edit-toolbar">
+            <h2 id="edit-scene-title" class="edit-title">Edit scene</h2>
+            <p class="edit-hint">Change dialogue, action, or sluglines. Simulate previews impact; Apply saves to your working draft.</p>
+          </div>
+          <textarea id="edit-textarea" class="edit-textarea" spellcheck="false"></textarea>
+          <div class="edit-actions">
+            <button type="button" id="run-edit-btn" class="primary-btn">Simulate edit</button>
+            <button type="button" id="apply-edit-btn" class="secondary-btn">Apply edit</button>
+            <button type="button" id="cancel-edit-btn" class="secondary-btn">Cancel</button>
+          </div>
+        </div>
+      </main>
+
+      <aside class="panel panel-right" aria-label="Simulation results">
+        <div class="results-placeholder" id="results-placeholder">
+          <div class="results-icon" aria-hidden="true">📄</div>
+          <p>Select a scene, then <strong>Simulate cut</strong> or <strong>Edit scene</strong> to preview impact.</p>
+        </div>
+        <div id="results-panel" class="results-panel hidden" hidden></div>
+      </aside>
+    </div>
+  </div>
+
+  <script src="/reader.js"></script>
+  <script src="/orphan-graph.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

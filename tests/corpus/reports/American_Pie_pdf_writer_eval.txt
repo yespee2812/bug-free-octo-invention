@@ -1,0 +1,64 @@
+WRITER LOG EVALUATION: American Pie
+Script file: American_Pie_pdf_refined.fountain
+========================================================================
+
+Writer: Chella Thurai
+
+SUMMARY
+  Planted errors in log:     13
+  Auto-mappable:             13
+  Matched by engine:         0
+  Missed (false negatives):  13
+  Unmapped (manual review):  0
+  Extra engine flags:        7
+  Total engine detections:   7
+
+  Recall (auto-mapped only): 0%
+
+MISSED — review manually (engine may have used different scenes/type)
+  [1] Character age Slip -> expected character_age (scene 1 vs 16)
+      Jim's age given as 12 | Nadia implies Jim is a high school senior | 12-year-old cannot be a high school senior
+  [2] Character_knowledge -> expected character_knowledge (scene 10 vs 6)
+      Kevin knows his father's phone number | Earlier scene establishes he did not know the number | Inconsistent knowledge of dad's contact
+  [3] Numeric_Mismatch -> expected numeric_count (scene 12 vs 12)
+      Four guys at table | Skipping one from four leaves three not four | Gum handout arithmetic error
+  [4] Name_Mismatch -> expected name_consistency (scene 26 vs 26)
+      Rajan named in action | Sherman speaks in dialogue cue | Wrong character name in action
+  [5] Action vs Dia_Mismatch -> expected action_vs_dia_mismatch (scene 28 vs 28)
+      Formal handshake in action | Dialogue claims sexual success | Action contradicts dialogue tone
+  [6] Culture Name_Mismatch -> expected name_consistency (scene 43 vs 43)
+      Indiana Jones misspelled as India | Famous character name typo
+  [7] Name_Mismatch -> expected name_consistency (scene 51 vs 51)
+      Mylus in action | Oz is the established actor | Unintroduced name Mylus
+  [8] Age_Mismatch -> expected character_age (scene 61 vs 61)
+      Jim is a high school teenager | Teen described as seventy
+  [9] Place_Mismatch -> expected place_mismatch (scene 62 vs 62)
+      Corrider vs hallway heading mismatch | Location inconsistency
+  [10] Character Presence_Mismatch -> expected character_presence_mismatch (scene 76 vs 76)
+      Michelle present at desk | Jim looks at empty desk | Present and absent simultaneously
+  [11] Props_Mismatch -> expected props_mismatch (scene 93 vs 93)
+      Mule in modern music hall | Absurd prop for setting
+  [12] Char Conty_Mismatch -> expected char_conty_mismatch (scene 102 vs 103)
+      Jhonny is Jim's date | Michelle is established date | Date character swaps
+  [13] Location_Mismatch -> expected location_continuity (scene 115 vs 115)
+      American diner becomes Kodaikanal office | Geographic teleport
+
+EXTRA ENGINE FLAGS (possible false positives)
+  - object_ownership: scene 74 vs 93
+      CLOSE was last held by JIM SIGHS in scene_074, but SO OZ has it in scene_093 with no handoff between scenes.
+  - numeric_count: scene 61 vs 63
+      'year' count is 70 in scene_061 but 3 in scene_063.
+  - numeric_count: scene 63 vs 92
+      'year' count is 3 in scene_063 but 4 in scene_092.
+  - numeric_count: scene 92 vs 106
+      'year' count is 4 in scene_092 but 18 in scene_106.
+  - numeric_count: scene 78 vs 78
+      'point' count is 1 in scene_078 but 4 in scene_078.
+  - numeric_count: scene 80 vs 96
+      'group' count is 2 in scene_080 but 10 in scene_096.
+  - numeric_count: scene 96 vs 96
+      'group' count is 10 in scene_096 but 1 in scene_096.
+
+Writer notes: Scene numbers remapped from quote positions in the 118-scene PDF Fountain. Writer log used different indices (e.g. 129, 207) from another export.
+
+Tip: A miss does not always mean failure — the engine may have caught the issue under a different type or scene pair. Check the full report.

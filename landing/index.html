@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ScriptLens — Early Access</title>
+  <meta
+    name="description"
+    content="ScriptLens: structural editing for screenplays. Join the early access waitlist."
+  />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+
+  <div class="scene-watermarks" aria-hidden="true">
+    <span class="wm wm-1">INT. SOUNDSTAGE — NIGHT</span>
+    <span class="wm wm-2">EXT. RED CARPET — EVENING</span>
+    <span class="wm wm-3">INT. EDIT BAY — CONTINUOUS</span>
+    <span class="wm wm-4">EXT. STUDIO LOT — DAWN</span>
+    <span class="wm wm-5">INT. WRITERS’ ROOM — DAY</span>
+    <span class="wm wm-6">EXT. THEATER MARQUEE — NIGHT</span>
+    <span class="wm wm-7">INT. PROJECTION BOOTH — NIGHT</span>
+    <span class="wm wm-8">EXT. HOLLYWOOD HILLS — DUSK</span>
+    <span class="wm wm-9">INT. SCREENING ROOM — LATER</span>
+    <span class="wm wm-10">EXT. BACKLOT — CONTINUOUS</span>
+    <span class="wm wm-11">INT. DRESSING ROOM — NIGHT</span>
+    <span class="wm wm-12">FADE IN:</span>
+    <span class="wm wm-13">CUT TO:</span>
+    <span class="wm wm-14">INT. ORPHAN SCENE — ???</span>
+    <span class="wm wm-15">EXT. AWARDS BALCONY — NIGHT</span>
+  </div>
+
+  <main class="hero">
+    <p class="eyebrow">Early access</p>
+    <h1 class="brand">ScriptLens</h1>
+    <p class="tagline">
+      Structural editing for screenplays — spot orphan scenes and preview cut
+      impact before you change the draft.
+    </p>
+
+    <ul class="points">
+      <li>Find scenes that don’t connect to the story</li>
+      <li>Simulate a cut and see what breaks</li>
+      <li>Keep your original script intact while you explore edits</li>
+    </ul>
+
+    <form class="waitlist" action="submit.php" method="POST" novalidate>
+      <label class="sr-only" for="email">Email</label>
+      <input
+        id="email"
+        name="email"
+        type="email"
+        required
+        autocomplete="email"
+        placeholder="you@studio.com"
+      />
+      <!-- Honeypot: leave empty -->
+      <input
+        class="hp"
+        type="text"
+        name="website"
+        tabindex="-1"
+        autocomplete="off"
+        aria-hidden="true"
+      />
+      <button type="submit">Join the waitlist</button>
+    </form>
+    <p id="form-error" class="form-error" hidden>Please enter a valid email and try again.</p>
+    <p class="fineprint">
+      Building in public. We’ll email you when there’s something to try — no spam.
+    </p>
+  </main>
+  <script>
+    if (new URLSearchParams(location.search).get("error") === "1") {
+      var el = document.getElementById("form-error");
+      if (el) el.hidden = false;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+WRITER LOG EVALUATION: American Pie
+Script file: American_Pie_refined.fountain
+========================================================================
+
+Writer: Chella Thurai
+
+SUMMARY
+  Planted errors in log:     13
+  Auto-mappable:             13
+  Matched by engine:         0
+  Missed (false negatives):  13
+  Unmapped (manual review):  0
+  Extra engine flags:        10
+  Total engine detections:   10
+
+  Recall (auto-mapped only): 0%
+
+MISSED — review manually (engine may have used different scenes/type)
+  [1] Character age Slip -> expected character_age (scene 1 vs 4)
+      Action attributes Jim's age as 12 | Dialogue implies Jim is a high school senior | A 12-year-old child cannot be a high school senior
+  [2] Character_knowledge -> expected character_knowledge (scene 4 vs 4)
+      Kevin knows his father's phone number | Earlier in the same block he did not know his dad's number | Character claims to know a specific contact inconsistently
+  [3] Numeric_Mismatch -> expected numeric_count (scene 4 vs 4)
+      Exactly four characters sitting together | Skipping one person from four leaves three, not four | Arithmetic contradiction in gum handout
+  [4] Name_Mismatch -> expected name_consistency (scene 5 vs 5)
+      Foreign character name Rajan opens the door | Dialogue block immediately cues Sherman | Unknown character name appears then wrong cue speaks
+  [5] Action vs Dia_Mismatch -> expected action_vs_dia_mismatch (scene 7 vs 7)
+      Action shows formal non-romantic handshake | Dialogue celebrates successful hookup | Handshake described as sexual success
+  [6] Culture Name_Mismatch -> expected name_consistency (scene 7 vs 7)
+      Film character misspelled as India instead of Indiana | Universally famous character name altered
+  [7] Name_Mismatch -> expected name_consistency (scene 9 vs 9)
+      Action shifts to random character Mylus | Oz is established as the speaker in context | Unintroduced name Mylus controls the action
+  [8] Age_Mismatch -> expected character_age (scene 11 vs 11)
+      Jim is a high school teenager throughout | High school son described as seventy years old
+  [9] Place_Mismatch -> expected place_mismatch (scene 11 vs 11)
+      Scene heading says hallway; action says corridor sprint | Location/action spatial mismatch
+  [10] Character Presence_Mismatch -> expected character_presence_mismatch (scene 13 vs 13)
+      Michelle physically present at desk | Jim stares at Michelle's empty desk | Character cannot be present and absent simultaneously
+  [11] Props_Mismatch -> expected props_mismatch (scene 16 vs 16)
+      Modern high school music hall setting | Mule in modern backstage music hall
+  [12] Char Conty_Mismatch -> expected char_conty_mismatch (scene 18 vs 18)
+      Jhonny introduced as Jim's date | Michelle established as Jim's band-geek date | Jim's date swaps from Michelle to Jhonny
+  [13] Location_Mismatch -> expected location_continuity (scene 22 vs 22)
+      American diner hot-dog scene | Suddenly located in South Indian hill-station office | American graduation wrap-up teleports to Kodaikanal
+
+EXTRA ENGINE FLAGS (possible false positives)
+  - object_ownership: scene 13 vs 16
+      CLOSE was last held by JIM in scene_013, but SO OZ has it in scene_016 with no handoff between scenes.
+  - name_consistency: scene 7 vs 13
+      Character name 'HEATHER' in scene_007 and 'HEATHER OZ' in scene_013 look like the same person (edit distance 2).
+  - world_rule_violation: scene 13 vs 18
+      I MEAN YOU was established as unable to 'even tell' in scene_013, but scene_018 shows it happening anyway.
+  - numeric_count: scene 4 vs 11
+      'guy' count is 4 in scene_004 but 3 in scene_011.
+  - numeric_count: scene 11 vs 11
+      'year' count is 70 in scene_011 but 3 in scene_011.
+  - numeric_count: scene 11 vs 16
+      'year' count is 3 in scene_011 but 4 in scene_016.
+  - numeric_count: scene 16 vs 19
+      'year' count is 4 in scene_016 but 18 in scene_019.
+  - numeric_count: scene 13 vs 13
+      'point' count is 1 in scene_013 but 4 in scene_013.
+  - numeric_count: scene 13 vs 16
+      'group' count is 2 in scene_013 but 10 in scene_016.
+  - numeric_count: scene 16 vs 17
+      'group' count is 10 in scene_016 but 1 in scene_017.
+
+Writer notes: Writer log used original PDF scene numbers (1–207). This file remaps quotes to the 26-scene Fountain produced from the Word document. Re-run with a PDF that has INT./EXT. headings for fair full-length comparison.
+
+Tip: A miss does not always mean failure — the engine may have caught the issue under a different type or scene pair. Check the full report.

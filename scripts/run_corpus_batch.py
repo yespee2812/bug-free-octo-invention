@@ -15,8 +15,10 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
+from legacy.plot_contradiction import InputProfile
+from pdf_to_fountain import ConversionStage
 from scene_dependency import SceneDependencyEngine
-from scriptlens_analyser import analyze_from_path, pretty_print_results
+from legacy.scriptlens_analyser import analyze_from_path, pretty_print_results
 
 SUPPORTED_SUFFIXES: frozenset[str] = frozenset(
     {".fountain", ".fadein", ".txt", ".md", ".screenplay", ".pdf"}
@@ -157,8 +159,20 @@ def run_batch(
     output_dir: Path,
     ground_truth_dir: Path | None,
     compare_ground_truth: bool,
+    *,
+    input_profile: InputProfile | None = None,
+    pdf_conversion: ConversionStage = "clean",
 ) -> None:
-    """Analyse all scripts in input_dir and write customer reports to output_dir."""
+    """Analyse all scripts in input_dir and write customer reports to output_dir.
+
+    Args:
+        input_dir: Folder containing screenplay files.
+        output_dir: Destination for reports and JSON.
+        ground_truth_dir: Optional YAML ground-truth folder.
+        compare_ground_truth: When True, write evaluation files for matching YAML.
+        input_profile: Engine profile passed to ``analyze_from_path`` (optional).
+        pdf_conversion: PDF-to-Fountain stage for ``.pdf`` inputs.
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     scripts = _discover_scripts(input_dir)
 
@@ -173,7 +187,11 @@ def run_batch(
         stem = script_path.stem
         print(f"Analysing: {script_path.name} ...")
 
-        results = analyze_from_path(script_path)
+        results = analyze_from_path(
+            script_path,
+            input_profile=input_profile,
+            pdf_conversion=pdf_conversion,
+        )
         report_text = _capture_customer_report(results)
 
         header = (
@@ -209,7 +227,7 @@ def run_batch(
             truth_path = ground_truth_dir / f"{stem}.yaml"
             truth = _load_ground_truth(truth_path)
             if truth is not None:
-                from scriptlens_analyser import load_screenplay_text
+                from legacy.scriptlens_analyser import load_screenplay_text
 
                 text, _ = load_screenplay_text(script_path)
                 eval_text = _evaluate_ground_truth(stem, results, truth, text)

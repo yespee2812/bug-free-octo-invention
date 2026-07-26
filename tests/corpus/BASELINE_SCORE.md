@@ -6,37 +6,38 @@ Matching is order-insensitive on (contradiction_type, {scene_a, scene_b}).
 ## Headline
 
 - Planted errors (ground truth):        **100**
-- Detected by engine (any):             **100**
-- True positives (correct catches):     **98**
+- Detected by engine (any):             **102**
+- True positives (correct catches):     **100**
 - False positives:                      **2**
-- **Recall (overall): 98.0%** (98/100)
+- **Recall (overall): 100.0%** (100/100)
 - Precision: 98.0%
-- F1: 98.0%
+- F1: 99.0%
 
 ## On the engine's own supported categories
 
 Subset = planted errors whose type the engine claims to support (object_ownership, character_trait_conflict, medical_state).
 
-- Supported-subset planted: **9**
-- Supported-subset caught:  **9**
+- Supported-subset planted: **12**
+- Supported-subset caught:  **12**
 - **Subset recall: 100.0%**
 
 ## Recall by planted error type
 
 | Type | Planted | Caught | Recall |
 |------|---------|--------|--------|
-| character_age | 13 | 13 | 100% |
+| character_age | 11 | 11 | 100% |
 | character_fact | 2 | 2 | 100% |
-| character_knowledge | 8 | 6 | 75% |
+| character_knowledge | 8 | 8 | 100% |
 | character_trait_conflict | 2 | 2 | 100% |
 | date_year | 8 | 8 | 100% |
 | fact_consistency | 1 | 1 | 100% |
 | location_continuity | 4 | 4 | 100% |
 | medical_state | 1 | 1 | 100% |
 | name_consistency | 2 | 2 | 100% |
-| numeric_count | 28 | 28 | 100% |
+| numeric_count | 27 | 27 | 100% |
 | object_identity | 16 | 16 | 100% |
 | object_ownership | 6 | 6 | 100% |
+| object_referent_swap | 3 | 3 | 100% |
 | relationship_fact | 9 | 9 | 100% |
 
 ## Per-script
@@ -46,7 +47,7 @@ Subset = planted errors whose type the engine claims to support (object_ownershi
 | action_5scene_errors | 2 | 2 | 2 |
 | action_10scene_errors | 3 | 3 | 3 |
 | crime_5scene_errors | 2 | 2 | 2 |
-| crime_10scene_errors | 3 | 2 | 2 |
+| crime_10scene_errors | 3 | 3 | 3 |
 | romance_5scene_errors | 2 | 2 | 2 |
 | romance_10scene_errors | 3 | 3 | 3 |
 | scifi_5scene_errors | 2 | 2 | 2 |
@@ -72,7 +73,7 @@ Subset = planted errors whose type the engine claims to support (object_ownershi
 | mystery_5scene_errors | 2 | 2 | 2 |
 | mystery_10scene_errors | 3 | 3 | 3 |
 | noir_5scene_errors | 2 | 2 | 2 |
-| noir_10scene_errors | 3 | 2 | 2 |
+| noir_10scene_errors | 3 | 3 | 3 |
 | sports_5scene_errors | 2 | 2 | 2 |
 | sports_10scene_errors | 3 | 3 | 3 |
 | supernatural_5scene_errors | 2 | 2 | 2 |

@@ -16,6 +16,11 @@ SCENE_HEADING_START = re.compile(
     r"^(INT\.|EXT\.|INT/EXT\.|I/E\.)\s+",
     re.IGNORECASE,
 )
+SCENE_HEADING_LINE = re.compile(
+    r"^(INT\.|EXT\.|INT/EXT\.|I/E\.)\s+.+",
+    re.IGNORECASE,
+)
+LEFT_SCENE_NUMBER = re.compile(r"^\d{1,3}$")
 PAGE_NUMBER_PATTERN = re.compile(r"^\d{1,3}\.?$")
 CONTINUED_PATTERN = re.compile(
     r"^(CONTINUED|CONT'D|CONTINUES|CONTINUED:)\s*:?\s*$",
@@ -82,8 +87,109 @@ def extract_text_from_pdf(pdf_path: Path) -> str:
     return "\n\n".join(page_texts)
 
 
+def _span_parts(line: dict) -> list[tuple[float, str]]:
+    """Return left-x positions and stripped text for non-empty spans."""
+    parts: list[tuple[float, str]] = []
+    for span in line.get("spans", []):
+        text = span.get("text", "").strip()
+        if text:
+            parts.append((round(span["bbox"][0], 1), text))
+    return parts
+
+
+def _group_page_rows(page_dict: dict) -> list[tuple[float, list[tuple[float, str]]]]:
+    """Group positioned text parts that share the same vertical position."""
+    grouped: dict[float, list[tuple[float, str]]] = {}
+    for block in page_dict.get("blocks", []):
+        if block.get("type") != 0:
+            continue
+        for line in block.get("lines", []):
+            parts = _span_parts(line)
+            if not parts:
+                continue
+            y_key = round(line["bbox"][1], 1)
+            grouped.setdefault(y_key, []).extend(parts)
+    return sorted(grouped.items(), key=lambda item: item[0])
+
+
+def _slugline_heading_from_parts(parts: list[tuple[float, str]]) -> str | None:
+    """Return a scene heading when parts form a Final Draft slugline row."""
+    ordered = sorted(parts, key=lambda item: item[0])
+    for _x_pos, text in ordered:
+        if SCENE_HEADING_LINE.match(text):
+            return text
+    return None
+
+
+def _body_text_from_parts(parts: list[tuple[float, str]]) -> str:
+    """Join positioned row parts into one screenplay line."""
+    ordered = sorted(parts, key=lambda item: item[0])
+    return "".join(text for _x_pos, text in ordered).strip()
+
+
+def _is_section_marker_row(parts: list[tuple[float, str]]) -> bool:
+    """Return True when a row is a prose-export section marker like ``118.``."""
+    if len(parts) != 1:
+        return False
+    x_pos, text = parts[0]
+    return x_pos >= 250.0 and re.fullmatch(r"\d{1,3}\.", text) is not None
+
+
+def _is_margin_scene_number_row(parts: list[tuple[float, str]]) -> bool:
+    """Return True when a row contains only left/right scene numbers."""
+    ordered = sorted(parts, key=lambda item: item[0])
+    texts = [text for _x_pos, text in ordered]
+    if not texts:
+        return True
+    if any(SCENE_HEADING_LINE.match(text) for text in texts):
+        return False
+    if _is_section_marker_row(parts):
+        return False
+    return all(LEFT_SCENE_NUMBER.match(text) for text in texts)
+
+
+def count_final_draft_sluglines(pdf_path: str | Path) -> int:
+    """Count Final Draft slugline rows in a screenplay PDF.
+
+    Args:
+        pdf_path: Path to a screenplay PDF.
+
+    Returns:
+        Number of detected ``N  INT./EXT. ...  N`` rows.
+    """
+    path = Path(pdf_path).resolve()
+    count = 0
+    with fitz.open(path) as document:
+        for page in document:
+            for _y_pos, parts in _group_page_rows(page.get_text("dict")):
+                if _slugline_heading_from_parts(parts) is not None:
+                    count += 1
+    return count
+
+
 def _extract_page_text(page: fitz.Page) -> str:
-    """Extract ordered text blocks from a single PDF page."""
+    """Extract ordered screenplay lines from a single PDF page.
+
+    Final Draft exports often place the left scene number, slugline, and right
+    scene number on separate PDF line objects that share the same y-coordinate.
+    This groups those rows and emits only the slugline heading text.
+    """
+    lines_out: list[str] = []
+    for _y_pos, parts in _group_page_rows(page.get_text("dict")):
+        heading = _slugline_heading_from_parts(parts)
+        if heading is not None:
+            lines_out.append(heading)
+            continue
+        if _is_margin_scene_number_row(parts):
+            continue
+
+        body_text = _body_text_from_parts(parts)
+        if body_text:
+            lines_out.append(body_text)
+
+    if lines_out:
+        return "\n".join(lines_out)
+
     blocks = page.get_text("blocks")
     text_blocks: list[tuple[float, float, str]] = []
     for block in blocks:

@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
-    from plot_contradiction import Fact, FactStore
+    from legacy.plot_contradiction import Fact, FactStore
 
 import networkx as nx
 import spacy
@@ -59,8 +59,8 @@ MULTI_WORD_TIME_HEADING_SUFFIXES: frozenset[str] = frozenset(
 # when that character never receives a dialogue cue (e.g. "DETECTIVE MILLER").
 PERSON_TITLE_WORDS: frozenset[str] = frozenset(
     {
-        "AGENT", "CAPTAIN", "CHIEF", "COACH", "CORONER", "DEPUTY",
-        "DETECTIVE", "DOCTOR", "DR", "JUDGE", "LIEUTENANT", "MAYOR",
+        "AGENT", "CAPTAIN", "CHIEF", "CLIMBER", "COACH", "CORONER", "DEPUTY",
+        "DETECTIVE", "DOCTOR", "DR", "GUIDE", "JUDGE", "LIEUTENANT", "MAYOR",
         "MISS", "MR", "MRS", "MS", "NURSE", "OFFICER", "PROFESSOR",
         "SENATOR", "SERGEANT", "SHERIFF",
     }
@@ -109,6 +109,17 @@ INANIMATE_DEATH_NOUNS: frozenset[str] = frozenset(
         "BATTERY", "CAR", "CHATTER", "CONVERSATION", "CROWD", "ENGINE",
         "LIGHT", "LIGHTS", "LINE", "MOTOR", "MUSIC", "NOISE", "PARTY",
         "PHONE", "RADIO", "SIGNAL", "SOUND",
+    }
+)
+# Head nouns that mark a caps span as a prop even when agentive verbs or NER
+# would otherwise promote it to a character (e.g. "A MAGNETIC GUEST BOOK sits").
+INANIMATE_PROP_HEAD_NOUNS: frozenset[str] = frozenset(
+    {
+        "BAG", "BOOK", "BOTTLE", "BOX", "BRIEFCASE", "CAMERA", "CARD", "CARDS",
+        "ENVELOPE", "FOLDER", "GUN", "JOURNAL", "KEY", "KEYS", "KNIFE",
+        "LAPTOP", "LEDGER", "LETTER", "MAP", "MIC", "MICROPHONE", "NOTE",
+        "PHONE", "POUCH", "REVOLVER", "RING", "SKETCH", "STATUE", "SWORD",
+        "TABLET", "WATCH",
     }
 )
 # Generic head nouns for "X is a <role>" that describe anyone or anything
@@ -274,6 +285,11 @@ AGENTIVE_PERSON_VERB_LEMMAS: frozenset[str] = frozenset(
         "think", "realize", "realise", "remember", "recall", "wonder",
         "ponder", "consider", "hesitate", "suspect", "recognize",
         "recognise", "imagine", "regret", "decide",
+        # Common screenplay action verbs (reading, movement, manipulation)
+        "read", "write", "open", "close", "hide", "enter", "exit", "leave",
+        "walk", "sit", "stand", "look", "watch", "listen", "grab", "hold",
+        "carry", "put", "set", "find", "take", "give", "drop", "pull",
+        "push", "reach", "turn", "move", "wait", "follow", "lead", "check",
     }
 )
 
@@ -362,6 +378,50 @@ ESTABLISHING_FACT_TYPES: frozenset[str] = frozenset(
         "location",
     }
 )
+# Closed dialogue nicknames → plant-token families. An alias only attaches to a
+# prop that was already established (CAPS / handling / ownership). See
+# docs/DIALOGUE_AS_STRUCTURE_DESIGN.md Phase A. Not a dialect lexicon.
+PROP_DIALOGUE_ALIAS_GROUPS: tuple[tuple[frozenset[str], frozenset[str]], ...] = (
+    (
+        frozenset(
+            {
+                "piece",
+                "shooter",
+                "heater",
+                "gat",
+                "firearm",
+            }
+        ),
+        frozenset(
+            {
+                "revolver",
+                "gun",
+                "pistol",
+                "rifle",
+                "shotgun",
+                "firearm",
+                "weapon",
+            }
+        ),
+    ),
+    (
+        frozenset({"shiv", "sticker", "blade"}),
+        frozenset({"knife", "blade", "dagger", "machete"}),
+    ),
+    (
+        frozenset({"loot", "score"}),
+        frozenset({"money", "cash", "loot"}),
+    ),
+    (
+        frozenset({"wheels", "ride"}),
+        frozenset({"car", "truck", "van", "vehicle", "sedan"}),
+    ),
+    (
+        frozenset({"mobile", "cell"}),
+        frozenset({"phone", "mobile", "cellphone", "cell"}),
+    ),
+)
+
 # Explicit backward-looking causal phrasing in dialogue ("after what you did",
 # "since that night"). v1 links to the most recent prior scene sharing a
 # speaker; open-domain resolution of "what" is deferred to coreference (C4).
@@ -370,8 +430,21 @@ CAUSAL_DIALOGUE_PATTERNS: tuple[re.Pattern[str], ...] = (
         r"\bafter\s+what\s+(?:you|he|she|they|we)\s+did\b",
         re.IGNORECASE,
     ),
+    # Informal / dialect-adjacent surface forms (literal; not a dialect engine).
+    re.compile(
+        r"\bafter\s+what\s+(?:you|he|she|they|we|ya)\s+done\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bafter\s+what\s+ya\s+did\b",
+        re.IGNORECASE,
+    ),
     re.compile(
         r"\bbecause\s+of\s+what\s+(?:you|he|she|they|we|happened)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bbecause\s+of\s+what\s+(?:you|he|she|they|we|ya)\s+done\b",
         re.IGNORECASE,
     ),
     re.compile(
@@ -389,6 +462,10 @@ CAUSAL_DIALOGUE_PATTERNS: tuple[re.Pattern[str], ...] = (
         r"ambush|meeting|fight|accident|murder|heist|job|mission)\b",
         re.IGNORECASE,
     ),
+    re.compile(
+        r"\bsince\s+what\s+happened\b",
+        re.IGNORECASE,
+    ),
 )
 
 
@@ -403,6 +480,11 @@ class SceneBlock:
     objects: list[str] = field(default_factory=list)
     locations: list[str] = field(default_factory=list)
     raw_text: str = ""
+    characters_speaking: list[str] = field(default_factory=list)
+    characters_mentioned: list[str] = field(default_factory=list)
+    props_detected: list[str] = field(default_factory=list)
+    wardrobe_detected: list[str] = field(default_factory=list)
+    time_of_day: str = ""
 
 
 @dataclass
@@ -428,6 +510,14 @@ def _normalize_object_key(value: str) -> str:
         if normalized.startswith(article):
             normalized = normalized[len(article) :].strip()
     return normalized
+
+
+def _is_inanimate_prop_key(key: str) -> bool:
+    """Return True when a normalized key ends in a known prop head noun."""
+    words = _normalize_object_key(key).split()
+    if not words:
+        return False
+    return words[-1] in INANIMATE_PROP_HEAD_NOUNS
 
 
 def _is_scene_heading(line: str) -> bool:
@@ -513,6 +603,68 @@ def _extract_locations_from_heading(heading: str) -> list[str]:
         _normalize_token(" ".join(parts[: depth + 1]))
         for depth in range(len(parts))
     ]
+
+
+WARDROBE_HEAD_NOUNS: frozenset[str] = frozenset(
+    {
+        "BOOTS", "BRACELET", "CAPE", "CLOAK", "COAT", "CROWN", "DRESS",
+        "GLASSES", "GLOVES", "GOWN", "HAT", "HELMET", "JACKET", "JEWELRY",
+        "MASK", "NECKLACE", "PANTS", "RING", "ROBE", "SCARF", "SHIRT",
+        "SHOES", "SUIT", "SUNGLASSES", "TIARA", "UNIFORM", "VEIL", "VEST",
+        "WATCH",
+    }
+)
+
+
+def _extract_time_of_day_from_heading(heading: str) -> str:
+    """Return the normalized time-of-day token from a scene heading, if present.
+
+    Args:
+        heading: A Fountain scene heading line.
+
+    Returns:
+        Normalized token such as ``DAY`` or ``LATER``, or an empty string.
+    """
+    match = re.match(
+        r"^(INT\.|EXT\.|INT/EXT\.|I/E\.)\s+(.+)$",
+        heading.strip(),
+        re.IGNORECASE,
+    )
+    if not match:
+        return ""
+    parts = [
+        part.strip()
+        for part in re.split(r"\s[-–]\s", match.group(2).strip())
+        if part.strip()
+    ]
+    if not parts:
+        return ""
+    last_segment = parts[-1]
+    if _is_time_of_day_heading_segment(last_segment):
+        return _normalize_token(last_segment)
+    return ""
+
+
+def _extract_wardrobe_from_props(props: list[str]) -> list[str]:
+    """Return prop keys that look like wardrobe or worn-asset items.
+
+    Args:
+        props: Normalized caps prop keys from one scene.
+
+    Returns:
+        Ordered wardrobe keys detected in the prop list.
+    """
+    wardrobe: list[str] = []
+    seen: set[str] = set()
+    for prop in props:
+        words = prop.split()
+        if not words:
+            continue
+        if words[-1] in WARDROBE_HEAD_NOUNS or words[0] in WARDROBE_HEAD_NOUNS:
+            if prop not in seen:
+                seen.add(prop)
+                wardrobe.append(prop)
+    return wardrobe
 
 
 def _parse_action_docs(
@@ -653,6 +805,96 @@ def _has_causal_dialogue(raw_text: str) -> bool:
     for line in _extract_dialogue_lines(raw_text):
         if any(pattern.search(line) for pattern in CAUSAL_DIALOGUE_PATTERNS):
             return True
+    return False
+
+
+def _register_character_aliases(
+    presence: str,
+    action_lines: list[str],
+    character_aliases: dict[str, str],
+) -> None:
+    """Register a character presence and common alias keys for later scenes.
+
+    Args:
+        presence: Canonical character name detected in action.
+        action_lines: Action lines from the same scene.
+        character_aliases: Mutable alias map updated in screenplay order.
+    """
+    presence_key = _normalize_token(presence)
+    character_aliases.setdefault(presence_key, presence)
+    for token in presence.split():
+        character_aliases.setdefault(_normalize_token(token), presence)
+    for line in action_lines:
+        for span_match in CAPS_SPAN_PATTERN.finditer(line):
+            span = span_match.group(0).strip("'- ")
+            object_key = _normalize_object_key(span)
+            span_words = object_key.split()
+            if (
+                len(span_words) >= 2
+                and span_words[0].rstrip(".") in PERSON_TITLE_WORDS
+                and " ".join(span_words[1:]) == _normalize_object_key(presence)
+            ):
+                character_aliases.setdefault(object_key, presence)
+                character_aliases.setdefault(_normalize_token(span), presence)
+
+
+def _consolidate_character_names(
+    names: set[str],
+    character_aliases: dict[str, str],
+) -> list[str]:
+    """Collapse alias variants to one canonical name per character.
+
+    Args:
+        names: Raw character names detected in one scene.
+        character_aliases: Normalized alias map for the screenplay.
+
+    Returns:
+        Sorted canonical character names with duplicates removed.
+    """
+    by_root: dict[str, str] = {}
+    for name in names:
+        key = _normalize_token(name)
+        root = character_aliases.get(key, name)
+        root_key = _normalize_token(root)
+        current = by_root.get(root_key)
+        if current is None or len(root) > len(current):
+            by_root[root_key] = root
+    return sorted(by_root.values(), key=str.lower)
+
+
+def _has_path_avoiding_node(
+    graph: nx.DiGraph,
+    source_id: str,
+    target_id: str,
+    avoid_id: str,
+) -> bool:
+    """Return True when ``target_id`` is reachable from ``source_id`` without ``avoid_id``.
+
+    Args:
+        graph: Scene dependency graph.
+        source_id: Origin scene id.
+        target_id: Destination scene id.
+        avoid_id: Scene id that must not appear on the path.
+
+    Returns:
+        Whether a valid bypass path exists.
+    """
+    if source_id == avoid_id or target_id == avoid_id:
+        return False
+    if source_id not in graph or target_id not in graph:
+        return False
+
+    stack = [source_id]
+    visited = {source_id}
+    while stack:
+        current = stack.pop()
+        if current == target_id:
+            return True
+        for neighbor in graph.successors(current):
+            if neighbor == avoid_id or neighbor in visited:
+                continue
+            visited.add(neighbor)
+            stack.append(neighbor)
     return False
 
 
@@ -824,6 +1066,8 @@ def _extract_agentive_subject_characters(
                 if len(key) < 2 or key in known_props:
                     continue
                 if key in INANIMATE_DEATH_NOUNS:
+                    continue
+                if _is_inanimate_prop_key(key):
                     continue
                 words = key.split()
                 if words[0] in CAPS_PROP_STOP_FIRST_WORDS:
@@ -1014,9 +1258,16 @@ def _extract_caps_props_and_presences(
                 len(span_words) >= 2
                 and span_words[0].rstrip(".") in PERSON_TITLE_WORDS
             ):
-                presences.add(token_key)
+                display_name = " ".join(span_words[1:])
+                presences.add(display_name)
                 continue
             if span_words[0] in CAPS_PROP_STOP_FIRST_WORDS:
+                continue
+            # Prop head nouns win over NER/person filters (guest book, briefcase).
+            if _is_inanimate_prop_key(object_key):
+                if object_key not in seen_props:
+                    seen_props.add(object_key)
+                    props.append(object_key)
                 continue
             if token_key in person_keys or object_key in person_keys:
                 continue
@@ -1063,6 +1314,154 @@ def _match_known_prop_mentions(
     return mentions
 
 
+def _prop_matches_plant_tokens(prop: str, plant_tokens: frozenset[str]) -> bool:
+    """Return True when a known prop key contains any plant-family token.
+
+    Args:
+        prop: Established prop key (e.g. ``REVOLVER``).
+        plant_tokens: Lowercase tokens that mark the prop family.
+
+    Returns:
+        True when any plant token appears as a whole word in the prop key.
+    """
+    prop_lower = prop.lower()
+    return any(
+        re.search(rf"\b{re.escape(token)}\b", prop_lower) is not None
+        for token in plant_tokens
+    )
+
+
+def _props_for_dialogue_aliases(
+    text: str,
+    known_props: set[str],
+) -> list[str]:
+    """Resolve closed dialogue nicknames onto already-planted props.
+
+    Aliases never create props. ``piece`` only maps to ``REVOLVER``/``GUN``/etc.
+    after that prop exists in ``known_props``.
+
+    Args:
+        text: Scene action and dialogue text to scan.
+        known_props: Caps/handling/ownership prop keys established so far.
+
+    Returns:
+        Canonical prop keys referenced by dialogue aliases, longest first.
+    """
+    if not text or not known_props:
+        return []
+
+    lowered = text.lower()
+    matched: set[str] = set()
+    for aliases, plant_tokens in PROP_DIALOGUE_ALIAS_GROUPS:
+        if not any(
+            re.search(rf"\b{re.escape(alias)}\b", lowered) for alias in aliases
+        ):
+            continue
+        for prop in known_props:
+            if _prop_matches_plant_tokens(prop, plant_tokens):
+                matched.add(prop)
+
+    return sorted(matched, key=len, reverse=True)
+
+
+def _match_prop_soft_mentions(text: str, known_props: set[str]) -> list[str]:
+    """Map dialogue/action paraphrases to established props.
+
+    Handles comedy/setup phrasing such as ``magnetic thing`` or ``guest book``
+    after ``MAGNETIC GUEST BOOK`` has already been planted, plus closed
+    dialogue nicknames (``piece`` → planted ``REVOLVER``).
+
+    Args:
+        text: Scene action and dialogue text to scan.
+        known_props: Caps prop keys established so far.
+
+    Returns:
+        Canonical prop keys referenced by soft mentions.
+    """
+    if not text or not known_props:
+        return []
+
+    lowered = text.lower()
+    mentions: list[str] = []
+    seen: set[str] = set()
+    for prop in sorted(known_props, key=len, reverse=True):
+        prop_lower = prop.lower()
+        words = prop_lower.split()
+        matched = False
+        if re.search(rf"\b{re.escape(prop_lower)}\b", lowered):
+            matched = True
+        elif len(words) >= 2 and re.search(
+            rf"\b{re.escape(' '.join(words[-2:]))}\b",
+            lowered,
+        ):
+            matched = True
+        elif len(words) >= 2 and re.search(
+            rf"\b{re.escape(words[0])}\s+thing\b",
+            lowered,
+        ):
+            matched = True
+        if matched and prop not in seen:
+            seen.add(prop)
+            mentions.append(prop)
+
+    for prop in _props_for_dialogue_aliases(text, known_props):
+        if prop not in seen:
+            seen.add(prop)
+            mentions.append(prop)
+    return mentions
+
+
+def _match_known_character_mentions(
+    text: str,
+    character_aliases: dict[str, str],
+) -> set[str]:
+    """Resolve sentence-case mentions of already-known characters.
+
+    Recovers presence for lines like ``Dave sweats near the podium`` or
+    ``(to Dave)`` once those names exist as cues elsewhere in the script.
+
+    Args:
+        text: Scene action and dialogue text to scan.
+        character_aliases: Normalized alias -> canonical cue name map.
+
+    Returns:
+        Canonical character names mentioned in the text.
+    """
+    if not text or not character_aliases:
+        return set()
+
+    found: set[str] = set()
+    canonical_names = sorted(
+        {name for name in character_aliases.values() if name},
+        key=len,
+        reverse=True,
+    )
+    for name in canonical_names:
+        if _is_inanimate_prop_key(name):
+            continue
+        if name in {"THE END", "END", "FADE OUT", "FADE IN"}:
+            continue
+        if re.search(rf"\b{re.escape(name)}\b", text, re.IGNORECASE):
+            found.add(name)
+            continue
+        first = name.split()[0]
+        if len(first) < 3:
+            continue
+        # Prefer unique first-name hits (Dave → DAVE / DAVE KIM).
+        if not re.search(rf"\b{re.escape(first)}\b", text, re.IGNORECASE):
+            continue
+        matches = [
+            candidate
+            for candidate in canonical_names
+            if candidate.split()[0] == first or candidate == first
+        ]
+        if len(matches) == 1:
+            found.add(matches[0])
+        elif name == first:
+            found.add(name)
+    return found
+
+
 class SceneDependencyEngine:
     """Build and query a scene dependency graph from Fountain screenplay text."""
 
@@ -1070,6 +1469,9 @@ class SceneDependencyEngine:
         """Initialize the engine and load or reuse the spaCy English model."""
         self.nlp: Language = nlp if nlp is not None else get_shared_nlp()
         self.graph: nx.DiGraph = nx.DiGraph()
+        self.orphan_graph: nx.DiGraph = nx.DiGraph()
+        self.orphan_unit_graph: nx.DiGraph = nx.DiGraph()
+        self.orphan_findings: list[dict[str, Any]] | None = None
         self.scenes: list[SceneBlock] = []
         self._scene_lookup: dict[str, SceneBlock] = {}
 
@@ -1125,6 +1527,8 @@ class SceneDependencyEngine:
             caps_props, action_presences = _extract_caps_props_and_presences(
                 action_lines, character_aliases, person_keys
             )
+            for presence in action_presences:
+                _register_character_aliases(presence, action_lines, character_aliases)
             ownership_props = _extract_ownership_objects(
                 action_lines, character_aliases, known_props | set(caps_props)
             )
@@ -1138,19 +1542,75 @@ class SceneDependencyEngine:
             known_props.update(ownership_props)
             known_props.update(handling_props)
             mention_props = _match_known_prop_mentions(raw_doc, known_props)
+            dialogue_lines = _extract_dialogue_lines(raw_text)
+            mention_scan_text = "\n".join(action_lines + dialogue_lines)
+            soft_props = _match_prop_soft_mentions(mention_scan_text, known_props)
+            known_character_mentions = _match_known_character_mentions(
+                mention_scan_text,
+                character_aliases,
+            )
 
             objects: list[str] = []
             for prop_name in (
-                caps_props + ownership_props + handling_props + mention_props
+                caps_props
+                + ownership_props
+                + handling_props
+                + mention_props
+                + soft_props
             ):
                 if prop_name not in objects:
                     objects.append(prop_name)
+            known_props.update(objects)
 
-            characters = sorted(
-                cue_names | action_presences | structural_chars | agentive_chars,
-                key=str.lower,
+            character_name_set: set[str] = set()
+            for name in (
+                action_presences
+                | structural_chars
+                | agentive_chars
+                | known_character_mentions
+            ):
+                name_key = _normalize_token(name)
+                character_name_set.add(character_aliases.get(name_key, name))
+            for cue in character_lines:
+                cue_name = _normalize_token(re.sub(r"\([^)]*\)", "", cue))
+                if cue_name:
+                    character_name_set.add(character_aliases.get(cue_name, cue_name))
+            # Drop inanimate prop keys that slipped into the character set.
+            character_name_set = {
+                name
+                for name in character_name_set
+                if not _is_inanimate_prop_key(name)
+            }
+            characters = _consolidate_character_names(
+                character_name_set,
+                character_aliases,
             )
             locations = _extract_locations_from_heading(heading)
+            time_of_day = _extract_time_of_day_from_heading(heading)
+
+            characters_speaking: list[str] = []
+            speaking_keys: set[str] = set()
+            for cue in character_lines:
+                cue_name = _normalize_token(re.sub(r"\([^)]*\)", "", cue))
+                if not cue_name:
+                    continue
+                canonical = character_aliases.get(cue_name, cue_name)
+                key = _normalize_token(canonical)
+                if key and key not in speaking_keys:
+                    speaking_keys.add(key)
+                    characters_speaking.append(canonical)
+            characters_speaking.sort(key=str.lower)
+
+            characters_mentioned = sorted(
+                [
+                    character
+                    for character in characters
+                    if _normalize_token(character) not in speaking_keys
+                ],
+                key=str.lower,
+            )
+            props_detected = list(objects)
+            wardrobe_detected = _extract_wardrobe_from_props(props_detected)
 
             scene = SceneBlock(
                 scene_id=f"scene_{index:03d}",
@@ -1160,6 +1620,11 @@ class SceneDependencyEngine:
                 objects=objects,
                 locations=locations,
                 raw_text=raw_text,
+                characters_speaking=characters_speaking,
+                characters_mentioned=characters_mentioned,
+                props_detected=props_detected,
+                wardrobe_detected=wardrobe_detected,
+                time_of_day=time_of_day,
             )
             scenes.append(scene)
 
@@ -1206,6 +1671,10 @@ class SceneDependencyEngine:
         seen_character_scenes: dict[str, list[str]] = {}
         seen_object_scenes: dict[str, list[str]] = {}
         seen_location_scenes: dict[str, list[str]] = {}
+        character_alias_map: dict[str, str] = {}
+        for parsed_scene in self.scenes:
+            for name in parsed_scene.characters:
+                _register_character_aliases(name, [], character_alias_map)
 
         for scene in self.scenes:
             self._add_continuity_edges(
@@ -1214,6 +1683,7 @@ class SceneDependencyEngine:
                 seen_character_scenes,
                 "character",
                 "Character '{item}' first introduced",
+                character_aliases=character_alias_map,
             )
             self._add_continuity_edges(
                 scene,
@@ -1233,7 +1703,7 @@ class SceneDependencyEngine:
         if include_fact_edges:
             resolved_store = fact_store
             if resolved_store is None:
-                from plot_contradiction import ContradictionEngine
+                from legacy.plot_contradiction import ContradictionEngine
 
                 resolved_store = ContradictionEngine(nlp=self.nlp).extract_facts(
                     self.scenes
@@ -1250,6 +1720,8 @@ class SceneDependencyEngine:
         seen_scenes: dict[str, list[str]],
         edge_type: str,
         first_seen_template: str,
+        *,
+        character_aliases: dict[str, str] | None = None,
     ) -> None:
         """Add dependency edges from every prior scene that featured an item.
 
@@ -1273,11 +1745,17 @@ class SceneDependencyEngine:
         weight = EDGE_WEIGHTS[edge_type]
 
         for item in items:
-            key = (
-                _normalize_object_key(item)
-                if edge_type == "object"
-                else _normalize_token(item)
-            )
+            if edge_type == "character" and character_aliases:
+                token = _normalize_token(item)
+                canonical = character_aliases.get(token, item)
+                key = _normalize_token(canonical)
+                display_item = canonical
+            elif edge_type == "object":
+                key = _normalize_object_key(item)
+                display_item = key
+            else:
+                key = _normalize_token(item)
+                display_item = key
             if not key:
                 continue
 
@@ -1290,9 +1768,9 @@ class SceneDependencyEngine:
                 if origin_scene_id == scene.scene_id:
                     continue
                 if position == 0:
-                    relation = first_seen_template.format(item=key)
+                    relation = first_seen_template.format(item=display_item)
                 else:
-                    relation = f"'{key}' also appears"
+                    relation = f"'{display_item}' also appears"
                 explanation = (
                     f"{relation} in {origin_scene_id}, "
                     f"reused in {scene.scene_id}"
@@ -1457,7 +1935,8 @@ class SceneDependencyEngine:
         """Return scenes that depend on the given scene, directly or transitively.
 
         Uses graph descendants to find downstream scenes that would be affected
-        if the given scene were removed.
+        if the given scene were removed. Scenes that still have an alternate
+        dependency path from an earlier scene are excluded.
 
         Args:
             scene_id: The scene whose deletion impact should be evaluated.
@@ -1468,8 +1947,29 @@ class SceneDependencyEngine:
         if scene_id not in self.graph:
             return []
 
+        removed_scene = self._scene_lookup.get(scene_id)
+        if removed_scene is None:
+            return []
+
+        upstream_sources = [
+            prior.scene_id
+            for prior in self.scenes
+            if prior.scene_number < removed_scene.scene_number
+        ]
+
         impacted: list[dict[str, Any]] = []
         for descendant_id in nx.descendants(self.graph, scene_id):
+            if any(
+                _has_path_avoiding_node(
+                    self.graph,
+                    source_id,
+                    descendant_id,
+                    scene_id,
+                )
+                for source_id in upstream_sources
+            ):
+                continue
+
             scene = self._scene_lookup.get(descendant_id)
             if scene is None:
                 continue
@@ -1536,18 +2036,37 @@ class SceneDependencyEngine:
         """Return scene IDs with no incoming edges, excluding the first scene.
 
         Orphan scenes are not depended upon by any other scene and may be
-        candidates for cutting.
+        candidates for cutting. Uses OSD findings when available.
 
         Returns:
-            Scene IDs with zero in-degree, excluding scene_001.
+            Scene IDs flagged as hard or subplot-chain orphans, excluding
+            cinematic exemptions.
         """
+        if self.orphan_findings is not None:
+            return sorted(
+                finding["scene_id"]
+                for finding in self.orphan_findings
+                if finding.get("orphan_type") in {"hard", "subplot_chain"}
+            )
+
+        graph = self._orphan_analysis_graph()
         orphans: list[str] = []
-        for scene_id in self.graph.nodes:
+        for scene_id in graph.nodes:
             if scene_id == "scene_001":
                 continue
-            if self.graph.in_degree(scene_id) == 0:
+            if graph.in_degree(scene_id) == 0:
                 orphans.append(scene_id)
         return sorted(orphans)
+
+    def _orphan_analysis_graph(self) -> nx.DiGraph:
+        """Return the graph used for orphan detection.
+
+        Returns:
+            OSD weighted graph when populated, else the continuity graph.
+        """
+        if self.orphan_graph.number_of_nodes() > 0:
+            return self.orphan_graph
+        return self.graph
 
     def export_graph_summary(self) -> dict[str, Any]:
         """Return high-level statistics about the dependency graph.

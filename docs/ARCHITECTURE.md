@@ -4,7 +4,7 @@
 |-------|-------|
 | **Version** | 2.4 (consolidated) |
 | **Date** | May 2026 |
-| **Status** | Architecture specification + current implementation map |
+| **Status** | Legacy v2.4 reference — see [`ARCHITECTURE_v3_STRUCTURE.md`](ARCHITECTURE_v3_STRUCTURE.md) for the **current customer product** |
 | **Audience** | Engineering, product, screenwriter-facing design |
 | **Source** | ScriptLens Architecture v2.3 + `scriptlensCore` codebase + v2.4 workflow refinements |
 
@@ -703,48 +703,55 @@ Extension → build Plasmo → upload to Chrome Web Store
 |-----------|--------|
 | Fountain parser (Python) | Done |
 | Scene dependency engine | Done |
-| Plot contradiction Tier 1 + Tier 2 | Done |
+| Plot contradiction Tier 1 + Tier 2 | Done (internal / CI) |
 | Combined analyser + CLI | Done |
-| PDF ingestion | Done |
-| Screenwriter text report | Done |
-| Regression test runners | Done (manual scripts) |
+| Structure-only analyser (`scriptlens_structure.py`) | Done |
+| PDF ingestion + `pdf_ingest.py` | Done |
+| FastAPI structure service + endpoints | Done |
+| Web workspace (`web/`) | Done |
+| Orphan scene detector (OSD) + semantic | Done |
+| Simulate cut + simulate edit | Done |
+| Draft delete / undo / export | Done |
+| Orphan graph view | Done |
+| pytest CI suite | Done (236+ tests) |
 | Delete-impact query | Done |
 | Orphan detection | Done |
-| High-risk scene ranking | Done |
+| High-risk scene ranking | Done (engine; UI pending) |
 
 ### 17.2 Not yet implemented
 
 | Component | Status |
 |-----------|--------|
 | Chrome extension (orb, popup, scroll) | Not started |
-| FastAPI service + endpoints | Not started |
 | Redis cache | Not started |
 | Postgres history | Not started |
 | Supabase auth + Stripe | Not started |
 | Tier 3 Haiku | Not started |
-| Simulate edit endpoint | Not started |
-| Established fact + causal dependency edges | Not started |
-| pytest CI suite | Not started |
-| v2.4 split pipelines (deps-only vs continuity) | Not started |
+| Production deploy (Hostinger) | Not started |
+| `.docx` upload API | Not started |
+| Contradiction UI (customer) | Out of v3 scope |
+| Simulate regression CI scorecard | Not started |
+| High-risk badges in web UI | Not started |
 
-### 17.3 Repo file map
+> **Note:** For the **customer v3 product**, see [`ARCHITECTURE_v3_STRUCTURE.md`](ARCHITECTURE_v3_STRUCTURE.md) and [`SCRIPTLENS_STATUS_REPORT.md`](SCRIPTLENS_STATUS_REPORT.md). This document (`ARCHITECTURE.md`) describes the legacy v2.4 contradiction + extension architecture.
+
+### 17.3 Repo file map (simplified)
 
 ```
 scriptlensCore/
-├── scene_dependency.py
-├── plot_contradiction.py
-├── scriptlens_analyser.py
-├── pdf_screenplay_loader.py
-├── run_scriptlens.py
-├── run_dependency_test.py
-├── run_contradiction_test.py
-├── real_screenplay_test.py
-├── test_screenplay.py
-├── test_contradiction_screenplay.py
-├── docs/
-│   └── ARCHITECTURE.md          ← this document
-└── samples/
-    └── _architecture_extracted.txt
+├── api/                         FastAPI routes + sessions
+├── web/                         Structure workspace UI
+├── scriptlens_structure.py      v3 structure-only path
+├── orphan_scene_detector.py     OSD orphan graph
+├── scene_dependency.py          Continuity graph
+├── plot_contradiction.py        Internal / CI
+├── scriptlens_analyser.py       Legacy full analyser
+├── run_api.py                   Start server
+├── run_scriptlens.py            CLI
+├── tests/                       Unit + API tests
+└── docs/
+    ├── ARCHITECTURE.md          ← this document (v2.4 legacy)
+    └── ARCHITECTURE_v3_STRUCTURE.md  ← v3 product (current)
 ```
 
 ---

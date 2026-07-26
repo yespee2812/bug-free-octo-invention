@@ -11,6 +11,7 @@ Everything you send to each participating screenwriter lives in this folder.
 | `starter_10scene.fountain` | Clean 10-scene script (writers inject 4–5 errors) |
 | `[Your feature script].fountain` or `.pdf` | **You add** — pre-produced full-length script (8–12 errors) |
 | `SCREENWRITER_ERROR_CHEAT_SHEET.pdf` | 1-page quick reference |
+| `FOUNTAIN_PDF_CLEANUP_GUIDE.pdf` | Step-by-step PDF→Fountain cleanup for benchmark scripts |
 | `ERROR_INJECTION_LOG_TEMPLATE.yaml` | Blank answer sheet (one copy per writer) |
 
 Zip the folder (plus your feature script) as e.g. `ScriptLens_Writer_Packet.zip`.

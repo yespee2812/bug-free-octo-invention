@@ -1,0 +1,35 @@
+# Copy of demo script — see docs/demo_scripts/action_5scene_simulate_demo.fountain
+script_id: action_5scene_simulate_demo
+filename: action_5scene_simulate_demo.fountain
+
+# Orphan: motorcycle alley beat — never referenced downstream.
+expected_orphans:
+  - scene_002
+
+# Simulate cut: remove briefcase setup in scene 1.
+expected_simulate_delete:
+  - scene_id: scene_001
+    expect_impacted:
+      - scene_003
+      - scene_004
+      - scene_005
+    expect_risk: high
+
+# Simulate edit: strip STEEL BRIEFCASE from scene 1 (see demo guide for modified text).
+expected_simulate_edit:
+  - scene_id: scene_001
+    modified_text: |
+      INT. ABANDONED WAREHOUSE - NIGHT
+
+      GINA VASQUEZ, 32, ex-driver, pries open an EMPTY CRATE on a crate. Nothing inside.
+
+      GINA
+      Still heavy. Good.
+    expect_edges_removed_min: 1
+    expect_risk_in:
+      - medium
+      - high
+
+notes: >
+  Five-scene action demo: scene 2 is a hard orphan (motorcycle alley);
+  cutting scene 1 breaks the briefcase chain through the docks payoff.
