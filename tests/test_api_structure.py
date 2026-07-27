@@ -33,6 +33,14 @@ def test_health_endpoint(client: TestClient) -> None:
     assert payload["service"] == "scriptlens-structure"
 
 
+def test_security_headers_present(client: TestClient) -> None:
+    """Baseline hardening headers are attached to responses."""
+    response = client.get("/api/health")
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert response.headers["X-Frame-Options"] == "DENY"
+    assert response.headers["Referrer-Policy"] == "no-referrer"
+
+
 def test_upload_fountain_returns_scenes_and_orphans(client: TestClient) -> None:
     """Upload analyses a Fountain script and returns structure metadata."""
     content = CORPUS_SCRIPT.read_bytes()
@@ -129,12 +137,12 @@ def test_script_detail_endpoint(client: TestClient) -> None:
 
 
 def test_upload_rejects_unsupported_type(client: TestClient) -> None:
-    """Unsupported extensions return HTTP 400."""
+    """Unsupported extensions are rejected before analysis with HTTP 415."""
     response = client.post(
         "/api/upload",
         files={"file": ("notes.docx", b"hello", "application/octet-stream")},
     )
-    assert response.status_code == 400
+    assert response.status_code == 415
 
 
 def test_orphans_unknown_script_returns_404(client: TestClient) -> None:
