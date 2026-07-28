@@ -45,12 +45,17 @@ POSITIONS: dict[int, tuple[int, int]] = {
     5: (760, 456),
 }
 
-COLOR_INK = "#11324d"
-COLOR_ACCENT = "#0f766e"
-COLOR_EDGE = "#5b7189"
-COLOR_ORPHAN = "#c0392b"
-COLOR_ORPHAN_FILL = "#fdecea"
-COLOR_MUTED = "#6b7a8d"
+# Gold / black theme, matching the landing page palette.
+COLOR_BG = "#0d0d0d"
+COLOR_INK = "#f3ead3"  # ivory text
+COLOR_ACCENT = "#d4af37"  # gold: scene labels, setup/payoff tags
+COLOR_GOLD_BORDER = "#d4af37"
+COLOR_TITLE = "#f0d77b"  # bright gold
+COLOR_NODE_FILL = "#151515"
+COLOR_EDGE = "#b2933a"  # dim gold links
+COLOR_ORPHAN = "#c67b3c"  # tarnished copper: the odd one out
+COLOR_ORPHAN_FILL = "#1a1206"
+COLOR_MUTED = "#9a927d"  # muted ivory
 
 
 def short_location(heading: str) -> str:
@@ -186,14 +191,16 @@ def _node_svg(node: dict[str, Any]) -> str:
     x = cx - NODE_WIDTH // 2
     y = cy - NODE_HEIGHT // 2
     is_orphan = bool(node["is_orphan"])
-    border = COLOR_ORPHAN if is_orphan else COLOR_INK
-    fill = COLOR_ORPHAN_FILL if is_orphan else "#ffffff"
+    border = COLOR_ORPHAN if is_orphan else COLOR_GOLD_BORDER
+    fill = COLOR_ORPHAN_FILL if is_orphan else COLOR_NODE_FILL
     label = short_location(str(node["heading"]))
     num_color = COLOR_ORPHAN if is_orphan else COLOR_ACCENT
+    dash = ' stroke-dasharray="7 5"' if is_orphan else ""
+    group_open = '<g opacity="0.9">' if is_orphan else "<g>"
     return (
-        f'<g>'
+        f'{group_open}'
         f'<rect x="{x}" y="{y}" width="{NODE_WIDTH}" height="{NODE_HEIGHT}" rx="12" '
-        f'fill="{fill}" stroke="{border}" stroke-width="2"/>'
+        f'fill="{fill}" stroke="{border}" stroke-width="2"{dash}/>'
         f'<text x="{x + 16}" y="{cy - 6}" font-size="13" font-weight="700" '
         f'fill="{num_color}" font-family="Verdana, sans-serif">SCENE {number}</text>'
         f'<text x="{x + 16}" y="{cy + 16}" font-size="14" fill="{COLOR_INK}" '
@@ -278,11 +285,11 @@ def render_svg(payload: dict[str, Any]) -> str:
 
     legend = (
         f'<g font-family="Verdana, sans-serif">'
-        f'<rect x="40" y="566" width="22" height="16" rx="4" fill="#ffffff" '
-        f'stroke="{COLOR_INK}" stroke-width="2"/>'
+        f'<rect x="40" y="566" width="22" height="16" rx="4" fill="{COLOR_NODE_FILL}" '
+        f'stroke="{COLOR_GOLD_BORDER}" stroke-width="2"/>'
         f'<text x="70" y="579" font-size="12" fill="{COLOR_INK}">Connected scene</text>'
         f'<rect x="214" y="566" width="22" height="16" rx="4" fill="{COLOR_ORPHAN_FILL}" '
-        f'stroke="{COLOR_ORPHAN}" stroke-width="2"/>'
+        f'stroke="{COLOR_ORPHAN}" stroke-width="2" stroke-dasharray="4 3"/>'
         f'<text x="244" y="579" font-size="12" fill="{COLOR_INK}">Orphan scene</text>'
         f'<line x1="372" y1="574" x2="410" y2="574" stroke="{COLOR_EDGE}" stroke-width="3" '
         f'marker-end="url(#arrow)"/>'
@@ -292,7 +299,7 @@ def render_svg(payload: dict[str, Any]) -> str:
     )
 
     header = (
-        f'<text x="40" y="46" font-size="22" font-weight="700" fill="{COLOR_INK}" '
+        f'<text x="40" y="46" font-size="22" font-weight="700" fill="{COLOR_TITLE}" '
         f'font-family="Georgia, serif">How ScriptLens reads a script</text>'
         f'<text x="40" y="70" font-size="13" fill="{COLOR_MUTED}" '
         f'font-family="Verdana, sans-serif">Real output for the demo script "DOCKS RUN" '
@@ -310,7 +317,7 @@ def render_svg(payload: dict[str, Any]) -> str:
         f'<path d="M 0 0 L 10 5 L 0 10 z" fill="{COLOR_EDGE}"/>'
         f'</marker>'
         f'</defs>'
-        f'<rect width="{CANVAS_WIDTH}" height="{CANVAS_HEIGHT}" fill="#f7f8fa"/>'
+        f'<rect width="{CANVAS_WIDTH}" height="{CANVAS_HEIGHT}" fill="{COLOR_BG}"/>'
         f'{header}'
         f'{"".join(edge_fragments)}'
         f'{setup_tag}{payoff_tag}'
