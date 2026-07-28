@@ -86,7 +86,10 @@ jobs:
         run: python -m pytest legacy/tests/ -q
 
       - name: Run corpus batch against planted ground truth
-        run: python scripts/run_corpus_batch.py --compare-ground-truth
+        run: >-
+          python scripts/run_corpus_batch.py
+          --compare-ground-truth
+          --ground-truth-dir legacy/corpus/ground_truth
 
       - name: Enforce corpus baseline thresholds
         run: >-
