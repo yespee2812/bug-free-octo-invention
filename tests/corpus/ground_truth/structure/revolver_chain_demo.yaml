@@ -1,0 +1,37 @@
+script_id: revolver_chain_demo
+filename: revolver_chain_demo.fountain
+
+expected_orphans: []
+
+orphan_types: {}
+
+orphan_anchors: {}
+
+expected_simulate_delete:
+  - scene_id: scene_001
+    expect_impacted:
+      - scene_002
+      - scene_003
+    expect_risk_in:
+      - medium
+      - high
+    anchor: >
+      Scene 1 plants the REVOLVER; scenes 2–3 handle and aim it. Cutting the
+      plant leaves the later beats unsupported.
+
+expected_simulate_edit:
+  - scene_id: scene_001
+    modified_text: |
+      INT. ROOM ONE - DAY
+
+      An empty table. Nothing rests on it.
+    expect_edges_removed_min: 1
+    expect_risk_in:
+      - medium
+      - high
+    anchor: >
+      Removing the revolver plant must drop at least one continuity edge.
+
+notes: >
+  Minimal Chekhov chain used as a structure golden and as the seed for
+  metamorphic / generator tests.

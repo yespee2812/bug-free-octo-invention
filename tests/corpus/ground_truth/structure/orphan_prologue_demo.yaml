@@ -1,0 +1,20 @@
+script_id: orphan_prologue_demo
+filename: orphan_prologue_demo.fountain
+
+expected_orphans: []
+
+orphan_types: {}
+
+orphan_exemptions:
+  - scene_id: scene_001
+    reason: prologue
+
+orphan_anchors: {}
+
+expected_simulate_delete: []
+
+expected_simulate_edit: []
+
+notes: >
+  Opening prologue / cold-open style scene is exempt from orphan flags;
+  Jane continuity across house and office keeps the remainder linked.

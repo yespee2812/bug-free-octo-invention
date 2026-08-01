@@ -1,0 +1,52 @@
+script_id: action_5scene_simulate_demo
+filename: action_5scene_simulate_demo.fountain
+
+expected_orphans:
+  - scene_002
+
+orphan_types:
+  scene_002: hard
+
+orphan_anchors:
+  scene_002:
+    character: "no shared named character with any other scene"
+    location: "alley never reused"
+    prop: "motorcycle never referenced downstream"
+    semantic: "no significant semantic link to briefcase thread"
+    evidence_quote: "A lone MOTORCYCLE idles under a busted streetlight."
+
+expected_simulate_delete:
+  - scene_id: scene_001
+    expect_impacted:
+      - scene_003
+      - scene_004
+      - scene_005
+    expect_risk: high
+    expect_risk_in:
+      - high
+    anchor: >
+      Scene 1 plants the STEEL BRIEFCASE; scenes 3–5 pay it off. Cutting 1
+      leaves those payoffs unsupported.
+
+expected_simulate_edit:
+  - scene_id: scene_001
+    modified_text: |
+      INT. ABANDONED WAREHOUSE - NIGHT
+
+      GINA VASQUEZ, 32, ex-driver, pries open an EMPTY CRATE on a crate. Nothing inside.
+
+      GINA
+      Still heavy. Good.
+    # Character continuity (GINA) remains, so pairs stay; briefcase weight drops.
+    expect_edges_changed_min: 1
+    expect_risk_in:
+      - low
+      - medium
+      - high
+    anchor: >
+      Edit strips the briefcase plant; at least one dependency edge must change
+      (weight / explanation), even if character links keep the scene pair.
+
+notes: >
+  Five-scene action demo: scene 2 is a hard orphan (motorcycle alley);
+  cutting scene 1 breaks the briefcase chain through the docks payoff.

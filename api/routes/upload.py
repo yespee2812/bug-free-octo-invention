@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
@@ -29,6 +30,28 @@ def _get_store(request: Request) -> SessionStore:
         Application-wide ``SessionStore`` instance.
     """
     return request.app.state.session_store
+
+
+def _upload_response_from_session(session: AnalysisSession) -> UploadResponse:
+    """Build an upload response from an existing analysis session.
+
+    Args:
+        session: Cached session for identical upload bytes.
+
+    Returns:
+        ``UploadResponse`` matching a fresh analysis of the same content.
+    """
+    scenes = [SceneSummary(**scene) for scene in session.scenes]
+    return UploadResponse(
+        script_id=session.script_id,
+        filename=session.filename,
+        scene_count=len(session.scenes),
+        orphan_count=session.orphan_count,
+        structure_mode=session.structure_mode,
+        scenes=scenes,
+        draft_revision=session.draft_revision,
+        input_format=session.input_format,
+    )
 
 
 @router.post("/upload", response_model=UploadResponse)
@@ -69,6 +92,12 @@ async def upload_screenplay(
             detail=f"File exceeds maximum size of {MAX_UPLOAD_BYTES // (1024 * 1024)} MB.",
         )
 
+    store = _get_store(request)
+    upload_hash = hashlib.sha256(content).hexdigest()
+    cached_session = store.get_by_upload_hash(upload_hash)
+    if cached_session is not None:
+        return _upload_response_from_session(cached_session)
+
     semaphore: asyncio.Semaphore = request.app.state.analysis_semaphore
     timeout: float = request.app.state.analysis_timeout
     if semaphore.locked():
@@ -78,6 +107,12 @@ async def upload_screenplay(
         )
 
     async with semaphore:
+        # Re-check after acquiring the slot so concurrent identical uploads
+        # only pay for one analysis.
+        cached_session = store.get_by_upload_hash(upload_hash)
+        if cached_session is not None:
+            return _upload_response_from_session(cached_session)
+
         try:
             results, engine, screenplay_text = await asyncio.wait_for(
                 asyncio.to_thread(
@@ -114,8 +149,9 @@ async def upload_screenplay(
         graph_summary=structure["graph_summary"],
         high_risk_scenes=structure["high_risk_scenes"],
         engine=engine,
+        upload_hash=upload_hash,
     )
-    _get_store(request).put(session)
+    store.put(session)
 
     scenes = [SceneSummary(**scene) for scene in results["scenes"]]
     return UploadResponse(

@@ -11,7 +11,12 @@ from orphan_scene_detector import (
     attach_orphan_graph,
     compute_linkage_components,
 )
-from osd_semantic import SceneSemanticCache, semantic_linkage
+from osd_semantic import (
+    SceneSemanticCache,
+    clear_embedding_cache,
+    embedding_cache_size,
+    semantic_linkage,
+)
 from scene_dependency import SceneBlock, SceneDependencyEngine
 
 
@@ -125,3 +130,100 @@ def test_semantic_increases_link_weight_over_cpl_only(
 
     assert with_semantic.semantic > 0.0
     assert with_semantic.total_weight > without_semantic.total_weight
+
+
+def test_precompute_reuses_shared_embedding_cache(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A second precompute of unchanged scenes does not re-encode them."""
+    monkeypatch.delenv("OSD_DISABLE_SEMANTIC", raising=False)
+    clear_embedding_cache()
+
+    text = Path(
+        "docs/demo_scripts/orphan_semantic_thread_demo.fountain",
+    ).read_text(encoding="utf-8")
+    engine = SceneDependencyEngine()
+    scenes = engine.parse_fountain_text(text)
+
+    first = SceneSemanticCache()
+    first.precompute(scenes)
+    assert embedding_cache_size() == len(first._vectors)
+    assert first._vectors
+
+    class _BoomModel:
+        """Stand-in model that fails if encode is invoked unexpectedly."""
+
+        def encode(self, *args: object, **kwargs: object) -> None:
+            """Raise when the shared cache should have absorbed the work."""
+            raise AssertionError("encode should not run on a full cache hit")
+
+    monkeypatch.setattr(
+        "osd_semantic._load_sentence_transformer",
+        lambda: _BoomModel(),
+    )
+
+    second = SceneSemanticCache()
+    second.precompute(scenes)
+    assert set(second._vectors) == set(first._vectors)
+    for scene_id, vector in first._vectors.items():
+        assert np.allclose(second._vectors[scene_id], vector)
+
+
+def test_precompute_encodes_only_changed_scenes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Editing one scene re-encodes only that scene's text."""
+    monkeypatch.delenv("OSD_DISABLE_SEMANTIC", raising=False)
+    clear_embedding_cache()
+
+    text = Path(
+        "docs/demo_scripts/orphan_semantic_thread_demo.fountain",
+    ).read_text(encoding="utf-8")
+    engine = SceneDependencyEngine()
+    scenes = engine.parse_fountain_text(text)
+
+    warm = SceneSemanticCache()
+    warm.precompute(scenes)
+    warmed = embedding_cache_size()
+    assert warmed >= 2
+
+    encode_calls: list[int] = []
+    real_loader = __import__(
+        "osd_semantic",
+        fromlist=["_load_sentence_transformer"],
+    )._load_sentence_transformer
+    real_model = real_loader()
+    original_encode = real_model.encode
+
+    def _counting_encode(texts: list[str], **kwargs: object) -> object:
+        """Record batch sizes while delegating to the real encoder."""
+        encode_calls.append(len(texts))
+        return original_encode(texts, **kwargs)
+
+    monkeypatch.setattr(real_model, "encode", _counting_encode)
+    monkeypatch.setattr(
+        "osd_semantic._load_sentence_transformer",
+        lambda: real_model,
+    )
+
+    edited = list(scenes)
+    changed = SceneBlock(
+        scene_id=edited[0].scene_id,
+        scene_number=edited[0].scene_number,
+        heading=edited[0].heading,
+        raw_text=edited[0].raw_text + "\nA brand new beat arrives.\n",
+        characters=list(edited[0].characters),
+        objects=list(edited[0].objects),
+        locations=list(edited[0].locations),
+        characters_speaking=list(edited[0].characters_speaking),
+        characters_mentioned=list(edited[0].characters_mentioned),
+        props_detected=list(edited[0].props_detected),
+    )
+    edited[0] = changed
+
+    cool = SceneSemanticCache()
+    cool.precompute(edited)
+    assert encode_calls == [1]
+    assert embedding_cache_size() == warmed + 1
+    assert changed.scene_id in cool._vectors
+
