@@ -49,6 +49,15 @@ jobs:
       - name: Run orphan-spec golden eval
         run: python scripts/run_orphan_spec_eval.py
 
+      - name: Score structure corpus baseline
+        run: >-
+          python scripts/score_structure_baseline.py
+          --check
+          --min-orphan-recall 1.0
+          --min-orphan-precision 0.9
+          --min-cut-recall 1.0
+          --min-edit-recall 1.0
+
   # Legacy contradiction-detection corpus. Plot contradictions are out of the
   # v3 product scope, so this no longer gates PRs/merges. It runs only on
   # manual dispatch to preserve the NLP regression signal on demand.

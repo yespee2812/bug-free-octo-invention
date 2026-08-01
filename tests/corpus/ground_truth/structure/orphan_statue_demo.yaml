@@ -1,0 +1,33 @@
+script_id: orphan_statue_demo
+filename: orphan_statue_demo.fountain
+
+expected_orphans:
+  - scene_002
+
+orphan_types:
+  scene_002: hard
+
+orphan_anchors:
+  scene_002:
+    character: "no shared named character with ledger scenes"
+    location: "setting B never reused"
+    prop: "STATUE never referenced in scenes 1 or 3"
+    semantic: "no significant semantic link to ledger thread"
+    evidence_quote: "A lone STATUE sits in the dark."
+
+expected_simulate_delete:
+  - scene_id: scene_001
+    expect_impacted:
+      - scene_003
+    expect_risk_in:
+      - low
+      - medium
+      - high
+    anchor: >
+      Scene 1 plants the LEDGER that scene 3 pays off. Cutting 1 leaves
+      scene 3 without the established prop.
+
+expected_simulate_edit: []
+
+notes: >
+  Statue beat is a hard orphan; ledger thread continues across scenes 1 and 3.

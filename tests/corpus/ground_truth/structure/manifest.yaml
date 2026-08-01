@@ -1,0 +1,25 @@
+# Structure corpus manifest — scripts scored by score_structure_baseline.py
+#
+# Each entry pairs a Fountain micro-script with a ground-truth YAML.
+# Add new goldens here after labeling (see docs/STRUCTURE_CORPUS_OWNER_CHECKLIST.md).
+
+scripts:
+  - id: action_5scene_simulate_demo
+    script: docs/demo_scripts/action_5scene_simulate_demo.fountain
+    ground_truth: tests/corpus/ground_truth/structure/action_5scene_simulate_demo.yaml
+    description: Briefcase plant/payoff chain; motorcycle alley hard orphan.
+
+  - id: orphan_statue_demo
+    script: docs/demo_scripts/orphan_statue_demo.fountain
+    ground_truth: tests/corpus/ground_truth/structure/orphan_statue_demo.yaml
+    description: Statue beat never referenced; ledger thread continues.
+
+  - id: revolver_chain_demo
+    script: docs/demo_scripts/revolver_chain_demo.fountain
+    ground_truth: tests/corpus/ground_truth/structure/revolver_chain_demo.yaml
+    description: Three-scene Chekhov revolver plant → grab → aim; no orphans.
+
+  - id: orphan_prologue_demo
+    script: docs/demo_scripts/orphan_prologue_demo.fountain
+    ground_truth: tests/corpus/ground_truth/structure/orphan_prologue_demo.yaml
+    description: Prologue exempt; no orphan flags expected.

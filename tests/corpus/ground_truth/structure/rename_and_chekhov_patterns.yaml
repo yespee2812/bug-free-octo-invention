@@ -1,0 +1,46 @@
+# Entity-swap rename maps for metamorphic isomorphism tests.
+# Fill or extend these tables (owner) — engineering wires them into
+# tests/test_structure_metamorphic.py and CI.
+#
+# Important: renamed tokens must still look like Fountain entities
+# (CAPS props / character cues). Avoid punctuation-heavy placeholders.
+
+action_5scene_simulate_demo:
+  script: docs/demo_scripts/action_5scene_simulate_demo.fountain
+  renames:
+    - from: GINA VASQUEZ
+      to: LENA KORSA
+    - from: GINA
+      to: LENA
+    - from: STEEL BRIEFCASE
+      to: TITANIUM CASE
+    - from: briefcase
+      to: case
+    - from: BRIEFCASE
+      to: CASE
+
+revolver_chain_demo:
+  script: docs/demo_scripts/revolver_chain_demo.fountain
+  renames:
+    - from: MARCUS
+      to: HARLAN
+    - from: REVOLVER
+      to: LASERGUN
+    - from: revolver
+      to: lasergun
+
+# Chekhov plant → mid → payoff. Plants use CAPS so prop extraction fires;
+# mid/payoff may be lowercase aliases the soft-matcher should resolve.
+chekhov_patterns:
+  - plant: a BRASS KEY
+    mid: the key
+    payoff: the key
+  - plant: a STEEL BRIEFCASE
+    mid: the briefcase
+    payoff: the briefcase
+  - plant: a REVOLVER
+    mid: the revolver
+    payoff: the revolver
+  - plant: a sealed LETTER
+    mid: the letter
+    payoff: the letter

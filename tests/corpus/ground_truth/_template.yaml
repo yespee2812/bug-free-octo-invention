@@ -1,30 +1,86 @@
-# Copy to ground_truth/<same_name_as_script>.yaml
-# Scene numbers = order of INT./EXT. headings in file (1 = first scene).
-# These must match "scene N" in the customer report (not scene_00N ids in engine JSON).
+# Structure corpus ground-truth template (v3 product path).
+# Copy to ground_truth/<same_stem_as_script>.yaml and fill every gold field
+# you want CI to score. See docs/STRUCTURE_CORPUS_OWNER_CHECKLIST.md and
+# docs/SCRIPTLENS_ANNOTATION_GUIDELINE.pdf for labeling rules.
+#
+# Scene numbers = order of INT./EXT. headings (1 = first scene).
+# Scene ids = scene_001, scene_002, ... matching that order.
+#
+# Legacy contradiction fields live under legacy/corpus/ground_truth/.
 
-script_id: my_script_01
-filename: my_script_01.fountain
+script_id: my_structure_01
+filename: my_structure_01.fountain
 
-# Contradictions you believe are real in the script (or already present).
-expected_contradictions:
-  - type: timeline_consistency
-    scene_number_a: 3
-    scene_number_b: 6
-    note: "Monday vs Wednesday with no flashback"
+# --- Required for orphan scoring ------------------------------------------------
+# List scene ids that must be flagged. Use [] when the script has no orphans.
+expected_orphans:
+  - scene_002
 
-# Contradictions you intentionally planted to test detection.
-planted_contradictions:
-  - type: character_alive_status
-    scene_number_a: 4
-    scene_number_b: 18
-    note: "Vance dead then alive"
+# Optional: hard vs loose / subplot_chain. Soft orphans need a second annotator.
+orphan_types:
+  scene_002: hard
 
-# Delete-impact checks (simulate cut).
+# Optional exemptions (prologue, montage, flashback, dream, framing, thematic).
+orphan_exemptions: []
+#  - scene_id: scene_001
+#    reason: prologue
+
+# Traceable anchors — required for gold (not silver). No anchor → do not CI-gate.
+orphan_anchors:
+  scene_002:
+    character: "no shared named character with any other scene"
+    location: "no shared location / setting"
+    prop: "no shared tracked object or document"
+    semantic: "no significant semantic link (E = 0)"
+    evidence_quote: "A lone STATUE sits in the dark."
+
+# --- Simulate cut (delete impact) -----------------------------------------------
 expected_simulate_delete:
-  - scene_id: scene_005
+  - scene_id: scene_001
     expect_impacted:
-      - scene_011
-      - scene_012
+      - scene_003
+      - scene_004
+    # Prefer a set when tier boundaries are fuzzy:
+    expect_risk_in:
+      - medium
+      - high
+    # Or a single tier when unambiguous:
+    # expect_risk: high
+    anchor: >
+      Scene 1 plants the STEEL BRIEFCASE; scenes 3–4 pay it off. Cutting 1
+      leaves those payoffs unsupported.
+
+# --- Simulate edit (edge delta) -------------------------------------------------
+expected_simulate_edit:
+  - scene_id: scene_001
+    modified_text: |
+      INT. LOCATION - DAY
+
+      Replacement scene text with the planted referent removed.
+    # Use removed when the referent was the only link; changed when another
+    # channel (e.g. character) keeps the scene pair but weight/explanation shifts.
+    expect_edges_removed_min: 0
+    expect_edges_changed_min: 1
+    expect_risk_in:
+      - low
+      - medium
+      - high
+    anchor: >
+      Edit strips the planted referent; at least one dependency edge must
+      remove or change.
+
+# --- Optional: scene-function roles (plant / payoff / setup) --------------------
+expected_scene_functions: []
+#  - scene_id: scene_001
+#    roles: [plant]
+#  - scene_id: scene_003
+#    roles: [payoff]
+
+# --- Optional: dependency edge bounds ------------------------------------------
+# Use when exact edge lists are brittle but a floor/ceiling is meaningful.
+expected_edge_bounds: {}
+#  min_edges: 2
+#  max_edges: 20
 
 notes: >
-  Optional free text — formatting issues, expected false positives, etc.
+  Optional free text — formatting quirks, known silver labels, review status.

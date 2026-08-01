@@ -9,8 +9,11 @@ structure-bearing dialogue only, not full slang-heavy spoken walls.
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
+import threading
+from collections import OrderedDict
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
@@ -22,6 +25,88 @@ SEMANTIC_MODEL_NAME = "all-MiniLM-L6-v2"
 SEMANTIC_DIALOGUE_CHAR_CAP: int = 400
 # When no structure-bearing lines exist, keep a short dialogue sample.
 SEMANTIC_FALLBACK_DIALOGUE_LINES: int = 3
+# Process-wide LRU of scene embeddings (model_name + text hash -> vector).
+_DEFAULT_EMBED_CACHE_SIZE: int = 20_000
+_CACHE_LOCK = threading.Lock()
+_EMBEDDING_CACHE: OrderedDict[str, Any] = OrderedDict()
+
+
+def _embed_cache_max_size() -> int:
+    """Return the configured process-wide embedding cache capacity.
+
+    Returns:
+        Positive integer capacity from ``OSD_EMBED_CACHE_SIZE`` or default.
+    """
+    raw = os.environ.get("OSD_EMBED_CACHE_SIZE", "").strip()
+    if not raw:
+        return _DEFAULT_EMBED_CACHE_SIZE
+    try:
+        value = int(raw)
+    except ValueError:
+        return _DEFAULT_EMBED_CACHE_SIZE
+    return max(1, value)
+
+
+def _embedding_cache_key(text: str) -> str:
+    """Build a stable cache key for one scene's semantic embedding text.
+
+    Args:
+        text: Scene semantic text that would be passed to the encoder.
+
+    Returns:
+        Cache key combining model name and SHA-256 of ``text``.
+    """
+    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
+    return f"{SEMANTIC_MODEL_NAME}:{digest}"
+
+
+def _cache_get(key: str) -> Any | None:
+    """Return a cached embedding and mark it as recently used.
+
+    Args:
+        key: Embedding cache key.
+
+    Returns:
+        Numpy vector when present, otherwise ``None``.
+    """
+    with _CACHE_LOCK:
+        vector = _EMBEDDING_CACHE.get(key)
+        if vector is None:
+            return None
+        _EMBEDDING_CACHE.move_to_end(key)
+        return vector
+
+
+def _cache_put(key: str, vector: Any) -> None:
+    """Insert or refresh one embedding in the process-wide LRU cache.
+
+    Args:
+        key: Embedding cache key.
+        vector: Encoded embedding vector.
+    """
+    max_size = _embed_cache_max_size()
+    with _CACHE_LOCK:
+        _EMBEDDING_CACHE[key] = vector
+        _EMBEDDING_CACHE.move_to_end(key)
+        while len(_EMBEDDING_CACHE) > max_size:
+            _EMBEDDING_CACHE.popitem(last=False)
+
+
+def clear_embedding_cache() -> None:
+    """Empty the process-wide embedding cache (test and maintenance hook)."""
+    with _CACHE_LOCK:
+        _EMBEDDING_CACHE.clear()
+
+
+def embedding_cache_size() -> int:
+    """Return how many embeddings are currently retained in the shared cache.
+
+    Returns:
+        Number of entries in the process-wide LRU embedding cache.
+    """
+    with _CACHE_LOCK:
+        return len(_EMBEDDING_CACHE)
+
 
 _PARENTHETICAL_ONLY = re.compile(r"^\([^)]*\)$")
 _ADDRESSEE_PAREN = re.compile(r"\(to\s+[^)]+\)", re.IGNORECASE)
@@ -247,7 +332,7 @@ class SceneSemanticCache:
         self._model: Any | None = None
 
     def precompute(self, scenes: list[SceneBlock]) -> None:
-        """Encode all scenes in one batch for efficient reuse.
+        """Encode scenes, reusing the process-wide embedding cache when possible.
 
         Args:
             scenes: Scene blocks whose semantic text will be embedded.
@@ -255,31 +340,44 @@ class SceneSemanticCache:
         if not is_semantic_enabled() or not scenes:
             return
 
+        pending_texts: list[str] = []
+        pending_ids: list[str] = []
+        pending_keys: list[str] = []
+        for scene in scenes:
+            text = scene_semantic_text(scene)
+            if not text.strip():
+                continue
+            key = _embedding_cache_key(text)
+            cached = _cache_get(key)
+            if cached is not None:
+                self._vectors[scene.scene_id] = cached
+                continue
+            pending_texts.append(text)
+            pending_ids.append(scene.scene_id)
+            pending_keys.append(key)
+
+        if not pending_texts:
+            return
+
         try:
             model = _load_sentence_transformer()
         except ImportError:
             return
 
-        texts: list[str] = []
-        scene_ids: list[str] = []
-        for scene in scenes:
-            text = scene_semantic_text(scene)
-            if not text.strip():
-                continue
-            texts.append(text)
-            scene_ids.append(scene.scene_id)
-
-        if not texts:
-            return
-
         embeddings = model.encode(
-            texts,
+            pending_texts,
             convert_to_numpy=True,
             normalize_embeddings=True,
             show_progress_bar=False,
         )
         self._model = model
-        for scene_id, vector in zip(scene_ids, embeddings, strict=True):
+        for scene_id, key, vector in zip(
+            pending_ids,
+            pending_keys,
+            embeddings,
+            strict=True,
+        ):
+            _cache_put(key, vector)
             self._vectors[scene_id] = vector
 
     def similarity(self, scene_a: SceneBlock, scene_b: SceneBlock) -> float:
