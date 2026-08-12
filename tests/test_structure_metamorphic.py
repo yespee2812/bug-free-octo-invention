@@ -137,6 +137,18 @@ def test_entity_swap_isomorphism_action_seed() -> None:
     assert before["edges"] == after["edges"]
 
 
+def test_entity_swap_isomorphism_birth_locket_demo() -> None:
+    """Birth-locket renames keep orphan set and dependency topology stable."""
+    script_path, rename_map = _rename_pairs("birth_locket_2scene_demo")
+    original = script_path.read_text(encoding="utf-8")
+    renamed = _apply_rename_map(original, rename_map)
+    before = _structure_signature(original)
+    after = _structure_signature(renamed)
+    assert before["scene_count"] == after["scene_count"]
+    assert before["orphans"] == after["orphans"]
+    assert before["edges"] == after["edges"]
+
+
 def _chekhov_script(plant: str, mid_ref: str, payoff_ref: str) -> str:
     """Build a three-scene plant → filler → payoff Fountain micro-script.
 

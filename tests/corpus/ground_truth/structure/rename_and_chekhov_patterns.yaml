@@ -29,6 +29,35 @@ revolver_chain_demo:
     - from: revolver
       to: lasergun
 
+# Demo from owner sample (Emma / Josh / gold locket birth beat).
+birth_locket_2scene_demo:
+  script: docs/demo_scripts/birth_locket_2scene_demo.fountain
+  renames:
+    - from: EMMA
+      to: CLARA
+    - from: JOSH
+      to: MILES
+    - from: MIDWIFE
+      to: DOULA
+    - from: midwife
+      to: doula
+    - from: GOLD LOCKET
+      to: SILVER PENDANT
+    - from: gold locket
+      to: silver pendant
+    - from: LOCKET
+      to: PENDANT
+    - from: locket
+      to: pendant
+    - from: WHITE TOWEL
+      to: LINEN CLOTH
+    - from: white towel
+      to: linen cloth
+    - from: TOWEL
+      to: CLOTH
+    - from: towel
+      to: cloth
+
 # Chekhov plant → mid → payoff. Plants use CAPS so prop extraction fires;
 # mid/payoff may be lowercase aliases the soft-matcher should resolve.
 chekhov_patterns:
@@ -44,3 +73,9 @@ chekhov_patterns:
   - plant: a sealed LETTER
     mid: the letter
     payoff: the letter
+  - plant: a GOLD LOCKET
+    mid: the locket
+    payoff: the locket
+  - plant: a WHITE TOWEL
+    mid: the towel
+    payoff: the towel

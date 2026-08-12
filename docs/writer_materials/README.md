@@ -36,4 +36,5 @@ Writers edit all three; they do not write from scratch.
 
 - Full markdown brief: `docs/SCREENWRITER_ERROR_INJECTION_GUIDE.md`
 - Email draft: `docs/WRITER_OUTREACH_MESSAGE.md`
+- Cohort retention (emails + in-app prompts): `RETENTION_PLAYBOOK_30_DAY.md` / `.pdf`
 - Internal type mapping: `docs/internal/CATEGORY_TO_ENGINE_MAPPING.md`
